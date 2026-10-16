@@ -1,0 +1,109 @@
+{
+  "schemaVersion": 1,
+  "levels": [
+    {
+      "id": "py_var_001",
+      "type": "multiple_choice",
+      "role": "lesson",
+      "title": "Первая переменная",
+      "prompt": "Какое значение будет у x?",
+      "code": "x = 5",
+      "difficulty": 1,
+      "hint": "После оператора = переменная получает значение справа.",
+      "explanation": "Оператор = записывает значение 5 в переменную x.",
+      "payload": {
+        "options": [
+          "3",
+          "5",
+          "x",
+          "Ошибка"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "py_var_002",
+      "type": "multiple_choice",
+      "role": "lesson",
+      "title": "Изменение значения",
+      "prompt": "Что выведет код?",
+      "code": "x = 5\nx += 2\nprint(x)",
+      "difficulty": 1,
+      "hint": "x += 2 — это короткая запись x = x + 2.",
+      "explanation": "Сначала x = 5, затем x увеличивается на 2 и становится 7.",
+      "payload": {
+        "options": [
+          "5",
+          "7",
+          "2",
+          "Ошибка"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "py_var_003",
+      "type": "fill_code",
+      "role": "lesson",
+      "title": "Присвоение значения",
+      "prompt": "Создайте переменную name со значением \"Ada\"",
+      "difficulty": 1,
+      "hint": "Для присваивания используется один знак равенства.",
+      "explanation": "Один знак = присваивает значение, а == сравнивает два значения.",
+      "payload": {
+        "template": "name {{0}} \"Ada\"\nprint(name)",
+        "options": [
+          "=",
+          "==",
+          ":",
+          "->"
+        ],
+        "answers": [
+          "="
+        ]
+      }
+    },
+    {
+      "id": "py_var_004",
+      "type": "code_ordering",
+      "role": "practice",
+      "title": "Собери программу",
+      "prompt": "Расставьте строки так, чтобы программа вывела 15",
+      "difficulty": 2,
+      "hint": "Переменную нельзя использовать до того, как ей присвоено значение.",
+      "explanation": "Сначала создаём x и y, затем считаем result и только потом выводим его.",
+      "payload": {
+        "lines": [
+          "x = 10",
+          "y = 5",
+          "result = x + y",
+          "print(result)"
+        ],
+        "alternativeOrders": [
+          [
+            1,
+            0,
+            2,
+            3
+          ]
+        ]
+      }
+    },
+    {
+      "id": "py_var_005",
+      "type": "bug_finder",
+      "role": "boss",
+      "title": "Босс: опечатка",
+      "prompt": "Найдите строку с ошибкой",
+      "code": "score = 10\nbonus = 5\ntotal = score + bonsu\nprint(total)",
+      "difficulty": 3,
+      "hint": "Сравните имена переменных посимвольно.",
+      "explanation": "В строке 3 опечатка: bonsu вместо bonus. Python не знает такую переменную и выдаёт NameError.",
+      "payload": {
+        "buggyLines": [
+          2
+        ]
+      }
+    }
+  ]
+}

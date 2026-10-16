@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "levels": [
+    {
+      "id": "py_types_001",
+      "type": "multiple_choice",
+      "role": "lesson",
+      "title": "Дробные числа",
+      "prompt": "Какой тип у переменной x?",
+      "code": "x = 3.14",
+      "difficulty": 1,
+      "hint": "Числа с точкой называются числами с плавающей точкой.",
+      "explanation": "3.14 — дробное число, его тип float.",
+      "payload": {
+        "options": [
+          "int",
+          "float",
+          "str",
+          "bool"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "py_types_002",
+      "type": "multiple_choice",
+      "role": "lesson",
+      "title": "Строка или число?",
+      "prompt": "Что выведет код?",
+      "code": "print(type(\"42\"))",
+      "difficulty": 1,
+      "hint": "Обратите внимание на кавычки.",
+      "explanation": "Всё, что в кавычках, — строка (str), даже если внутри цифры.",
+      "payload": {
+        "options": [
+          "<class 'int'>",
+          "<class 'str'>",
+          "<class 'float'>",
+          "42"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "py_types_003",
+      "type": "fill_code",
+      "role": "lesson",
+      "title": "Преобразование типов",
+      "prompt": "Превратите строку \"25\" в целое число, чтобы программа вывела 26",
+      "difficulty": 1,
+      "hint": "Функция с именем целочисленного типа превращает строку в число.",
+      "explanation": "int(\"25\") возвращает число 25, поэтому age + 1 равно 26.",
+      "payload": {
+        "template": "age = {{0}}(\"25\")\nprint(age + 1)",
+        "options": [
+          "int",
+          "str",
+          "len",
+          "bool"
+        ],
+        "answers": [
+          "int"
+        ]
+      }
+    },
+    {
+      "id": "py_types_004",
+      "type": "multiple_choice",
+      "role": "lesson",
+      "title": "Правда или ложь",
+      "prompt": "Что выведет код?",
+      "code": "print(bool(0), bool(\"0\"))",
+      "difficulty": 2,
+      "hint": "Пустые значения и ноль — ложь. А непустая строка?",
+      "explanation": "bool(0) — False, а \"0\" — непустая строка, поэтому True.",
+      "payload": {
+        "options": [
+          "False False",
+          "False True",
+          "True True",
+          "True False"
+        ],
+        "correctIndex": 1
+      }
+    },
+    {
+      "id": "py_types_005",
+      "type": "code_ordering",
+      "role": "boss",
+      "title": "Босс: возраст",
+      "prompt": "Соберите программу, которая выведет «Возраст: 26»",
+      "difficulty": 3,
+      "hint": "Строки и числа нельзя складывать напрямую — нужен str().",
+      "explanation": "Сначала читаем строку, превращаем её в число, прибавляем 1 и собираем сообщение через str().",
+      "payload": {
+        "lines": [
+          "age_text = \"25\"",
+          "age = int(age_text) + 1",
+          "message = \"Возраст: \" + str(age)",
+          "print(message)"
+        ]
+      }
+    }
+  ]
+}

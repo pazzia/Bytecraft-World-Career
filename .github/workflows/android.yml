@@ -1,21 +1,23 @@
-name: CodeQuest Android MVP
+name: Bytecraft CI
 
 on:
   push:
     branches: [ main ]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
-  group: codequest-android-${{ github.ref }}
+  group: bytecraft-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -29,30 +31,68 @@ jobs:
 
       - name: Generate Android shell
         run: |
-          flutter create --platforms=android --org com.pazzia --project-name codequest_mvp .
+          flutter --version | tee flutter-version.txt
+          flutter create --platforms=android --org com.pazzia --project-name bytecraft .
+          # flutter create adds a counter-app test that doesn't apply here.
           rm -f test/widget_test.dart
 
       - name: Install dependencies
-        run: flutter pub get
+        run: flutter pub get 2>&1 | tee pub.txt
 
       - name: Analyze
-        run: flutter analyze --no-fatal-infos
+        id: analyze
+        run: |
+          set -o pipefail
+          flutter analyze --no-fatal-infos 2>&1 | tee analyze.txt
 
       - name: Unit tests
-        run: flutter test
+        id: tests
+        if: always() && steps.analyze.conclusion != 'skipped'
+        run: |
+          set -o pipefail
+          flutter test --reporter expanded 2>&1 | tee test.txt
 
       - name: Build release APK
-        run: flutter build apk --release
+        id: apk
+        run: flutter build apk --release 2>&1 | tee apk.txt
+
+      # Logs are posted to the PR so results are readable without Actions log access.
+      - name: Report to pull request
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          section() {
+            local title="$1" file="$2" lines="$3"
+            echo "<details><summary>$title</summary>"
+            echo
+            echo '```'
+            if [ -f "$file" ]; then tail -n "$lines" "$file"; else echo "(step did not run)"; fi
+            echo '```'
+            echo "</details>"
+          }
+          {
+            echo "### CI: analyze=${{ steps.analyze.outcome }} · tests=${{ steps.tests.outcome }} · apk=${{ steps.apk.outcome }}"
+            echo
+            section "Flutter version" flutter-version.txt 6
+            section "pub get" pub.txt 40
+            section "flutter analyze" analyze.txt 150
+            section "flutter test" test.txt 150
+            section "build apk" apk.txt 40
+          } > report.md
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file report.md
 
       - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: codequest-mvp-apk
+          name: bytecraft-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
 
       - name: Publish GitHub Release
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -61,5 +101,5 @@ jobs:
             build/app/outputs/flutter-apk/app-release.apk \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "CodeQuest MVP build ${GITHUB_RUN_NUMBER}" \
-            --notes "Automated Android MVP build from commit ${GITHUB_SHA}."
+            --title "Bytecraft MVP build ${GITHUB_RUN_NUMBER}" \
+            --notes "Automated Android build from commit ${GITHUB_SHA}."

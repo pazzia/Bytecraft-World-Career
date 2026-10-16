@@ -1,0 +1,105 @@
+{
+  "schemaVersion": 1,
+  "levels": [
+    {
+      "id": "py_cond_001",
+      "type": "multiple_choice",
+      "role": "lesson",
+      "title": "Первое условие",
+      "prompt": "Что выведет код?",
+      "code": "x = 7\nif x > 5:\n    print(\"big\")\nelse:\n    print(\"small\")",
+      "difficulty": 1,
+      "hint": "7 больше 5?",
+      "explanation": "Условие x > 5 истинно, поэтому выполняется ветка if.",
+      "payload": {
+        "options": [
+          "big",
+          "small",
+          "big small",
+          "Ничего"
+        ],
+        "correctIndex": 0
+      }
+    },
+    {
+      "id": "py_cond_002",
+      "type": "fill_code",
+      "role": "lesson",
+      "title": "Больше или равно",
+      "prompt": "Разрешите доступ всем, кому 18 лет и больше",
+      "difficulty": 1,
+      "hint": "Нужен оператор «больше или равно».",
+      "explanation": "В Python «больше или равно» пишется как >=. Вариант => — синтаксическая ошибка.",
+      "payload": {
+        "template": "age = 20\nif age {{0}} 18:\n    print(\"Доступ разрешён\")",
+        "options": [
+          ">=",
+          "=",
+          "=>",
+          "=="
+        ],
+        "answers": [
+          ">="
+        ]
+      }
+    },
+    {
+      "id": "py_cond_003",
+      "type": "fill_code",
+      "role": "practice",
+      "title": "Цепочка условий",
+      "prompt": "Заполните пропуски, чтобы программа вывела «тепло»",
+      "difficulty": 2,
+      "hint": "Цепочка начинается с if, промежуточные проверки — elif.",
+      "explanation": "if проверяет первое условие, elif — следующее, else срабатывает, если ни одно не подошло.",
+      "payload": {
+        "template": "t = 15\n{{0}} t > 25:\n    print(\"жарко\")\n{{1}} t > 10:\n    print(\"тепло\")\nelse:\n    print(\"холодно\")",
+        "options": [
+          "if",
+          "elif",
+          "else",
+          "when"
+        ],
+        "answers": [
+          "if",
+          "elif"
+        ]
+      }
+    },
+    {
+      "id": "py_cond_004",
+      "type": "bug_finder",
+      "role": "challenge",
+      "title": "Пропавшее двоеточие",
+      "prompt": "Найдите строку с ошибкой",
+      "code": "n = 4\nif n % 2 == 0\n    print(\"чётное\")\nelse:\n    print(\"нечётное\")",
+      "difficulty": 2,
+      "hint": "Посмотрите на конец строк с if и else.",
+      "explanation": "После условия if обязательно ставится двоеточие. Без него — SyntaxError.",
+      "payload": {
+        "buggyLines": [
+          1
+        ]
+      }
+    },
+    {
+      "id": "py_cond_005",
+      "type": "code_ordering",
+      "role": "boss",
+      "title": "Босс: оценка",
+      "prompt": "Соберите программу, которая выведет «Отлично» для оценки 5",
+      "difficulty": 3,
+      "hint": "Каждая ветка начинается со строки с двоеточием, а её тело идёт с отступом.",
+      "explanation": "Переменная, затем if с телом, затем else со своим телом.",
+      "payload": {
+        "lines": [
+          "grade = 5",
+          "if grade == 5:",
+          "    print(\"Отлично\")",
+          "else:",
+          "    print(\"Можно лучше\")"
+        ]
+      }
+    }
+  ]
+}

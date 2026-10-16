@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "levels": [
+    {
+      "id": "py_loop_001",
+      "type": "fill_code",
+      "role": "lesson",
+      "title": "Цикл for",
+      "prompt": "Допишите цикл, который выведет числа от 0 до 4",
+      "difficulty": 1,
+      "hint": "for <переменная> ___ <последовательность>",
+      "explanation": "Цикл for перебирает элементы последовательности с помощью ключевого слова in.",
+      "payload": {
+        "template": "for i {{0}} range(5):\n    print(i)",
+        "options": [
+          "in",
+          "of",
+          "from",
+          "inside"
+        ],
+        "answers": [
+          "in"
+        ]
+      }
+    },
+    {
+      "id": "py_loop_002",
+      "type": "multiple_choice",
+      "role": "lesson",
+      "title": "range",
+      "prompt": "Какое последнее число выведет программа?",
+      "code": "for i in range(3):\n    print(i)",
+      "difficulty": 1,
+      "hint": "range(3) начинается с 0 и не включает 3.",
+      "explanation": "range(3) даёт 0, 1, 2 — последнее число 2.",
+      "payload": {
+        "options": [
+          "2",
+          "3",
+          "4",
+          "Ничего"
+        ],
+        "correctIndex": 0
+      }
+    },
+    {
+      "id": "py_loop_003",
+      "type": "multiple_choice",
+      "role": "practice",
+      "title": "Сумма в цикле",
+      "prompt": "Что выведет код?",
+      "code": "total = 0\nfor n in range(1, 4):\n    total += n\nprint(total)",
+      "difficulty": 2,
+      "hint": "range(1, 4) — это 1, 2, 3.",
+      "explanation": "1 + 2 + 3 = 6.",
+      "payload": {
+        "options": [
+          "6",
+          "10",
+          "3",
+          "4"
+        ],
+        "correctIndex": 0
+      }
+    },
+    {
+      "id": "py_loop_004",
+      "type": "code_ordering",
+      "role": "challenge",
+      "title": "Обратный отсчёт",
+      "prompt": "Соберите программу: 3, 2, 1, затем «Старт!»",
+      "difficulty": 3,
+      "hint": "Сначала выводим число, потом уменьшаем.",
+      "explanation": "while повторяет тело, пока count > 0. «Старт!» стоит без отступа — после цикла.",
+      "payload": {
+        "lines": [
+          "count = 3",
+          "while count > 0:",
+          "    print(count)",
+          "    count -= 1",
+          "print(\"Старт!\")"
+        ]
+      }
+    },
+    {
+      "id": "py_loop_005",
+      "type": "bug_finder",
+      "role": "boss",
+      "title": "Босс: сумма не считается",
+      "prompt": "Программа должна вывести 15, но выводит 0. Найдите ошибку",
+      "code": "total = 0\nfor i in range(1, 6):\n    total == total + i\nprint(total)",
+      "difficulty": 3,
+      "hint": "Чем отличаются = и ==?",
+      "explanation": "== только сравнивает и ничего не меняет. Нужно присваивание: total = total + i.",
+      "payload": {
+        "buggyLines": [
+          2
+        ]
+      }
+    }
+  ]
+}
