@@ -48,7 +48,7 @@ class _CourseSelectionScreenState extends ConsumerState<CourseSelectionScreen> {
     final textTheme = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: const AppBar(),
+      appBar: AppBar(),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: Spacing.page),

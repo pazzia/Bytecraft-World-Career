@@ -47,7 +47,7 @@ class ShopScreen extends ConsumerWidget {
     final profile = ref.watch(profileProvider);
     final items = ShopItem.catalog(ref.watch(gameRulesProvider));
     return Scaffold(
-      appBar: const AppBar(title: Text('Магазин')),
+      appBar: AppBar(title: const Text('Магазин')),
       body: AsyncValueView<UserProfile>(
         value: profile,
         data: (profile) => ListView(

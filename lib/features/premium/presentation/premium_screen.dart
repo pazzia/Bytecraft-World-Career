@@ -60,7 +60,7 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: const AppBar(title: Text('Premium')),
+      appBar: AppBar(title: const Text('Premium')),
       body: ListView(
         padding: const EdgeInsets.all(Spacing.page),
         children: [

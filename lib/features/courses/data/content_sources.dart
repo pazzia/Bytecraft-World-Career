@@ -11,9 +11,9 @@ typedef TextAssetLoader = Future<String> Function(String path);
 /// Bundled content shipped inside the app binary — always available offline.
 ///
 /// Layout:
-///   assets/content/catalog.json
-///   assets/content/<course>/course.json   (module list with "file" refs)
-///   assets/content/<course>/<module file>  ({"levels": [...]})
+///   `assets/content/catalog.json`
+///   `assets/content/{course}/course.json` (module list with "file" refs)
+///   `assets/content/{course}/{module file}` ({"levels": [...]})
 class BundledContentSource {
   const BundledContentSource(this._load, {this.root = 'assets/content'});
 

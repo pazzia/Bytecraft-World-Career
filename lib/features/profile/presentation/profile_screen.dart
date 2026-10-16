@@ -70,7 +70,7 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
     return Scaffold(
-      appBar: const AppBar(title: Text('Профиль')),
+      appBar: AppBar(title: const Text('Профиль')),
       body: AsyncValueView<ProfileViewModel>(
         value: vm,
         onRetry: () => ref.invalidate(profileViewModelProvider),
