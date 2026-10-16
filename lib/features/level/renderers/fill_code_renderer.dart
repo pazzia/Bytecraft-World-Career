@@ -4,6 +4,7 @@ import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/game_colors.dart';
 import '../../../shared/widgets/code_block.dart';
+import '../../../shared/widgets/keycap.dart';
 import '../../courses/domain/fill_code_template.dart';
 import '../../courses/domain/level_payload.dart';
 import '../domain/answer.dart';
@@ -20,14 +21,15 @@ class FillCodeRenderer extends QuestionRenderer {
       FillCodeView(question: question);
 }
 
-/// Code with tappable blanks + a bank of large tokens.
-/// Tap a token to fill the next empty blank; tap a filled blank to clear it.
+/// Code on the board with slots + a bank of token keys.
+/// Tap a key to drop it into the next empty slot; tap a slot to take the
+/// key back out.
 class FillCodeView extends StatelessWidget {
   const FillCodeView({super.key, required this.question});
 
   final QuestionContext question;
 
-  /// Which option chips are already placed (supports duplicate tokens).
+  /// Which option keys are already placed (supports duplicate tokens).
   static Set<int> usedOptionIndexes(List<String> options, List<String?> tokens) {
     final remaining = <String, int>{};
     for (final token in tokens) {
@@ -59,6 +61,7 @@ class FillCodeView extends StatelessWidget {
           alignment: PlaceholderAlignment.middle,
           child: _BlankSlot(
             key: ValueKey('blank_$index'),
+            index: index,
             token: index < answer.tokens.length ? answer.tokens[index] : null,
             isWrong: wrong.contains(index),
             isCorrect: isCorrect,
@@ -81,50 +84,58 @@ class FillCodeView extends StatelessWidget {
     final colors = context.gameColors;
     final wrong = question.outcome?.wrongParts ?? const <int>{};
     final isCorrect = question.outcome?.isCorrect ?? false;
+    final lines = FillCodeTemplate.lines(payload.template);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: colors.codeBackground,
-            borderRadius: AppRadius.lgAll,
-          ),
+        CodeBoard(
           padding: const EdgeInsets.all(Spacing.lg),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final line in FillCodeTemplate.lines(payload.template))
+                for (var i = 0; i < lines.length; i++)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: Spacing.xxs),
-                    child: Text.rich(
-                      TextSpan(
-                        children: [
-                          for (final segment in line)
-                            _spanFor(
-                              segment,
-                              answer: answer,
-                              colors: colors,
-                              wrong: wrong,
-                              isCorrect: isCorrect,
+                    padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 26,
+                          child: Text(
+                            '${i + 1}',
+                            style: AppTypography.code(
+                              color: colors.codeLineNumber,
+                              size: 13,
                             ),
-                        ],
-                      ),
-                      style: AppTypography.code(color: colors.codeText),
-                      softWrap: false,
+                          ),
+                        ),
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              for (final segment in lines[i])
+                                _spanFor(
+                                  segment,
+                                  answer: answer,
+                                  colors: colors,
+                                  wrong: wrong,
+                                  isCorrect: isCorrect,
+                                ),
+                            ],
+                          ),
+                          style: AppTypography.code(color: colors.codeText),
+                          softWrap: false,
+                        ),
+                      ],
                     ),
                   ),
               ],
             ),
           ),
         ),
-        const SizedBox(height: Spacing.xl),
-        Wrap(
-          spacing: Spacing.md,
-          runSpacing: Spacing.md,
-          alignment: WrapAlignment.center,
+        const SizedBox(height: Spacing.xxl),
+        _TokenGrid(
           children: [
             for (var i = 0; i < payload.options.length; i++)
               TokenChip(
@@ -142,60 +153,95 @@ class FillCodeView extends StatelessWidget {
   }
 }
 
+class _TokenGrid extends StatelessWidget {
+  const _TokenGrid({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => Column(
+        children: [
+          for (var row = 0; row < children.length; row += 2)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Spacing.md),
+              child: Row(
+                children: [
+                  Expanded(child: children[row]),
+                  const SizedBox(width: Spacing.md),
+                  Expanded(
+                    child: row + 1 < children.length
+                        ? children[row + 1]
+                        : const SizedBox.shrink(),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      );
+}
+
 class _BlankSlot extends StatelessWidget {
   const _BlankSlot({
     super.key,
+    required this.index,
     required this.token,
     required this.isWrong,
     required this.isCorrect,
     required this.onTap,
   });
 
+  final int index;
   final String? token;
   final bool isWrong;
   final bool isCorrect;
   final VoidCallback? onTap;
 
-  static const double _minWidth = 56;
-
   @override
   Widget build(BuildContext context) {
     final colors = context.gameColors;
-    final scheme = Theme.of(context).colorScheme;
-    final border = isWrong
-        ? colors.error
+    final slotStyle = AppTypography.code(
+      color: colors.onReward,
+      size: 18,
+      weight: FontWeight.w700,
+    ).copyWith(height: 1.2);
+    if (token == null) {
+      return Semantics(
+        label: 'Пропуск ${index + 1}, пустой',
+        child: Container(
+          constraints: const BoxConstraints(minWidth: 60, minHeight: 34),
+          margin: const EdgeInsets.symmetric(horizontal: Spacing.xs),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(9),
+            border: Border.all(color: colors.codeLineNumber, width: 2),
+          ),
+        ),
+      );
+    }
+    final (Color face, Color edge, Color text) = isWrong
+        ? (colors.errorBright, colors.errorEdge, Colors.white)
         : isCorrect
-            ? colors.success
-            : token == null
-                ? colors.codeComment
-                : scheme.primary;
-    return GestureDetector(
-      onTap: token == null ? null : onTap,
-      child: Container(
-        constraints: const BoxConstraints(minWidth: _minWidth),
-        margin: const EdgeInsets.symmetric(horizontal: Spacing.xs),
+            ? (colors.successBright, colors.successEdge, Colors.white)
+            : (colors.reward, colors.rewardEdge, colors.onReward);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Spacing.xs),
+      child: Keycap(
+        onTap: onTap,
+        face: face,
+        edge: edge,
+        radius: 9,
+        depth: 3,
         padding: const EdgeInsets.symmetric(
-          horizontal: Spacing.sm,
-          vertical: Spacing.xxs,
+          horizontal: Spacing.md,
+          vertical: Spacing.xs,
         ),
-        decoration: BoxDecoration(
-          color: token == null
-              ? Colors.transparent
-              : border.withValues(alpha: 0.25),
-          borderRadius: AppRadius.smAll,
-          border: Border.all(color: border, width: 2),
-        ),
-        child: Text(
-          token ?? ' ',
-          textAlign: TextAlign.center,
-          style: AppTypography.code(color: colors.codeText),
-        ),
+        semanticLabel: 'Пропуск ${index + 1}: $token. Нажмите, чтобы убрать',
+        child: Text(token!, style: slotStyle.copyWith(color: text)),
       ),
     );
   }
 }
 
-/// Large selectable code token.
+/// A large selectable code token key.
 class TokenChip extends StatelessWidget {
   const TokenChip({
     super.key,
@@ -212,39 +258,40 @@ class TokenChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final game = context.gameColors;
-    return AnimatedOpacity(
-      duration: AppDurations.fast,
-      opacity: isUsed ? 0.3 : 1,
-      child: Container(
-        constraints: const BoxConstraints(
-          minHeight: Spacing.touchTarget,
-          minWidth: Spacing.touchTarget + Spacing.lg,
-        ),
-        decoration: BoxDecoration(
-          color: scheme.surface,
-          borderRadius: AppRadius.mdAll,
-          border: Border.all(color: scheme.outline, width: 2),
-          boxShadow: AppShadows.edge(isUsed ? game.locked : scheme.outline),
-        ),
-        child: Material(
-          type: MaterialType.transparency,
-          child: InkWell(
-            borderRadius: AppRadius.mdAll,
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: Spacing.lg,
-                vertical: Spacing.md,
-              ),
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: AppTypography.code(color: scheme.onSurface, size: 18),
-              ),
-            ),
+    final text = Text(
+      label,
+      textAlign: TextAlign.center,
+      style: AppTypography.code(
+        color: isUsed ? game.lockedIcon : scheme.onSurface,
+        size: 20,
+        weight: FontWeight.w700,
+      ).copyWith(height: 1.2),
+    );
+    if (isUsed) {
+      // An empty socket where the key was.
+      return Semantics(
+        label: '$label, уже в коде',
+        excludeSemantics: true,
+        child: Container(
+          height: 60,
+          margin: const EdgeInsets.only(bottom: 4),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: game.track,
+            borderRadius: AppRadius.lgAll,
           ),
+          child: text,
         ),
-      ),
+      );
+    }
+    return Keycap(
+      onTap: onTap,
+      face: game.keyFace,
+      edge: game.keyEdge,
+      border: game.keyBorder,
+      height: 64,
+      semanticLabel: label,
+      child: text,
     );
   }
 }

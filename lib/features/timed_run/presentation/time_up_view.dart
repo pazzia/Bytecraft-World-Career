@@ -17,6 +17,7 @@ class TimeUpView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final game = context.gameColors;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(Spacing.page),
@@ -24,11 +25,7 @@ class TimeUpView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Spacer(),
-            Icon(
-              Icons.timer_off_outlined,
-              size: 72,
-              color: context.gameColors.streak,
-            ),
+            Icon(Icons.timer_off_outlined, size: 72, color: game.streak),
             const SizedBox(height: Spacing.lg),
             Text(
               'Время вышло',
@@ -37,16 +34,16 @@ class TimeUpView extends StatelessWidget {
             ),
             const SizedBox(height: Spacing.sm),
             Text(
-              'Забег не засчитан. Уже полученный опыт остаётся у вас.',
+              'Забег не засчитан. Опыт за уже пройденные уровни остаётся у вас.',
               textAlign: TextAlign.center,
-              style: textTheme.bodyLarge,
+              style: textTheme.bodyLarge?.copyWith(color: game.textMuted),
             ),
             const Spacer(),
             AppButton(label: 'Начать заново', onPressed: onRestart),
-            const SizedBox(height: Spacing.sm),
+            const SizedBox(height: Spacing.xs),
             AppButton(
               label: 'К карте',
-              variant: AppButtonVariant.secondary,
+              variant: AppButtonVariant.quiet,
               onPressed: onExit,
             ),
           ],

@@ -23,7 +23,7 @@ flutter run
 
 ## Архитектура
 
-См. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): ADR, дерево проекта, Level Engine, data flow, хранилище, роутинг, состояние.
+См. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): ADR, дерево проекта, Level Engine, data flow, хранилище, роутинг, состояние. Дизайн-система: [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Контент
 

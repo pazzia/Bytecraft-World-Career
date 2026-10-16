@@ -35,6 +35,10 @@ jobs:
           flutter create --platforms=android --org com.pazzia --project-name bytecraft .
           # flutter create adds a counter-app test that doesn't apply here.
           rm -f test/widget_test.dart
+          # App name and launcher icon (the generated shell has Flutter's).
+          sed -i 's/android:label="bytecraft"/android:label="Bytecraft"/' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:label="Bytecraft"' android/app/src/main/AndroidManifest.xml
+          cp -r tool/android/res/. android/app/src/main/res/
 
       - name: Install dependencies
         run: flutter pub get 2>&1 | tee pub.txt
@@ -135,6 +139,10 @@ jobs:
             section "Flutter version" flutter-version.txt 6
             section "pub get" pub.txt 40
             section "flutter analyze" analyze.txt 150
+            if grep -q "EXCEPTION CAUGHT BY" test.txt 2>/dev/null; then
+              awk '/EXCEPTION CAUGHT BY/{found=1} found{print; n++} n>=70{exit}' test.txt > first-failure.txt
+              section "first test exception" first-failure.txt 70
+            fi
             section "flutter test" test.txt 150
             section "build apk" apk.txt 40
             section "signing" sign.txt 10
