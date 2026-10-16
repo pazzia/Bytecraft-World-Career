@@ -46,4 +46,4 @@ python3 tool/content/generate_python_course.py assets/content/python/modules
 
 ## CI
 
-GitHub Actions (`.github/workflows/android.yml`) on every PR and push to `main`: `flutter analyze`, `flutter test`, release APK. On PRs the results are posted as a comment; on `main` the APK is published as a GitHub Release.
+GitHub Actions (`.github/workflows/android.yml`) on every PR and push to `main`: `flutter analyze`, `flutter test`, release APK. On PRs the results are posted as a comment; on `main` the APK is published as a GitHub Release. Release signing setup: [docs/RELEASE.md](docs/RELEASE.md).
