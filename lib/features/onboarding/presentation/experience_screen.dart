@@ -135,7 +135,9 @@ class _HelloBoard extends StatelessWidget {
               style: AppTypography.code(color: game.codeText, size: 20),
             ),
             const SizedBox(height: Spacing.lg),
-            Row(
+            // Wrap, not Row: narrow phones and large text sizes must fit.
+            Wrap(
+              runSpacing: Spacing.sm,
               children: [
                 key('print', lit: true),
                 key('for'),
