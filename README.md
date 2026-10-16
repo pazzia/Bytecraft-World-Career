@@ -7,3 +7,5 @@ MVP includes onboarding, learning map, 20 Python levels, multiple-choice/fill-mi
 ## CI/CD
 
 Every push to `main` runs Flutter analyze/tests, builds a release APK and publishes it as a GitHub Release.
+
+Active repository: `pazzia/Python.io`.
