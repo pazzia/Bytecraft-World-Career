@@ -1,0 +1,33 @@
+name: Keep signing key
+
+# GitHub deletes cache entries that are not used for 7 days. The permanent
+# signing key lives in the cache (see docs/RELEASE.md), so it is read every
+# few days even when nothing is being built.
+on:
+  schedule:
+    - cron: '17 4 */2 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  touch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Restore signing key
+        id: key-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.bytecraft-signing
+          key: bytecraft-signing-v1
+
+      - name: Check the key is there
+        run: |
+          if [ "${{ steps.key-cache.outputs.cache-hit }}" != "true" ]; then
+            echo "::error::Signing key not found in the cache. If a build on main already ran, the key was lost: see docs/RELEASE.md."
+            exit 1
+          fi
+          keytool -list -keystore "$HOME/.bytecraft-signing/release.jks" \
+            -storepass "$(cat "$HOME/.bytecraft-signing/password")" | grep -i 'SHA-256' || true

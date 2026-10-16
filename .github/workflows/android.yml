@@ -64,35 +64,66 @@ jobs:
           set -o pipefail
           flutter build apk --release --build-number=${{ github.run_number }} 2>&1 | tee apk.txt
 
-      # Re-sign with the release key from repository secrets (see
-      # docs/RELEASE.md). Without secrets every build gets a different key
-      # and can't be installed over a previous build.
-      - name: Sign APK with release key
+      # The permanent signing key lives in the GitHub Actions cache (see
+      # docs/RELEASE.md). The cache key never changes, so the key is
+      # created once and every later build is signed with the same key.
+      - name: Restore signing key
+        id: key-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.bytecraft-signing
+          key: bytecraft-signing-v1
+
+      - name: Sign APK
         id: sign
         env:
+          # Optional override: repository secrets take priority over the cache.
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # Only main may create the permanent key: caches saved by PR runs
+          # are invisible to main and would give a different key.
+          CAN_CREATE_KEY: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
         run: |
           set -euo pipefail
           APK=build/app/outputs/flutter-apk/app-release.apk
-          KS="$RUNNER_TEMP/release.jks"
+          KEY_DIR="$HOME/.bytecraft-signing"
+          TEMP_KS="$RUNNER_TEMP/temp.jks"
           if [ -n "${KEYSTORE_BASE64}" ]; then
-            echo "$KEYSTORE_BASE64" | base64 --decode > "$KS"
-            SIGNED=true
+            echo "$KEYSTORE_BASE64" | base64 --decode > "$TEMP_KS"
+            KS="$TEMP_KS"
+            SOURCE=secrets
+          elif [ -f "$KEY_DIR/release.jks" ]; then
+            KS="$KEY_DIR/release.jks"
+            KEYSTORE_PASSWORD="$(cat "$KEY_DIR/password")"
+            KEY_PASSWORD="$KEYSTORE_PASSWORD"
+            KEY_ALIAS=bytecraft
+            SOURCE=cache
+          elif [ "$CAN_CREATE_KEY" = true ]; then
+            mkdir -p "$KEY_DIR"
+            openssl rand -hex 24 > "$KEY_DIR/password"
+            KEYSTORE_PASSWORD="$(cat "$KEY_DIR/password")"
+            KEY_PASSWORD="$KEYSTORE_PASSWORD"
+            KEY_ALIAS=bytecraft
+            keytool -genkeypair -keystore "$KEY_DIR/release.jks" -storetype PKCS12 \
+              -alias "$KEY_ALIAS" -keyalg RSA -keysize 4096 -validity 10000 \
+              -storepass "$KEYSTORE_PASSWORD" -dname "CN=Bytecraft, O=pazzia" >/dev/null 2>&1
+            KS="$KEY_DIR/release.jks"
+            SOURCE=created
           else
-            # No secrets (yet): sign with a throwaway key so the signing
-            # path is still exercised on every run.
+            # A PR before the key exists: a throwaway key keeps the signing
+            # path exercised, but the APK can't update an installed app.
             KEYSTORE_PASSWORD="$(openssl rand -hex 16)"
             KEY_PASSWORD="$KEYSTORE_PASSWORD"
             KEY_ALIAS=throwaway
-            keytool -genkeypair -keystore "$KS" -storetype PKCS12 \
+            keytool -genkeypair -keystore "$TEMP_KS" -storetype PKCS12 \
               -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 1 \
               -storepass "$KEYSTORE_PASSWORD" -dname "CN=Throwaway" >/dev/null 2>&1
-            export KEYSTORE_PASSWORD KEY_PASSWORD
-            SIGNED=false
+            KS="$TEMP_KS"
+            SOURCE=throwaway
           fi
+          export KEYSTORE_PASSWORD KEY_PASSWORD
           BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
           "$BUILD_TOOLS/apksigner" sign \
             --ks "$KS" \
@@ -102,20 +133,34 @@ jobs:
             --out "$RUNNER_TEMP/signed.apk" \
             "$APK"
           mv "$RUNNER_TEMP/signed.apk" "$APK"
-          rm -f "$KS"
+          rm -f "$TEMP_KS"
           {
-            if [ "$SIGNED" = true ]; then
-              echo "Signed with the release key."
-            else
-              echo "⚠️ Release key secrets are not set: signed with a throwaway key (see docs/RELEASE.md)."
-            fi
+            case "$SOURCE" in
+              cache) echo "Signed with the permanent key (from the Actions cache)." ;;
+              created) echo "Created the permanent key and signed with it." ;;
+              secrets) echo "Signed with the key from repository secrets." ;;
+              *) echo "⚠️ No permanent key yet (it is created by the first build on main): signed with a throwaway key." ;;
+            esac
             echo "apksigner: $BUILD_TOOLS"
             # verify fails the step on a bad signature; the summary lines
             # differ between build-tools versions, so fall back to all output.
             "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" > verify.txt
             grep -iE "certificate (DN|SHA-256)|Verified using" verify.txt || cat verify.txt
           } 2>&1 | tee sign.txt
-          echo "signed=$SIGNED" >> "$GITHUB_OUTPUT"
+          FINGERPRINT="$(grep -iE 'certificate SHA-256' verify.txt | head -n 1 | sed 's/.*: *//' || true)"
+          if [ "$SOURCE" = throwaway ]; then SIGNED=false; else SIGNED=true; fi
+          {
+            echo "signed=$SIGNED"
+            echo "source=$SOURCE"
+            echo "fingerprint=$FINGERPRINT"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Save new signing key
+        if: steps.sign.outputs.source == 'created'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.bytecraft-signing
+          key: bytecraft-signing-v1
 
       # Logs are posted to the PR so results are readable without Actions log access.
       - name: Report to pull request
@@ -134,7 +179,7 @@ jobs:
             echo "</details>"
           }
           {
-            echo "### CI: analyze=${{ steps.analyze.outcome }} · tests=${{ steps.tests.outcome }} · apk=${{ steps.apk.outcome }} · release-signed=${{ steps.sign.outputs.signed || 'n/a' }}"
+            echo "### CI: analyze=${{ steps.analyze.outcome }} · tests=${{ steps.tests.outcome }} · apk=${{ steps.apk.outcome }} · release-signed=${{ steps.sign.outputs.signed || 'n/a' }} · key=${{ steps.sign.outputs.source || 'n/a' }}"
             echo
             section "Flutter version" flutter-version.txt 6
             section "pub get" pub.txt 40
@@ -158,15 +203,24 @@ jobs:
           if-no-files-found: error
 
       - name: Publish GitHub Release
-        if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        # Push to main, or a manual "Run workflow" on main (e.g. after the
+        # signing secrets changed).
+        if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
           SIGNED: ${{ steps.sign.outputs.signed }}
+          SOURCE: ${{ steps.sign.outputs.source }}
+          FINGERPRINT: ${{ steps.sign.outputs.fingerprint }}
         run: |
           TAG="mvp-${GITHUB_RUN_NUMBER}"
           NOTES="Android build ${GITHUB_RUN_NUMBER} from commit ${GITHUB_SHA}."
-          if [ "$SIGNED" != "true" ]; then
-            NOTES="$(printf '%s\n\n%s' "$NOTES" "⚠️ Signed with a temporary debug key: uninstall the previous build before installing this one. See docs/RELEASE.md.")"
+          if [ "$SIGNED" = "true" ]; then
+            NOTES="$(printf '%s\n\n%s' "$NOTES" "Signing certificate SHA-256: ${FINGERPRINT}")"
+          else
+            NOTES="$(printf '%s\n\n%s' "$NOTES" "⚠️ Signed with a temporary key: uninstall the previous build before installing this one. See docs/RELEASE.md.")"
+          fi
+          if [ "$SOURCE" = "created" ]; then
+            NOTES="$(printf '%s\n\n%s' "$NOTES" "First build with the permanent key: uninstall older builds once. From now on, updates install over this one.")"
           fi
           gh release create "$TAG" \
             build/app/outputs/flutter-apk/app-release.apk \
