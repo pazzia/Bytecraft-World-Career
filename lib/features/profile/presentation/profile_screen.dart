@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/di/providers.dart';
 import '../../../app/router/routes.dart';
+import '../../../core/config/build_info.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/game_colors.dart';
@@ -176,6 +177,14 @@ class ProfileScreen extends ConsumerWidget {
                   label: 'Сбросить прогресс',
                   variant: AppButtonVariant.quiet,
                   onPressed: () => _confirmReset(context, ref),
+                ),
+                const SizedBox(height: Spacing.lg),
+                Text(
+                  'Bytecraft ${BuildInfo.label}',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: context.gameColors.textMuted,
+                      ),
                 ),
               ],
             );
