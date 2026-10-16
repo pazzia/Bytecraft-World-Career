@@ -4,6 +4,7 @@ import '../../../app/di/providers.dart';
 import '../../../core/time/calendar_day.dart';
 import '../../../services/feature_flags/feature_flag_service.dart';
 import '../../daily_challenge/domain/daily_challenge.dart';
+import '../../gamification/domain/score_calculators.dart';
 import '../../gamification/domain/streak.dart';
 import '../../learning_map/domain/learning_map_model.dart';
 import '../../learning_map/presentation/learning_map_providers.dart';
@@ -31,6 +32,7 @@ class HomeViewModel {
     required this.lives,
     required this.map,
     required this.dailyChallenge,
+    required this.nextLevelXp,
   });
 
   final UserProfile profile;
@@ -39,6 +41,9 @@ class HomeViewModel {
   final LivesSnapshot lives;
   final LearningMapModel map;
   final DailyChallenge? dailyChallenge;
+
+  /// XP for a flawless first completion of the next level.
+  final int nextLevelXp;
 }
 
 final homeViewModelProvider = FutureProvider<HomeViewModel>((ref) async {
@@ -48,7 +53,12 @@ final homeViewModelProvider = FutureProvider<HomeViewModel>((ref) async {
   final daily = await ref.watch(dailyChallengeProvider.future);
   final today = CalendarDay.fromDateTime(ref.watch(clockProvider).now());
   const streakPolicy = StreakPolicy();
+  final next = map.nextLevel;
+  final rewards = RewardCalculator(ref.watch(gameRulesProvider));
   return HomeViewModel(
+    nextLevelXp: next == null
+        ? 0
+        : rewards.xpFor(level: next, mistakes: 0, isFirstCompletion: true),
     profile: profile,
     streakDays: streakPolicy.displayValue(profile.streak, today),
     isStreakActiveToday: streakPolicy.isActiveToday(profile.streak, today),

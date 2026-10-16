@@ -116,6 +116,7 @@ class LevelEngine {
 
     final progress = await _progress.loadCourseProgress(courseId);
     DateTime? deadline;
+    DateTime? runStartedAt;
     if (mode == LevelMode.timed) {
       final run = (await _timedRuns.load(courseId)).activeRun;
       if (run == null ||
@@ -124,6 +125,7 @@ class LevelEngine {
         return const LevelStartDenied(LevelStartDenial.noActiveRun);
       }
       deadline = run.deadline;
+      runStartedAt = run.startedAt;
     } else {
       final unlockMode = await _unlockMode();
       if (!_unlock.isUnlocked(course, progress, levelId, mode: unlockMode)) {
@@ -162,6 +164,7 @@ class LevelEngine {
         mode: mode,
         startedAt: now,
         deadline: deadline,
+        runStartedAt: runStartedAt,
       ),
       lives: lives,
     );

@@ -77,11 +77,12 @@ class LevelUiState {
     bool? isSubmitting,
     bool? isHintVisible,
     bool clearOutcome = false,
+    bool clearAnswer = false,
   }) =>
       LevelUiState(
         phase: phase ?? this.phase,
         session: session ?? this.session,
-        answer: answer ?? this.answer,
+        answer: clearAnswer ? null : answer ?? this.answer,
         outcome: clearOutcome ? null : outcome ?? this.outcome,
         lives: lives ?? this.lives,
         result: result ?? this.result,
