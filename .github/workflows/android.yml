@@ -62,7 +62,12 @@ jobs:
         id: apk
         run: |
           set -o pipefail
-          flutter build apk --release --build-number=${{ github.run_number }} 2>&1 | tee apk.txt
+          VERSION="$(grep -m1 '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          flutter build apk --release \
+            --build-name="$VERSION" --build-number=${{ github.run_number }} \
+            --dart-define=APP_VERSION="$VERSION" \
+            --dart-define=BUILD_NUMBER=${{ github.run_number }} 2>&1 | tee apk.txt
 
       # The permanent signing key lives in the GitHub Actions cache (see
       # docs/RELEASE.md). The cache key never changes, so the key is
@@ -179,7 +184,7 @@ jobs:
             echo "</details>"
           }
           {
-            echo "### CI: analyze=${{ steps.analyze.outcome }} · tests=${{ steps.tests.outcome }} · apk=${{ steps.apk.outcome }} · release-signed=${{ steps.sign.outputs.signed || 'n/a' }} · key=${{ steps.sign.outputs.source || 'n/a' }}"
+            echo "### CI: version=${{ steps.apk.outputs.version }}+${{ github.run_number }} · analyze=${{ steps.analyze.outcome }} · tests=${{ steps.tests.outcome }} · apk=${{ steps.apk.outcome }} · release-signed=${{ steps.sign.outputs.signed || 'n/a' }} · key=${{ steps.sign.outputs.source || 'n/a' }}"
             echo
             section "Flutter version" flutter-version.txt 6
             section "pub get" pub.txt 40
@@ -211,9 +216,12 @@ jobs:
           SIGNED: ${{ steps.sign.outputs.signed }}
           SOURCE: ${{ steps.sign.outputs.source }}
           FINGERPRINT: ${{ steps.sign.outputs.fingerprint }}
+          VERSION: ${{ steps.apk.outputs.version }}
         run: |
           TAG="mvp-${GITHUB_RUN_NUMBER}"
-          NOTES="Android build ${GITHUB_RUN_NUMBER} from commit ${GITHUB_SHA}."
+          APK_NAME="bytecraft-${VERSION}-build${GITHUB_RUN_NUMBER}.apk"
+          cp build/app/outputs/flutter-apk/app-release.apk "$APK_NAME"
+          NOTES="Bytecraft ${VERSION}, build ${GITHUB_RUN_NUMBER}, from commit ${GITHUB_SHA}."
           if [ "$SIGNED" = "true" ]; then
             NOTES="$(printf '%s\n\n%s' "$NOTES" "Signing certificate SHA-256: ${FINGERPRINT}")"
           else
@@ -223,8 +231,8 @@ jobs:
             NOTES="$(printf '%s\n\n%s' "$NOTES" "First build with the permanent key: uninstall older builds once. From now on, updates install over this one.")"
           fi
           gh release create "$TAG" \
-            build/app/outputs/flutter-apk/app-release.apk \
+            "$APK_NAME" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "Bytecraft MVP build ${GITHUB_RUN_NUMBER}" \
+            --title "Bytecraft ${VERSION} (build ${GITHUB_RUN_NUMBER})" \
             --notes "$NOTES"
