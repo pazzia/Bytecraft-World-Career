@@ -13,6 +13,8 @@ import 'package:bytecraft/features/level/engine/answer_validator.dart';
 import 'package:bytecraft/features/level/engine/level_engine.dart';
 import 'package:bytecraft/features/progress/data/local_progress_repository.dart';
 import 'package:bytecraft/features/settings/data/local_settings_repository.dart';
+import 'package:bytecraft/features/timed_run/domain/timed_run.dart';
+import 'package:bytecraft/features/timed_run/domain/timed_run_service.dart';
 import 'package:bytecraft/services/analytics/analytics_service.dart';
 import 'package:bytecraft/services/feature_flags/feature_flag_service.dart';
 
@@ -31,6 +33,7 @@ Map<String, dynamic> testCourseJson({int version = 1}) => {
         {
           'id': 'basics',
           'title': 'Basics',
+          'timedRunSeconds': 300,
           'levels': [
             {
               'id': 'l1',
@@ -149,8 +152,17 @@ class TestEnv {
       ids: FixedIdGenerator(),
     );
     settings = LocalSettingsRepository(documents, defaultCourseId: testCourseId);
+    final content = FakeContentRepository(this.course);
+    timedRuns = TimedRunService(
+      content: content,
+      progress: progress,
+      settings: settings,
+      policy: TimedRunPolicy(rules),
+      clock: clock,
+      analytics: analytics,
+    );
     engine = LevelEngine(
-      content: FakeContentRepository(this.course),
+      content: content,
       progress: progress,
       settings: settings,
       validators: ValidatorRegistry.standard(),
@@ -158,6 +170,7 @@ class TestEnv {
       clock: clock,
       analytics: analytics,
       flags: this.flags,
+      timedRuns: timedRuns,
     );
   }
 
@@ -169,6 +182,7 @@ class TestEnv {
   final RecordingAnalyticsService analytics = RecordingAnalyticsService();
   late final LocalProgressRepository progress;
   late final LocalSettingsRepository settings;
+  late final TimedRunService timedRuns;
   late final LevelEngine engine;
 
   Future<LevelStartResult> start(

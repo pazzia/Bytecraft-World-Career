@@ -9,6 +9,7 @@ Usage: python3 tool/content/generate_python_course.py assets/content/python/modu
 """
 import contextlib
 import io
+import itertools
 import json
 import os
 import sys
@@ -31,19 +32,33 @@ def mc(id, title, prompt, code, options, correct, hint, explanation, role="lesso
         out, err = run(code)
         assert err is None, (id, err)
         assert out == expect_stdout, (id, out, expect_stdout)
+        # Options that are literal output must match it exactly once.
+        printed = out.strip()
+        if printed in options:
+            assert options.index(printed) == correct, (id, "wrong correctIndex")
     return dict(id=id, type="multiple_choice", role=role, title=title, prompt=prompt, code=code,
                 difficulty=difficulty, hint=hint, explanation=explanation,
                 payload=dict(options=options, correctIndex=correct))
 
 
 def fill(id, title, prompt, template, options, answers, hint, explanation, role="lesson", difficulty=1, expect_stdout=None):
-    code = template
-    for i, a in enumerate(answers):
-        code = code.replace("{{%d}}" % i, a)
-    out, err = run(code)
-    assert err is None, (id, err, code)
+    def filled(tokens):
+        code = template
+        for i, token in enumerate(tokens):
+            code = code.replace("{{%d}}" % i, token)
+        return code
+
+    out, err = run(filled(answers))
+    assert err is None, (id, err)
     if expect_stdout is not None:
         assert out == expect_stdout, (id, out)
+    # No other combination of options may produce the same output:
+    # otherwise a player with working code would be marked wrong.
+    for combo in itertools.product(options, repeat=len(answers)):
+        if list(combo) == list(answers):
+            continue
+        other, other_err = run(filled(combo))
+        assert other_err is not None or other != out, (id, "ambiguous", combo)
     return dict(id=id, type="fill_code", role=role, title=title, prompt=prompt, difficulty=difficulty,
                 hint=hint, explanation=explanation,
                 payload=dict(template=template, options=options, answers=answers))
@@ -171,12 +186,12 @@ modules["conditions"] = [
          "Нужен оператор «больше или равно».",
          "В Python «больше или равно» пишется как >=. Вариант => — синтаксическая ошибка.",
          expect_stdout="Доступ разрешён\n"),
-    fill("py_cond_003", "Цепочка условий", "Заполните пропуски, чтобы программа вывела «тепло»",
-         "t = 15\n{{0}} t > 25:\n    print(\"жарко\")\n{{1}} t > 10:\n    print(\"тепло\")\nelse:\n    print(\"холодно\")",
+    fill("py_cond_003", "Цепочка условий", "Заполните пропуски, чтобы при t = 30 программа вывела только «жарко»",
+         "t = 30\n{{0}} t > 25:\n    print(\"жарко\")\n{{1}} t > 10:\n    print(\"тепло\")\nelse:\n    print(\"холодно\")",
          ["if", "elif", "else", "when"], ["if", "elif"],
-         "Цепочка начинается с if, промежуточные проверки — elif.",
-         "if проверяет первое условие, elif — следующее, else срабатывает, если ни одно не подошло.",
-         role="practice", difficulty=2, expect_stdout="тепло\n"),
+         "Нужна одна цепочка: после первой сработавшей проверки остальные пропускаются.",
+         "if начинает цепочку, elif проверяется, только если предыдущие условия ложны. Два отдельных if вывели бы и «жарко», и «тепло».",
+         role="practice", difficulty=2, expect_stdout="жарко\n"),
     bug("py_cond_004", "Пропавшее двоеточие", "Найдите строку с ошибкой",
         "n = 4\nif n % 2 == 0\n    print(\"чётное\")\nelse:\n    print(\"нечётное\")", [1],
         "Посмотрите на конец строк с if и else.",

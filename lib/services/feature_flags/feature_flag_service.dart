@@ -5,7 +5,8 @@ enum FeatureFlag {
   aiTutor('ai_tutor_enabled', defaultValue: false),
   dailyChallenge('daily_challenge_enabled', defaultValue: true),
   metagame('metagame_enabled', defaultValue: false),
-  leaderboards('leaderboards_enabled', defaultValue: false);
+  leaderboards('leaderboards_enabled', defaultValue: false),
+  timedRuns('timed_runs_enabled', defaultValue: true);
 
   const FeatureFlag(this.key, {required this.defaultValue});
 

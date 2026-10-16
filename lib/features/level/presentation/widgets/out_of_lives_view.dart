@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/theme/game_colors.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../domain/level_result.dart';
 
@@ -22,14 +23,15 @@ class OutOfLivesView extends StatelessWidget {
 
   String _nextLifeText() {
     final wait = lives?.nextLifeIn;
-    if (wait == null) return '';
+    if (wait == null) return 'Жизни восстанавливаются со временем.';
     final minutes = wait.inMinutes + 1;
-    return 'Новая жизнь через ~$minutes мин.';
+    return 'Новая жизнь появится примерно через $minutes мин.';
   }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final game = context.gameColors;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(Spacing.page),
@@ -37,11 +39,7 @@ class OutOfLivesView extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const Spacer(),
-            const Text(
-              '💔',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 72),
-            ),
+            Icon(Icons.heart_broken_rounded, size: 72, color: game.life),
             const SizedBox(height: Spacing.lg),
             Text(
               'Жизни закончились',
@@ -52,12 +50,12 @@ class OutOfLivesView extends StatelessWidget {
             Text(
               _nextLifeText(),
               textAlign: TextAlign.center,
-              style: textTheme.bodyLarge,
+              style: textTheme.bodyLarge?.copyWith(color: game.textMuted),
             ),
             const Spacer(),
             if (onWatchAd != null) ...[
               AppButton(
-                label: 'Реклама → +1 жизнь',
+                label: 'Посмотреть рекламу: +1 жизнь',
                 icon: Icons.play_circle_fill_rounded,
                 onPressed: onWatchAd,
               ),
@@ -65,13 +63,13 @@ class OutOfLivesView extends StatelessWidget {
             ],
             AppButton(
               label: 'Premium: бесконечные жизни',
-              variant: AppButtonVariant.success,
+              variant: AppButtonVariant.reward,
               onPressed: onPremium,
             ),
-            const SizedBox(height: Spacing.sm),
+            const SizedBox(height: Spacing.xs),
             AppButton(
               label: 'Выйти',
-              variant: AppButtonVariant.secondary,
+              variant: AppButtonVariant.quiet,
               onPressed: onExit,
             ),
           ],

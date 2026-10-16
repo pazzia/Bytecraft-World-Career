@@ -20,12 +20,12 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
   String? _busyPlanId;
   bool _restoring = false;
 
-  static const List<(String, String)> _benefits = [
-    ('❤️', 'Бесконечные жизни'),
-    ('🚫', 'Без рекламы'),
-    ('📊', 'Полная статистика'),
-    ('📚', 'Расширенные курсы'),
-    ('🤖', 'AI-объяснения и AI-тьютор'),
+  static const List<(IconData, String)> _benefits = [
+    (Icons.favorite_rounded, 'Бесконечные жизни'),
+    (Icons.block_rounded, 'Без рекламы'),
+    (Icons.insights_rounded, 'Полная статистика'),
+    (Icons.menu_book_rounded, 'Расширенные курсы'),
+    (Icons.auto_awesome_rounded, 'AI-объяснения и AI-тьютор'),
   ];
 
   Future<void> _purchase(SubscriptionPlan plan) async {
@@ -64,14 +64,14 @@ class _PremiumScreenState extends ConsumerState<PremiumScreen> {
       body: ListView(
         padding: const EdgeInsets.all(Spacing.page),
         children: [
-          Text('Учитесь без ограничений ⭐', style: textTheme.headlineSmall),
+          Text('Учитесь без ограничений', style: textTheme.headlineLarge),
           const SizedBox(height: Spacing.lg),
           for (final (glyph, text) in _benefits)
             Padding(
               padding: const EdgeInsets.only(bottom: Spacing.sm),
               child: Row(
                 children: [
-                  Text(glyph, style: const TextStyle(fontSize: 22)),
+                  Icon(glyph, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(width: Spacing.md),
                   Text(text, style: textTheme.bodyLarge),
                 ],

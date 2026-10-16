@@ -20,6 +20,10 @@ class GameRules {
     required this.streakFreezePrice,
     required this.maxStreakFreezes,
     required this.livesRefillPrice,
+    required this.defaultTimedRunDuration,
+    required this.timedXpMultiplier,
+    required this.timedMaxSpeedBonus,
+    required this.timedFirstClearCoins,
   });
 
   static const GameRules standard = GameRules(
@@ -48,6 +52,10 @@ class GameRules {
     streakFreezePrice: 50,
     maxStreakFreezes: 2,
     livesRefillPrice: 30,
+    defaultTimedRunDuration: Duration(minutes: 10),
+    timedXpMultiplier: 2,
+    timedMaxSpeedBonus: 100,
+    timedFirstClearCoins: 10,
   );
 
   final int maxLives;
@@ -71,4 +79,14 @@ class GameRules {
   final int streakFreezePrice;
   final int maxStreakFreezes;
   final int livesRefillPrice;
+
+  /// Timed runs ("На время"): used when a module has no own limit.
+  final Duration defaultTimedRunDuration;
+
+  /// Multiplier for XP of a level's first-ever timed completion.
+  final int timedXpMultiplier;
+
+  /// Speed bonus for the first clear of a module, scaled by time left.
+  final int timedMaxSpeedBonus;
+  final int timedFirstClearCoins;
 }

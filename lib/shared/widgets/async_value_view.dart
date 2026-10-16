@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_spacing.dart';
+import '../../core/theme/game_colors.dart';
+import 'app_button.dart';
 
 /// Standard loading / error / data rendering for [AsyncValue].
 class AsyncValueView<T> extends StatelessWidget {
@@ -18,6 +20,9 @@ class AsyncValueView<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => value.when(
+        // Keep showing the previous data while a dependency reloads
+        // (e.g. after finishing a level) instead of flashing a spinner.
+        skipLoadingOnReload: true,
         data: data,
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorView(message: '$error', onRetry: onRetry),
@@ -31,26 +36,40 @@ class ErrorView extends StatelessWidget {
   final VoidCallback? onRetry;
 
   @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(Spacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('😵', style: TextStyle(fontSize: 48)),
-              const SizedBox(height: Spacing.md),
-              Text(
-                'Что-то пошло не так',
-                style: Theme.of(context).textTheme.titleMedium,
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(Spacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: context.gameColors.error,
+            ),
+            const SizedBox(height: Spacing.md),
+            Text('Не удалось загрузить', style: textTheme.titleMedium),
+            const SizedBox(height: Spacing.sm),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: textTheme.bodyMedium
+                  ?.copyWith(color: context.gameColors.textMuted),
+            ),
+            if (onRetry != null) ...[
+              const SizedBox(height: Spacing.lg),
+              AppButton(
+                label: 'Повторить',
+                expand: false,
+                variant: AppButtonVariant.secondary,
+                onPressed: onRetry,
               ),
-              const SizedBox(height: Spacing.sm),
-              Text(message, textAlign: TextAlign.center),
-              if (onRetry != null) ...[
-                const SizedBox(height: Spacing.lg),
-                TextButton(onPressed: onRetry, child: const Text('Повторить')),
-              ],
             ],
-          ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 }

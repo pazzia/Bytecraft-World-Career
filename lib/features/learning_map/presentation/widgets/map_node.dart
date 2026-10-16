@@ -3,89 +3,39 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/theme/game_colors.dart';
+import '../../../../shared/widgets/game_icons.dart';
+import '../../../../shared/widgets/keycap.dart';
 import '../../../../shared/widgets/stat_badges.dart';
+import '../../../courses/domain/level_payload.dart';
 import '../../../courses/domain/level_type.dart';
 import '../../domain/learning_map_model.dart';
 
-/// One stop on the "circuit" path: a chip-shaped node on the rail plus a
-/// card with the level title. Visual concept: a circuit board trace that
-/// the player "powers up" level by level.
+/// One level on the map: a square key (done / current / locked) and its
+/// label. The current level gets a ring and an expanded card.
 class MapNodeTile extends StatelessWidget {
-  const MapNodeTile({
-    super.key,
-    required this.node,
-    required this.isFirst,
-    required this.isLast,
-    required this.onTap,
-  });
+  const MapNodeTile({super.key, required this.node, required this.onTap});
 
   final MapNode node;
-  final bool isFirst;
-  final bool isLast;
   final VoidCallback onTap;
 
-  static const double _nodeSize = 56;
-  static const double _railWidth = 6;
-  static const double _railColumn = 72;
+  static const double _column = 64;
 
   @override
   Widget build(BuildContext context) {
-    final game = context.gameColors;
-    final scheme = Theme.of(context).colorScheme;
-    final poweredRail = node.state == MapNodeState.completed
-        ? game.success
-        : game.locked;
-
-    return IntrinsicHeight(
+    final isCurrent = node.state == MapNodeState.current;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            width: _railColumn,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                Column(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        width: _railWidth,
-                        color: isFirst ? Colors.transparent : poweredRail,
-                      ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        width: _railWidth,
-                        color: isLast ? Colors.transparent : poweredRail,
-                      ),
-                    ),
-                  ],
-                ),
-                _NodeChip(node: node, size: _nodeSize, onTap: onTap),
-              ],
-            ),
+            width: _column,
+            child: Center(child: _NodeKey(node: node, onTap: onTap)),
           ),
+          const SizedBox(width: Spacing.md),
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
-              child: Material(
-                color: node.state == MapNodeState.current
-                    ? scheme.primary.withValues(alpha: 0.1)
-                    : Colors.transparent,
-                borderRadius: AppRadius.mdAll,
-                child: InkWell(
-                  borderRadius: AppRadius.mdAll,
-                  onTap: onTap,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: Spacing.md,
-                      vertical: Spacing.md,
-                    ),
-                    child: _NodeLabel(node: node),
-                  ),
-                ),
-              ),
-            ),
+            child: isCurrent
+                ? _CurrentCard(node: node, onTap: onTap)
+                : _NodeLabel(node: node, onTap: onTap),
           ),
         ],
       ),
@@ -93,59 +43,10 @@ class MapNodeTile extends StatelessWidget {
   }
 }
 
-class _NodeLabel extends StatelessWidget {
-  const _NodeLabel({required this.node});
+class _NodeKey extends StatelessWidget {
+  const _NodeKey({required this.node, required this.onTap});
 
   final MapNode node;
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final game = context.gameColors;
-    final isLocked = node.state == MapNodeState.locked;
-    final roleLabel = switch (node.level.role) {
-      LevelRole.boss => 'BOSS',
-      LevelRole.challenge => 'CHALLENGE',
-      LevelRole.practice => 'PRACTICE',
-      LevelRole.lesson => null,
-    };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (roleLabel != null)
-          Text(
-            roleLabel,
-            style: AppTypography.code(size: 11, color: game.streak)
-                .copyWith(fontWeight: FontWeight.w800),
-          ),
-        Text(
-          node.level.title,
-          style: textTheme.titleMedium?.copyWith(
-            color: isLocked ? game.locked : null,
-          ),
-        ),
-        if (node.state == MapNodeState.completed) ...[
-          const SizedBox(height: Spacing.xs),
-          StarRow(stars: node.stars),
-        ],
-        if (node.state == MapNodeState.current)
-          Text(
-            'Продолжить →',
-            style: textTheme.labelLarge?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _NodeChip extends StatelessWidget {
-  const _NodeChip({required this.node, required this.size, required this.onTap});
-
-  final MapNode node;
-  final double size;
   final VoidCallback onTap;
 
   @override
@@ -153,44 +54,180 @@ class _NodeChip extends StatelessWidget {
     final game = context.gameColors;
     final scheme = Theme.of(context).colorScheme;
     final isBoss = node.level.role == LevelRole.boss;
-    final color = switch (node.state) {
-      MapNodeState.completed => game.success,
-      MapNodeState.current => scheme.primary,
-      MapNodeState.available => scheme.secondary,
-      MapNodeState.locked => game.locked,
-    };
-    final glyph = switch (node.state) {
-      MapNodeState.locked => '🔒',
-      MapNodeState.completed => isBoss ? '👑' : '✓',
-      _ => switch (node.level.role) {
-          LevelRole.boss => '👑',
-          LevelRole.challenge => '★',
-          LevelRole.practice => '⚙',
-          LevelRole.lesson => '▶',
-        },
-    };
-    final chipSize = isBoss ? size + Spacing.md : size;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: chipSize,
-        height: chipSize,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: color,
-          // Rounded square = "chip" on the circuit, not a bubble.
-          borderRadius: BorderRadius.circular(chipSize / 3.2),
-          boxShadow: AppShadows.edge(Color.lerp(color, Colors.black, 0.3)!),
-          border: node.state == MapNodeState.current
-              ? Border.all(color: scheme.onPrimary, width: 3)
+    final label = '${node.level.title}: ${switch (node.state) {
+      MapNodeState.completed => 'пройден, ${node.stars} из 3 звёзд',
+      MapNodeState.current => 'следующий уровень',
+      MapNodeState.available => 'доступен',
+      MapNodeState.locked => 'закрыт',
+    }}';
+
+    switch (node.state) {
+      case MapNodeState.locked:
+        return Semantics(
+          label: label,
+          button: true,
+          excludeSemantics: true,
+          child: GestureDetector(
+            onTap: onTap,
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: game.locked,
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Icon(Icons.lock_rounded, size: 20, color: game.lockedIcon),
+            ),
+          ),
+        );
+      case MapNodeState.completed:
+        return Keycap(
+          onTap: onTap,
+          face: game.success,
+          edge: game.successEdge,
+          radius: 16,
+          width: isBoss ? 56 : 52,
+          height: isBoss ? 60 : 56,
+          semanticLabel: label,
+          child: isBoss
+              ? CrownIcon(size: 28, color: game.reward)
+              : const Icon(Icons.check_rounded, color: Colors.white, size: 28),
+        );
+      case MapNodeState.current:
+      case MapNodeState.available:
+        final current = node.state == MapNodeState.current;
+        return Container(
+          decoration: current
+              ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(color: game.primaryTint, width: 5),
+                )
               : null,
+          child: Keycap(
+            onTap: onTap,
+            face: current ? scheme.primary : game.keyFace,
+            edge: current ? game.primaryEdge : game.keyEdge,
+            border: current ? null : game.keyBorder,
+            radius: 18,
+            width: 56,
+            height: 60,
+            semanticLabel: label,
+            child: isBoss
+                ? CrownIcon(
+                    size: 26,
+                    color: current ? game.reward : game.rewardIcon,
+                  )
+                : Icon(
+                    Icons.play_arrow_rounded,
+                    size: 28,
+                    color: current ? game.onPrimary : scheme.primary,
+                  ),
+          ),
+        );
+    }
+  }
+}
+
+class _NodeLabel extends StatelessWidget {
+  const _NodeLabel({required this.node, required this.onTap});
+
+  final MapNode node;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final game = context.gameColors;
+    final locked = node.state == MapNodeState.locked;
+    return ExcludeSemantics(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (node.level.role == LevelRole.boss)
+                Text(
+                  'Босс модуля',
+                  style: textTheme.labelMedium?.copyWith(
+                    color: game.streakText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              Text(
+                node.level.title,
+                style: textTheme.titleMedium?.copyWith(
+                  color: locked ? game.textMuted : null,
+                  fontWeight: locked ? FontWeight.w600 : FontWeight.w700,
+                ),
+              ),
+              if (node.state == MapNodeState.completed) ...[
+                const SizedBox(height: Spacing.xxs),
+                StarRow(stars: node.stars),
+              ],
+            ],
+          ),
         ),
-        child: Text(
-          glyph,
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-            color: scheme.onPrimary,
+      ),
+    );
+  }
+}
+
+class _CurrentCard extends StatelessWidget {
+  const _CurrentCard({required this.node, required this.onTap});
+
+  final MapNode node;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    final game = context.gameColors;
+    final codeHint = switch (node.level.payload) {
+      FillCodePayload() || CodeOrderingPayload() => null,
+      _ => node.level.codeLines.isEmpty ? null : node.level.codeLines.first,
+    };
+    return ExcludeSemantics(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Spacing.lg,
+            vertical: Spacing.md,
+          ),
+          decoration: BoxDecoration(
+            color: game.keyFace,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: scheme.primary, width: 2),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (node.level.role == LevelRole.boss)
+                Text(
+                  'Босс модуля',
+                  style: textTheme.labelMedium?.copyWith(
+                    color: game.streakText,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              Text(node.level.title, style: textTheme.titleMedium),
+              if (codeHint != null)
+                Text(
+                  codeHint,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.code(size: 14, color: game.textMuted),
+                ),
+              const SizedBox(height: Spacing.xs),
+              Text(
+                'Начать',
+                style: textTheme.titleSmall?.copyWith(color: scheme.primary),
+              ),
+            ],
           ),
         ),
       ),

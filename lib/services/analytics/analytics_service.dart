@@ -17,7 +17,10 @@ enum AnalyticsEvent {
   dailyChallengeCompleted('daily_challenge_completed'),
   premiumScreenOpened('premium_screen_opened'),
   subscriptionStarted('subscription_started'),
-  adWatched('ad_watched');
+  adWatched('ad_watched'),
+  timedRunStarted('timed_run_started'),
+  timedRunCompleted('timed_run_completed'),
+  timedRunFailed('timed_run_failed');
 
   const AnalyticsEvent(this.eventName);
 

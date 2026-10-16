@@ -170,3 +170,22 @@ abstract interface class LeaderboardRepository { currentLeague(userId); }
 | AI Tutor | `AITutorService` (mock), engine от него не зависит |
 | Meta Game | `MetaGameService` + маппинг курс → отдел |
 | UGC / PvP | `CodeExecutionService` + sandbox-требования в `ExecutionLimits` |
+
+---
+
+## Режим «На время» (timed runs)
+
+Перенесён из Hardcore CodeQuest. Код: `features/timed_run/`.
+
+- `TimedRun` — активный забег модуля: `startedAt`, `deadline`, пройденные в забеге уровни. Таймер стартует по кнопке «Старт».
+- `TimedProgress` — состояние по курсу (`player.timed.<courseId>`): активный забег + **постоянные** записи `everCompletedLevelIds` и `bestTimes`. Истечение забега их не трогает — это и закрывает фарм XP.
+- `TimedRunPolicy` — чистые правила: длительность (`course.json → modules[].timedRunSeconds`, иначе `GameRules.defaultTimedRunDuration`), доступность (модуль пройден в обучении или `UnlockMode.modulesOpen`), порядок уровней, бонус за скорость.
+- `TimedRunService` — старт / продолжение / отказ; просроченный забег сбрасывается при любом чтении.
+- `LevelEngine` в `LevelMode.timed`: уровень открывается только как следующий в активном забеге; ответ после дедлайна → `SubmissionResult.timeUp` (жизнь не списывается).
+
+| Награда | Правило |
+|---|---|
+| Уровень, первое прохождение на время | XP по обычным правилам (с учётом ошибок) × `timedXpMultiplier` (2) |
+| Уровень, повтор | обычный повторный XP (20% базы) |
+| Первое прохождение модуля | бонус за скорость до `timedMaxSpeedBonus` (100) пропорционально оставшемуся времени + `timedFirstClearCoins` (10) |
+| Повторное прохождение модуля | только обновление рекорда времени |

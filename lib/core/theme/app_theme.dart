@@ -8,37 +8,52 @@ import 'game_colors.dart';
 abstract final class AppTheme {
   static ThemeData get light => _build(
         brightness: Brightness.light,
-        background: AppColors.lightBackground,
-        surface: AppColors.lightSurface,
-        outline: AppColors.lightOutline,
+        primary: AppColors.blue,
+        surface: AppColors.surface,
+        text: AppColors.ink,
+        outline: AppColors.line,
         game: GameColors.light,
       );
 
   static ThemeData get dark => _build(
         brightness: Brightness.dark,
-        background: AppColors.darkBackground,
-        surface: AppColors.darkSurface,
-        outline: AppColors.darkOutline,
+        primary: AppColors.blue,
+        surface: AppColors.nightSurface,
+        text: AppColors.nightText,
+        outline: AppColors.nightLine,
         game: GameColors.dark,
+      );
+
+  /// The "На время" mode: night palette with ember actions, independent of
+  /// the system theme so the mode always feels like a different place.
+  static ThemeData get timed => _build(
+        brightness: Brightness.dark,
+        primary: AppColors.ember,
+        surface: AppColors.nightSurface,
+        text: AppColors.nightText,
+        outline: AppColors.nightLine,
+        game: GameColors.timed,
       );
 
   static ThemeData _build({
     required Brightness brightness,
-    required Color background,
+    required Color primary,
     required Color surface,
+    required Color text,
     required Color outline,
     required GameColors game,
   }) {
     final scheme = ColorScheme.fromSeed(
-      seedColor: AppColors.violet,
+      seedColor: AppColors.blue,
       brightness: brightness,
     ).copyWith(
-      primary: AppColors.violet,
-      onPrimary: AppColors.white,
-      secondary: AppColors.mint,
+      primary: primary,
+      onPrimary: game.onPrimary,
+      secondary: AppColors.green,
       onSecondary: AppColors.white,
-      error: AppColors.coral,
+      error: AppColors.red,
       surface: surface,
+      onSurface: text,
       outline: outline,
       outlineVariant: outline,
     );
@@ -46,30 +61,35 @@ abstract final class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       brightness: brightness,
+      fontFamily: AppTypography.uiFamily,
     );
+    final textTheme = AppTypography.textTheme(base.textTheme, text);
     return base.copyWith(
-      scaffoldBackgroundColor: background,
-      textTheme: AppTypography.textTheme(base.textTheme),
+      scaffoldBackgroundColor: game.background,
+      textTheme: textTheme,
       extensions: [game],
+      iconTheme: IconThemeData(color: text),
       appBarTheme: AppBarTheme(
-        backgroundColor: background,
+        backgroundColor: game.background,
+        foregroundColor: text,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: false,
-        titleTextStyle: AppTypography.textTheme(base.textTheme)
-            .titleLarge
-            ?.copyWith(color: scheme.onSurface),
+        titleTextStyle: textTheme.titleLarge,
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: surface,
-        indicatorColor: AppColors.violet.withValues(alpha: 0.16),
-        height: 68,
-      ),
-      snackBarTheme: const SnackBarThemeData(
+      snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
+        backgroundColor: AppColors.ink,
+        contentTextStyle: textTheme.bodyMedium?.copyWith(color: AppColors.white),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.mdAll),
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: surface,
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.xlAll),
       ),
       dividerTheme: DividerThemeData(color: outline, thickness: 1),
+      progressIndicatorTheme: ProgressIndicatorThemeData(color: primary),
     );
   }
 }

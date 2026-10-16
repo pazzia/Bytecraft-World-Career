@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/di/providers.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/game_colors.dart';
 import '../../../services/monetization/monetization_service.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_card.dart';
@@ -38,7 +39,13 @@ class ShopScreen extends ConsumerWidget {
     final coins = await ref.read(economyServiceProvider).purchaseCoins(pack);
     ref.read(progressRevisionProvider.notifier).bump();
     messenger.showSnackBar(
-      SnackBar(content: Text(coins > 0 ? '+$coins 🪙' : 'Покупка отменена')),
+      SnackBar(
+        content: Text(
+          coins > 0
+              ? '+$coins ${plural(coins, 'монета', 'монеты', 'монет')}'
+              : 'Покупка отменена',
+        ),
+      ),
     );
   }
 
@@ -64,7 +71,18 @@ class ShopScreen extends ConsumerWidget {
                 child: AppCard(
                   child: Row(
                     children: [
-                      Text(item.icon, style: const TextStyle(fontSize: 32)),
+                      Icon(
+                        switch (item.kind) {
+                          ShopItemKind.streakFreeze => Icons.ac_unit_rounded,
+                          ShopItemKind.livesRefill => Icons.favorite_rounded,
+                        },
+                        size: 32,
+                        color: switch (item.kind) {
+                          ShopItemKind.streakFreeze =>
+                            Theme.of(context).colorScheme.primary,
+                          ShopItemKind.livesRefill => context.gameColors.life,
+                        },
+                      ),
                       const SizedBox(width: Spacing.md),
                       Expanded(
                         child: Column(
@@ -74,14 +92,21 @@ class ShopScreen extends ConsumerWidget {
                               item.title,
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
-                            Text(item.description),
+                            Text(
+                              item.description,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                             if (item.kind == ShopItemKind.streakFreeze)
-                              Text('У вас: ${profile.streak.freezes}'),
+                              Text(
+                                'У вас: ${profile.streak.freezes}',
+                                style: Theme.of(context).textTheme.labelMedium,
+                              ),
                           ],
                         ),
                       ),
                       AppButton(
-                        label: '${item.price} 🪙',
+                        label: '${item.price}',
+                        icon: Icons.toll_rounded,
                         expand: false,
                         onPressed: () => _buy(context, ref, item),
                       ),
@@ -96,11 +121,15 @@ class ShopScreen extends ConsumerWidget {
                 child: AppCard(
                   child: Row(
                     children: [
-                      const Text('🪙', style: TextStyle(fontSize: 32)),
+                      Icon(
+                        Icons.toll_rounded,
+                        size: 32,
+                        color: context.gameColors.rewardIcon,
+                      ),
                       const SizedBox(width: Spacing.md),
                       Expanded(
                         child: Text(
-                          '${pack.coins} монет',
+                          '${pack.coins} ${plural(pack.coins, 'монета', 'монеты', 'монет')}',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
                       ),

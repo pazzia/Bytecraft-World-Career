@@ -1,3 +1,4 @@
+import '../../timed_run/domain/timed_run.dart';
 import 'course_progress.dart';
 import 'user_profile.dart';
 
@@ -12,6 +13,10 @@ abstract interface class ProgressRepository {
   Future<CourseProgress> loadCourseProgress(String courseId);
 
   Future<void> saveCourseProgress(CourseProgress progress);
+
+  Future<TimedProgress> loadTimedProgress(String courseId);
+
+  Future<void> saveTimedProgress(TimedProgress progress);
 
   /// Wipes all player data (profile + every course).
   Future<void> resetAll();

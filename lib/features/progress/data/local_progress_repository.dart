@@ -3,6 +3,7 @@ import '../../../core/storage/storage_keys.dart';
 import '../../../core/time/clock.dart';
 import '../../../core/utils/id_generator.dart';
 import '../../gamification/domain/game_rules.dart';
+import '../../timed_run/domain/timed_run.dart';
 import '../domain/course_progress.dart';
 import '../domain/progress_repository.dart';
 import '../domain/user_profile.dart';
@@ -67,6 +68,30 @@ class LocalProgressRepository implements ProgressRepository {
       StorageKeys.courseProgress(progress.courseId),
       progress.toJson(),
       schemaVersion: StorageKeys.courseProgressSchema,
+    );
+    await _markDirty();
+  }
+
+  @override
+  Future<TimedProgress> loadTimedProgress(String courseId) async {
+    final json = await _documents.read(StorageKeys.timedProgress(courseId));
+    if (json == null || json['courseId'] != courseId) {
+      return TimedProgress(courseId: courseId);
+    }
+    try {
+      return TimedProgress.fromJson(json);
+    } catch (_) {
+      // Corrupted run data must never block the app: start clean.
+      return TimedProgress(courseId: courseId);
+    }
+  }
+
+  @override
+  Future<void> saveTimedProgress(TimedProgress progress) async {
+    await _documents.write(
+      StorageKeys.timedProgress(progress.courseId),
+      progress.toJson(),
+      schemaVersion: StorageKeys.timedProgressSchema,
     );
     await _markDirty();
   }

@@ -21,6 +21,9 @@ enum LevelPhase {
   /// No lives left (at start or mid-level).
   outOfLives,
 
+  /// The timed run's deadline passed.
+  timeUp,
+
   /// Level can't be opened (locked, unsupported, not found).
   denied,
   error,
@@ -74,11 +77,12 @@ class LevelUiState {
     bool? isSubmitting,
     bool? isHintVisible,
     bool clearOutcome = false,
+    bool clearAnswer = false,
   }) =>
       LevelUiState(
         phase: phase ?? this.phase,
         session: session ?? this.session,
-        answer: answer ?? this.answer,
+        answer: clearAnswer ? null : answer ?? this.answer,
         outcome: clearOutcome ? null : outcome ?? this.outcome,
         lives: lives ?? this.lives,
         result: result ?? this.result,
