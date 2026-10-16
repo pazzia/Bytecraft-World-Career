@@ -158,7 +158,9 @@ jobs:
           if-no-files-found: error
 
       - name: Publish GitHub Release
-        if: success() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+        # Push to main, or a manual "Run workflow" on main (e.g. after the
+        # signing secrets changed).
+        if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
           SIGNED: ${{ steps.sign.outputs.signed }}
