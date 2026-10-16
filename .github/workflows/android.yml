@@ -105,9 +105,12 @@ jobs:
             else
               echo "⚠️ Release key secrets are not set: signed with a throwaway key (see docs/RELEASE.md)."
             fi
-            "$BUILD_TOOLS/apksigner" verify --print-certs "$APK" \
-              | grep -E "Signer #1 certificate (DN|SHA-256)"
-          } | tee sign.txt
+            echo "apksigner: $BUILD_TOOLS"
+            # verify fails the step on a bad signature; the summary lines
+            # differ between build-tools versions, so fall back to all output.
+            "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" > verify.txt
+            grep -iE "certificate (DN|SHA-256)|Verified using" verify.txt || cat verify.txt
+          } 2>&1 | tee sign.txt
           echo "signed=$SIGNED" >> "$GITHUB_OUTPUT"
 
       # Logs are posted to the PR so results are readable without Actions log access.
