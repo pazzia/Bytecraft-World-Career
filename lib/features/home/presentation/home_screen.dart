@@ -314,12 +314,15 @@ class _TimedTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     const night = GameColors.timed;
+    // In the dark theme the page is already night-coloured: lift the tile.
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final face = isDark ? night.keyFace : night.background;
     return AppCard(
       semanticLabel: 'Режим на время',
       onTap: onTap,
-      color: night.background,
-      borderColor: night.background,
-      edgeColor: night.track,
+      color: face,
+      borderColor: isDark ? night.streak : face,
+      edgeColor: isDark ? night.primaryEdge : night.track,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
