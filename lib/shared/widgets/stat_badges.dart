@@ -3,51 +3,46 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/game_colors.dart';
 
-/// Pill with an emoji/icon glyph and a value. Base for all HUD badges.
+/// Icon + number, no pill. The HUD of the game.
 class StatBadge extends StatelessWidget {
   const StatBadge({
     super.key,
-    required this.glyph,
+    required this.icon,
     required this.value,
     required this.color,
-    this.tooltip,
+    required this.semanticLabel,
+    this.textColor,
   });
 
-  final String glyph;
+  final IconData icon;
   final String value;
   final Color color;
-  final String? tooltip;
-
-  static const double _backgroundAlpha = 0.14;
+  final Color? textColor;
+  final String semanticLabel;
 
   @override
-  Widget build(BuildContext context) {
-    final badge = Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Spacing.md,
-        vertical: Spacing.xs + Spacing.xxs,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: _backgroundAlpha),
-        borderRadius: AppRadius.pillAll,
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(glyph, style: const TextStyle(fontSize: 16)),
-          const SizedBox(width: Spacing.xs),
-          Text(
-            value,
-            style: Theme.of(context)
-                .textTheme
-                .titleSmall
-                ?.copyWith(color: color, fontWeight: FontWeight.w800),
+  Widget build(BuildContext context) => Semantics(
+        label: semanticLabel,
+        excludeSemantics: true,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: Spacing.touchTarget - 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: color, size: 22),
+              const SizedBox(width: Spacing.xs),
+              Text(
+                value,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w700,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-    return tooltip == null ? badge : Tooltip(message: tooltip, child: badge);
-  }
+        ),
+      );
 }
 
 class StreakBadge extends StatelessWidget {
@@ -57,10 +52,10 @@ class StreakBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => StatBadge(
-        glyph: '🔥',
+        icon: Icons.local_fire_department_rounded,
         value: '$days',
         color: context.gameColors.streak,
-        tooltip: 'Серия дней',
+        semanticLabel: 'Серия: $days дн.',
       );
 }
 
@@ -71,9 +66,10 @@ class XpBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => StatBadge(
-        glyph: '⚡',
-        value: '$xp XP',
-        color: context.gameColors.xp,
+        icon: Icons.bolt_rounded,
+        value: '$xp',
+        color: context.gameColors.rewardIcon,
+        semanticLabel: 'Опыт: $xp',
       );
 }
 
@@ -84,10 +80,10 @@ class CoinBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => StatBadge(
-        glyph: '🪙',
+        icon: Icons.toll_rounded,
         value: '$coins',
-        color: context.gameColors.coin,
-        tooltip: 'Монеты',
+        color: context.gameColors.rewardIcon,
+        semanticLabel: 'Монеты: $coins',
       );
 }
 
@@ -103,10 +99,10 @@ class LivesBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => StatBadge(
-        glyph: '❤️',
+        icon: Icons.favorite_rounded,
         value: isUnlimited ? '∞' : '$current',
         color: context.gameColors.life,
-        tooltip: 'Жизни',
+        semanticLabel: isUnlimited ? 'Жизни: без ограничений' : 'Жизни: $current',
       );
 }
 
@@ -125,16 +121,29 @@ class StarRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.gameColors;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (var i = 0; i < max; i++)
-          Icon(
-            Icons.star_rounded,
-            size: size,
-            color: i < stars ? colors.coin : colors.locked,
-          ),
-      ],
+    return Semantics(
+      label: '$stars из $max звёзд',
+      excludeSemantics: true,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < max; i++)
+            Icon(
+              Icons.star_rounded,
+              size: size,
+              color: i < stars ? colors.rewardIcon : colors.track,
+            ),
+        ],
+      ),
     );
   }
+}
+
+/// Russian plural: 1 жизнь, 2 жизни, 5 жизней.
+String plural(int n, String one, String few, String many) {
+  final mod10 = n % 10;
+  final mod100 = n % 100;
+  if (mod10 == 1 && mod100 != 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
 }

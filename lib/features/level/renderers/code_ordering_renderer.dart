@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -19,11 +20,12 @@ class CodeOrderingRenderer extends QuestionRenderer {
       CodeOrderingView(question: question);
 }
 
-/// Drag & drop reordering of code lines.
+/// Drag & drop reordering of code lines, each line a dark key.
 ///
 /// Implemented with Draggable/DragTarget (not ReorderableListView) so the
-/// whole card is the handle, it works inside the screen's scroll view and
+/// whole key is the handle, it works inside the screen's scroll view and
 /// doesn't depend on framework-version-specific reorder callbacks.
+/// Screen readers get "move up / move down" actions instead of dragging.
 class CodeOrderingView extends StatelessWidget {
   const CodeOrderingView({super.key, required this.question});
 
@@ -47,10 +49,11 @@ class CodeOrderingView extends StatelessWidget {
         children: [
           for (var position = 0; position < answer.order.length; position++)
             Padding(
-              padding: const EdgeInsets.only(bottom: Spacing.sm),
+              padding: const EdgeInsets.only(bottom: Spacing.md),
               child: _DropSlot(
                 key: ValueKey('slot_${answer.order[position]}'),
                 position: position,
+                count: answer.order.length,
                 width: constraints.maxWidth,
                 text: payload.lines[answer.order[position]],
                 isWrong: wrong.contains(position),
@@ -59,6 +62,14 @@ class CodeOrderingView extends StatelessWidget {
                 dragDelay: _dragDelay,
                 onMove: (from, to) => question.onChanged(answer.move(from, to)),
               ),
+            ),
+          if (!question.isLocked)
+            Text(
+              'Удерживайте строку и перетащите её на нужное место',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: context.gameColors.textMuted),
             ),
         ],
       ),
@@ -70,6 +81,7 @@ class _DropSlot extends StatelessWidget {
   const _DropSlot({
     super.key,
     required this.position,
+    required this.count,
     required this.width,
     required this.text,
     required this.isWrong,
@@ -80,6 +92,7 @@ class _DropSlot extends StatelessWidget {
   });
 
   final int position;
+  final int count;
   final double width;
   final String text;
   final bool isWrong;
@@ -90,86 +103,129 @@ class _DropSlot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final card = _LineCard(
+    final card = _LineKey(
       text: text,
-      isWrong: isWrong,
-      isCorrect: isCorrect,
-      isLocked: isLocked,
+      state: isWrong
+          ? _LineState.wrong
+          : isCorrect
+              ? _LineState.correct
+              : _LineState.idle,
+      showHandle: !isLocked,
     );
     if (isLocked) return card;
-    return DragTarget<int>(
-      onWillAcceptWithDetails: (details) => details.data != position,
-      onAcceptWithDetails: (details) => onMove(details.data, position),
-      builder: (context, candidates, rejected) => LongPressDraggable<int>(
-        data: position,
-        delay: dragDelay,
-        axis: Axis.vertical,
-        feedback: Material(
-          color: Colors.transparent,
-          child: SizedBox(
-            width: width,
-            child: _LineCard(
-              text: text,
-              isWrong: false,
-              isCorrect: false,
-              isLocked: false,
-              isLifted: true,
+    return Semantics(
+      label: 'Строка ${position + 1} из $count: $text',
+      customSemanticsActions: {
+        if (position > 0)
+          const CustomSemanticsAction(label: 'Поднять выше'): () =>
+              onMove(position, position - 1),
+        if (position < count - 1)
+          const CustomSemanticsAction(label: 'Опустить ниже'): () =>
+              onMove(position, position + 1),
+      },
+      child: DragTarget<int>(
+        onWillAcceptWithDetails: (details) => details.data != position,
+        onAcceptWithDetails: (details) {
+          HapticFeedback.selectionClick();
+          onMove(details.data, position);
+        },
+        builder: (context, candidates, rejected) => LongPressDraggable<int>(
+          data: position,
+          delay: dragDelay,
+          axis: Axis.vertical,
+          hapticFeedbackOnStart: true,
+          feedback: Material(
+            color: Colors.transparent,
+            child: SizedBox(
+              width: width,
+              child: Transform.rotate(
+                angle: -0.025,
+                child: _LineKey(
+                  text: text,
+                  state: _LineState.lifted,
+                  showHandle: true,
+                ),
+              ),
             ),
           ),
+          childWhenDragging: const _Socket(height: 58),
+          child: candidates.isEmpty
+              ? card
+              : _LineKey(
+                  text: text,
+                  state: _LineState.dropTarget,
+                  showHandle: true,
+                ),
         ),
-        childWhenDragging: Opacity(opacity: 0.25, child: card),
-        child: candidates.isEmpty
-            ? card
-            : _LineCard(
-                text: text,
-                isWrong: false,
-                isCorrect: false,
-                isLocked: false,
-                isDropTarget: true,
-              ),
       ),
     );
   }
 }
 
-class _LineCard extends StatelessWidget {
-  const _LineCard({
+enum _LineState { idle, lifted, dropTarget, wrong, correct }
+
+class _Socket extends StatelessWidget {
+  const _Socket({required this.height});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      height: height,
+      margin: const EdgeInsets.only(bottom: 4),
+      decoration: BoxDecoration(
+        color: scheme.primary.withValues(alpha: 0.08),
+        borderRadius: AppRadius.mdAll,
+        border: Border.all(color: scheme.primary, width: 2),
+      ),
+    );
+  }
+}
+
+class _LineKey extends StatelessWidget {
+  const _LineKey({
     required this.text,
-    required this.isWrong,
-    required this.isCorrect,
-    required this.isLocked,
-    this.isLifted = false,
-    this.isDropTarget = false,
+    required this.state,
+    required this.showHandle,
   });
 
   final String text;
-  final bool isWrong;
-  final bool isCorrect;
-  final bool isLocked;
-  final bool isLifted;
-  final bool isDropTarget;
+  final _LineState state;
+  final bool showHandle;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.gameColors;
     final scheme = Theme.of(context).colorScheme;
-    final border = isWrong
-        ? colors.error
-        : isCorrect
-            ? colors.success
-            : isDropTarget || isLifted
-                ? scheme.primary
-                : colors.codeBackground;
-    return AnimatedContainer(
-      duration: AppDurations.fast,
-      constraints: const BoxConstraints(minHeight: Spacing.touchTarget),
+    final border = switch (state) {
+      _LineState.wrong => colors.error,
+      _LineState.correct => colors.success,
+      _LineState.lifted || _LineState.dropTarget => scheme.primary,
+      _LineState.idle => colors.board,
+    };
+    return Container(
+      constraints: const BoxConstraints(minHeight: 58),
+      margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
-        color: colors.codeBackground,
+        color: state == _LineState.lifted
+            ? Color.lerp(colors.board, Colors.white, 0.1)
+            : colors.board,
         borderRadius: AppRadius.mdAll,
         border: Border.all(color: border, width: 2),
-        boxShadow: isLifted ? AppShadows.raised : null,
+        boxShadow: [
+          BoxShadow(color: colors.boardEdge, offset: const Offset(0, 4)),
+          if (state == _LineState.lifted) ...const [
+            BoxShadow(
+              color: Color(0x66000000),
+              blurRadius: 28,
+              offset: Offset(0, 14),
+            ),
+          ],
+        ],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: Spacing.md),
+      padding: const EdgeInsets.only(left: Spacing.lg, right: Spacing.md),
       child: Row(
         children: [
           Expanded(
@@ -177,13 +233,18 @@ class _LineCard extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               child: Text.rich(
                 TextSpan(children: highlightPython(text, colors)),
-                style: AppTypography.code(color: colors.codeText),
+                style: AppTypography.code(color: colors.codeText, size: 17),
                 softWrap: false,
               ),
             ),
           ),
-          if (!isLocked)
-            Icon(Icons.drag_indicator_rounded, color: colors.codeComment),
+          if (showHandle)
+            Icon(
+              Icons.drag_indicator_rounded,
+              color: state == _LineState.lifted
+                  ? scheme.primary
+                  : colors.codeLineNumber,
+            ),
         ],
       ),
     );

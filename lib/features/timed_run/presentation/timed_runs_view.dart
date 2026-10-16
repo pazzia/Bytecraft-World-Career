@@ -7,7 +7,8 @@ import '../../../app/router/routes.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/game_colors.dart';
 import '../../../shared/widgets/app_button.dart';
-import '../../../shared/widgets/app_card.dart';
+import '../../../shared/widgets/app_progress_bar.dart';
+import '../../../shared/widgets/stat_badges.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../courses/domain/course.dart';
 import '../../level/domain/level_session.dart';
@@ -148,12 +149,20 @@ class TimedRunsView extends ConsumerWidget {
       value: overview,
       onRetry: () => ref.invalidate(timedOverviewProvider),
       data: (overview) => ListView(
-        padding: const EdgeInsets.all(Spacing.page),
+        padding: const EdgeInsets.fromLTRB(
+          Spacing.page,
+          0,
+          Spacing.page,
+          Spacing.huge,
+        ),
         children: [
           Text(
             'Пройдите модуль целиком, пока не вышло время. Первый забег '
             'даёт ×2 опыта и бонус за скорость.',
-            style: Theme.of(context).textTheme.bodyMedium,
+            style: Theme.of(context)
+                .textTheme
+                .bodyMedium
+                ?.copyWith(color: context.gameColors.textMuted),
           ),
           const SizedBox(height: Spacing.lg),
           for (final card in overview.modules)
@@ -189,58 +198,134 @@ class _ModuleCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
     final game = context.gameColors;
+    final scheme = Theme.of(context).colorScheme;
     final locked = card.availability == TimedModuleAvailability.locked;
     final run = card.activeRun;
+    final levels = card.module.playableLevels.length;
     final details = [
-      formatClock(card.duration),
-      '${card.module.playableLevels.length} уровней',
+      '${formatClock(card.duration)} на $levels ${plural(levels, 'уровень', 'уровня', 'уровней')}',
       if (card.bestTime != null) 'рекорд ${formatClock(card.bestTime!)}',
     ].join(', ');
 
-    return Opacity(
-      opacity: locked ? 0.55 : 1,
-      child: AppCard(
-        borderColor: run != null ? game.streak : null,
+    if (locked) {
+      return Container(
+        padding: const EdgeInsets.all(Spacing.lg),
+        decoration: BoxDecoration(
+          borderRadius: AppRadius.xlAll,
+          border: Border.all(color: game.keyBorder, width: 2),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.lock_rounded, color: game.lockedIcon),
+            const SizedBox(width: Spacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    card.module.title,
+                    style: textTheme.titleMedium?.copyWith(color: game.textMuted),
+                  ),
+                  Text(
+                    'Откроется, когда пройдёте модуль в обучении',
+                    style: textTheme.bodySmall?.copyWith(color: game.textMuted),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (run != null) {
+      return Container(
+        padding: const EdgeInsets.all(Spacing.lg),
+        margin: const EdgeInsets.only(bottom: 4),
+        decoration: BoxDecoration(
+          color: game.keyFace,
+          borderRadius: AppRadius.xlAll,
+          border: Border.all(color: scheme.primary, width: 2),
+          boxShadow: AppShadows.edge(game.primaryEdge),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
-                Text(card.module.icon, style: const TextStyle(fontSize: 28)),
-                const SizedBox(width: Spacing.md),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(card.module.title, style: textTheme.titleMedium),
-                      Text(details, style: textTheme.bodySmall),
+                      Text(
+                        'Забег идёт: ${run.completedLevelIds.length} из $levels',
+                        style: textTheme.bodySmall
+                            ?.copyWith(color: game.textMuted),
+                      ),
                     ],
                   ),
                 ),
-                if (run != null)
-                  CountdownBadge(deadline: run.deadline, onFinished: onExpired),
+                CountdownBadge(
+                  deadline: run.deadline,
+                  onFinished: onExpired,
+                  size: 26,
+                ),
               ],
             ),
             const SizedBox(height: Spacing.md),
-            if (locked)
-              Text(
-                'Откроется, когда пройдёте модуль в обучении',
-                style: textTheme.bodySmall,
-              )
-            else if (run != null)
-              AppButton(
-                label: 'Продолжить забег',
-                variant: AppButtonVariant.danger,
-                onPressed: onResume,
-              )
-            else
-              AppButton(
-                label: card.bestTime == null ? 'Старт' : 'Улучшить время',
-                icon: Icons.timer_outlined,
-                onPressed: onStart,
+            CountdownBuilder(
+              deadline: run.deadline,
+              builder: (context, remaining) => ExcludeSemantics(
+                child: AppProgressBar(
+                  value: run.totalDuration.inMilliseconds == 0
+                      ? 0
+                      : remaining.inMilliseconds /
+                          run.totalDuration.inMilliseconds,
+                  height: 8,
+                  glow: true,
+                  color: game.streak,
+                ),
               ),
+            ),
+            const SizedBox(height: Spacing.lg),
+            AppButton(label: 'Продолжить забег', onPressed: onResume),
           ],
         ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(Spacing.lg),
+      decoration: BoxDecoration(
+        color: game.keyFace,
+        borderRadius: AppRadius.xlAll,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(card.module.title, style: textTheme.titleMedium),
+                Text(
+                  details,
+                  style: textTheme.bodySmall?.copyWith(color: game.textMuted),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: Spacing.md),
+          AppButton(
+            label: card.bestTime == null ? 'Старт' : 'Улучшить',
+            icon: card.bestTime == null ? Icons.timer_outlined : null,
+            expand: false,
+            variant: card.bestTime == null
+                ? AppButtonVariant.primary
+                : AppButtonVariant.secondary,
+            onPressed: onStart,
+          ),
+        ],
       ),
     );
   }

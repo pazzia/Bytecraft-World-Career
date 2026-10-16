@@ -52,9 +52,13 @@ class LevelController extends Notifier<LevelUiState> {
             ),
           ),
         LevelStartDenied(:final reason, :final lives) => LevelUiState(
-            phase: reason == LevelStartDenial.noLives
-                ? LevelPhase.outOfLives
-                : LevelPhase.denied,
+            phase: switch (reason) {
+              LevelStartDenial.noLives => LevelPhase.outOfLives,
+              // The run's clock ran out between levels (e.g. on the
+              // rewards screen): offer a restart, not a dead end.
+              LevelStartDenial.noActiveRun => LevelPhase.timeUp,
+              _ => LevelPhase.denied,
+            },
             denial: reason,
             lives: lives,
           ),
@@ -122,9 +126,11 @@ class LevelController extends Notifier<LevelUiState> {
   /// Closes the wrong-answer feedback and lets the player try again.
   void dismissMistake() {
     if (state.phase != LevelPhase.wrongAnswer) return;
+    final next = answerAfterMistake(state.answer, state.outcome);
     state = state.copyWith(
       phase: LevelPhase.playing,
-      answer: _answerAfterMistake(state.answer, state.outcome),
+      answer: next,
+      clearAnswer: next == null,
     );
   }
 
@@ -157,18 +163,29 @@ class LevelController extends Notifier<LevelUiState> {
     return granted;
   }
 
-  /// Keeps correct parts, clears wrong blanks so the retry is quick.
-  static Answer? _answerAfterMistake(
+  /// Draft answer for the retry: correct parts stay, the wrong ones are
+  /// removed, so re-tapping "Проверить" can't repeat the same mistake (and
+  /// cost another life) by accident.
+  static Answer? answerAfterMistake(
     Answer? answer,
     ValidationOutcome? outcome,
   ) {
-    if (answer is FillCodeAnswer && outcome != null) {
-      var next = answer;
-      for (final index in outcome.wrongParts) {
-        next = next.clear(index);
-      }
-      return next;
+    if (outcome == null) return answer;
+    switch (answer) {
+      case final FillCodeAnswer fill:
+        var next = fill;
+        for (final index in outcome.wrongParts) {
+          next = next.clear(index);
+        }
+        return next;
+      case ChoiceAnswer():
+        return null;
+      case LineSelectionAnswer(:final lines):
+        final kept = lines.difference(outcome.wrongParts);
+        return kept.isEmpty ? null : LineSelectionAnswer(kept);
+      case OrderingAnswer():
+      case null:
+        return answer;
     }
-    return answer;
   }
 }

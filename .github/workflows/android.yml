@@ -35,6 +35,10 @@ jobs:
           flutter create --platforms=android --org com.pazzia --project-name bytecraft .
           # flutter create adds a counter-app test that doesn't apply here.
           rm -f test/widget_test.dart
+          # App name and launcher icon (the generated shell has Flutter's).
+          sed -i 's/android:label="bytecraft"/android:label="Bytecraft"/' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:label="Bytecraft"' android/app/src/main/AndroidManifest.xml
+          cp -r tool/android/res/. android/app/src/main/res/
 
       - name: Install dependencies
         run: flutter pub get 2>&1 | tee pub.txt

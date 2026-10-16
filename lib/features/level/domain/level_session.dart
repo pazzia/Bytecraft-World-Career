@@ -21,6 +21,7 @@ class LevelSession {
     this.isCompleted = false,
     this.isFailed = false,
     this.deadline,
+    this.runStartedAt,
   });
 
   final LevelDefinition level;
@@ -34,6 +35,9 @@ class LevelSession {
 
   /// Run deadline for [LevelMode.timed] sessions.
   final DateTime? deadline;
+
+  /// When the timed run began (the fuse is measured from it).
+  final DateTime? runStartedAt;
 
   bool get isFinished => isCompleted || isFailed;
 
@@ -54,5 +58,6 @@ class LevelSession {
         isCompleted: isCompleted ?? this.isCompleted,
         isFailed: isFailed ?? this.isFailed,
         deadline: deadline,
+        runStartedAt: runStartedAt,
       );
 }

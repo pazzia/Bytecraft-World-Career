@@ -5,17 +5,21 @@ import 'package:go_router/go_router.dart';
 import '../../../app/di/providers.dart';
 import '../../../app/router/routes.dart';
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/game_colors.dart';
-import '../../../services/analytics/analytics_service.dart';
+import '../../../services/feature_flags/feature_flag_service.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_card.dart';
 import '../../../shared/widgets/app_progress_bar.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../../shared/widgets/code_block.dart';
+import '../../../shared/widgets/keycap.dart';
 import '../../../shared/widgets/stat_badges.dart';
 import '../../daily_challenge/domain/daily_challenge.dart';
+import '../../learning_map/domain/learning_map_model.dart';
 import '../../learning_map/presentation/learning_map_providers.dart';
 import '../../level/domain/level_session.dart';
-import '../../../services/feature_flags/feature_flag_service.dart';
+import '../../level/presentation/widgets/level_code_preview.dart';
 import 'home_providers.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -24,87 +28,46 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final home = ref.watch(homeViewModelProvider);
+    final timedEnabled =
+        ref.watch(featureFlagsProvider).isEnabled(FeatureFlag.timedRuns);
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: AsyncValueView<HomeViewModel>(
           value: home,
           onRetry: () => ref.invalidate(homeViewModelProvider),
           data: (vm) => RefreshIndicator(
             onRefresh: () => ref.refresh(homeViewModelProvider.future),
             child: ListView(
-              padding: const EdgeInsets.all(Spacing.page),
+              padding: const EdgeInsets.fromLTRB(
+                Spacing.page,
+                Spacing.xxl,
+                Spacing.page,
+                Spacing.xxl,
+              ),
               children: [
-                _Header(vm: vm),
+                _Hud(vm: vm),
                 const SizedBox(height: Spacing.xl),
-                _ContinueCard(vm: vm),
-                if (vm.dailyChallenge != null) ...[
-                  const SizedBox(height: Spacing.lg),
-                  _DailyChallengeCard(challenge: vm.dailyChallenge!),
-                ],
-                if (ref
-                    .watch(featureFlagsProvider)
-                    .isEnabled(FeatureFlag.timedRuns)) ...[
-                  const SizedBox(height: Spacing.lg),
-                  AppCard(
-                    borderColor: context.gameColors.streak,
-                    onTap: () {
-                      ref
-                          .read(mapModeProvider.notifier)
-                          .select(MapMode.timed);
-                      context.go(Routes.map);
-                    },
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.timer_outlined,
-                          size: 36,
-                          color: context.gameColors.streak,
-                        ),
-                        const SizedBox(width: Spacing.lg),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'На время',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              Text('Пройденный модуль на скорость, ×2 опыта'),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.chevron_right_rounded),
-                      ],
-                    ),
-                  ),
-                ],
-                const SectionTitle('Магазин'),
+                _NextLevelBoard(vm: vm),
+                const SizedBox(height: Spacing.xl),
+                _CourseProgress(map: vm.map),
+                const SizedBox(height: Spacing.xl),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: _Tile(
-                        glyph: '🛒',
-                        title: 'Магазин',
-                        onTap: () => context.push(Routes.shop),
+                    if (vm.dailyChallenge != null)
+                      Expanded(child: _DailyTile(challenge: vm.dailyChallenge!)),
+                    if (vm.dailyChallenge != null && timedEnabled)
+                      const SizedBox(width: Spacing.md),
+                    if (timedEnabled)
+                      Expanded(
+                        child: _TimedTile(
+                          onTap: () {
+                            ref.read(mapModeProvider.notifier).select(MapMode.timed);
+                            context.go(Routes.map);
+                          },
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: Spacing.md),
-                    Expanded(
-                      child: _Tile(
-                        glyph: '⭐',
-                        title: 'Premium',
-                        onTap: () {
-                          ref.read(analyticsProvider).track(
-                            AnalyticsEvent.premiumScreenOpened,
-                            {'source': 'home'},
-                          );
-                          context.push(Routes.premium);
-                        },
-                      ),
-                    ),
                   ],
                 ),
               ],
@@ -116,94 +79,200 @@ class HomeScreen extends ConsumerWidget {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({required this.vm});
+class _Hud extends StatelessWidget {
+  const _Hud({required this.vm});
 
   final HomeViewModel vm;
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            vm.isStreakActiveToday
-                ? 'Отличная работа сегодня!'
-                : 'Пора кодить 👾',
-            style: Theme.of(context).textTheme.headlineSmall,
+  Widget build(BuildContext context) {
+    final game = context.gameColors;
+    return Row(
+      children: [
+        StreakBadge(days: vm.streakDays),
+        const SizedBox(width: Spacing.lg),
+        XpBadge(xp: vm.profile.totalXp),
+        const SizedBox(width: Spacing.lg),
+        LivesBadge(
+          current: vm.lives.current,
+          isUnlimited: vm.lives.isUnlimited,
+        ),
+        const Spacer(),
+        Keycap(
+          onTap: () => context.go(Routes.profile),
+          face: game.board,
+          edge: game.boardEdge,
+          radius: 12,
+          depth: 3,
+          width: 44,
+          height: 44,
+          semanticLabel: 'Профиль',
+          child: Text(
+            '{}',
+            style: AppTypography.code(
+              color: game.reward,
+              size: 17,
+              weight: FontWeight.w700,
+            ),
           ),
-          const SizedBox(height: Spacing.md),
-          Wrap(
-            spacing: Spacing.sm,
-            runSpacing: Spacing.sm,
-            children: [
-              StreakBadge(days: vm.streakDays),
-              XpBadge(xp: vm.profile.totalXp),
-              LivesBadge(
-                current: vm.lives.current,
-                isUnlimited: vm.lives.isUnlimited,
-              ),
-              CoinBadge(coins: vm.profile.coins),
-            ],
-          ),
-        ],
-      );
+        ),
+      ],
+    );
+  }
 }
 
-class _ContinueCard extends StatelessWidget {
-  const _ContinueCard({required this.vm});
+/// The hero: the next level on a code board, one tap to continue.
+class _NextLevelBoard extends StatelessWidget {
+  const _NextLevelBoard({required this.vm});
 
   final HomeViewModel vm;
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final game = context.gameColors;
     final map = vm.map;
     final next = map.nextLevel;
-    return AppCard(
-      child: Column(
+
+    if (next == null) {
+      return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Текущий курс', style: textTheme.labelMedium),
+          Text(map.course.title, style: textTheme.labelMedium?.copyWith(color: game.textMuted)),
           const SizedBox(height: Spacing.xs),
-          Text(map.course.title, style: textTheme.titleLarge),
-          const SizedBox(height: Spacing.md),
-          AppProgressBar(value: map.progress),
-          const SizedBox(height: Spacing.xs),
-          Text('${map.completed} из ${map.total} уровней · ⭐ ${map.stars}'),
+          Text('Курс пройден', style: textTheme.headlineLarge),
           const SizedBox(height: Spacing.lg),
-          if (next != null) ...[
-            Text('Дальше: ${next.title}', style: textTheme.bodyMedium),
-            const SizedBox(height: Spacing.sm),
-            AppButton(
-              label: 'Продолжить',
-              icon: Icons.play_arrow_rounded,
-              onPressed: () =>
-                  context.push(Routes.level(map.course.id, next.id)),
-            ),
-          ] else
-            AppButton(
-              label: 'Курс пройден! К карте',
-              variant: AppButtonVariant.success,
-              onPressed: () => context.go(Routes.map),
-            ),
+          AppButton(
+            label: 'Открыть карту',
+            onPressed: () => context.go(Routes.map),
+          ),
         ],
-      ),
+      );
+    }
+
+    final module = map.course.moduleOf(next.id);
+    final section = map.sections.firstWhere(
+      (section) => section.module.id == module?.id,
+      orElse: () => map.sections.first,
+    );
+    final position =
+        section.nodes.indexWhere((node) => node.level.id == next.id) + 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          map.course.title,
+          style: textTheme.labelMedium?.copyWith(color: game.textMuted),
+        ),
+        const SizedBox(height: Spacing.xs),
+        Text(module?.title ?? next.title, style: textTheme.headlineLarge),
+        const SizedBox(height: Spacing.lg),
+        CodeBoard(
+          padding: const EdgeInsets.all(Spacing.xl),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Уровень $position из ${section.total}',
+                      style: textTheme.labelMedium?.copyWith(color: game.boardMuted),
+                    ),
+                  ),
+                  Text(
+                    '+${vm.nextLevelXp} XP',
+                    style: textTheme.labelMedium?.copyWith(
+                      color: game.reward,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: Spacing.md),
+              if (LevelCodePreview.hasPreview(next)) ...[
+                LevelCodePreview(level: next),
+                const SizedBox(height: Spacing.md),
+              ],
+              Text(
+                next.title,
+                style: textTheme.titleLarge?.copyWith(color: game.codeText),
+              ),
+              const SizedBox(height: Spacing.lg),
+              AppButton(
+                label: 'Продолжить',
+                icon: Icons.play_arrow_rounded,
+                variant: AppButtonVariant.reward,
+                onPressed: () => context.push(Routes.level(map.course.id, next.id)),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _DailyChallengeCard extends StatelessWidget {
-  const _DailyChallengeCard({required this.challenge});
+class _CourseProgress extends StatelessWidget {
+  const _CourseProgress({required this.map});
+
+  final LearningMapModel map;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final game = context.gameColors;
+    final nextModuleId =
+        map.nextLevel == null ? null : map.course.moduleOf(map.nextLevel!.id)?.id;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                '${map.completed} из ${map.total} ${plural(map.total, 'уровня', 'уровней', 'уровней')}',
+                style: textTheme.titleSmall,
+              ),
+            ),
+            Text(
+              '${map.stars} ${plural(map.stars, 'звезда', 'звезды', 'звёзд')}',
+              style: textTheme.labelMedium?.copyWith(color: game.textMuted),
+            ),
+          ],
+        ),
+        const SizedBox(height: Spacing.sm),
+        SegmentedProgress(
+          semanticLabel: 'Пройдено модулей: '
+              '${map.sections.where((s) => s.completed == s.total).length} из ${map.sections.length}',
+          segments: [
+            for (final section in map.sections)
+              section.total > 0 && section.completed == section.total
+                  ? SegmentState.done
+                  : section.module.id == nextModuleId
+                      ? SegmentState.current
+                      : SegmentState.todo,
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _DailyTile extends StatelessWidget {
+  const _DailyTile({required this.challenge});
 
   final DailyChallenge challenge;
 
   @override
   Widget build(BuildContext context) {
-    final game = context.gameColors;
     final textTheme = Theme.of(context).textTheme;
+    final game = context.gameColors;
+    final done = challenge.isCompleted;
     return AppCard(
-      borderColor: game.coin,
-      onTap: challenge.isCompleted
+      semanticLabel: done ? 'Задача дня выполнена' : 'Задача дня',
+      onTap: done
           ? null
           : () => context.push(
                 Routes.level(
@@ -212,51 +281,61 @@ class _DailyChallengeCard extends StatelessWidget {
                   mode: LevelMode.dailyChallenge,
                 ),
               ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('🏆', style: TextStyle(fontSize: 36)),
-          const SizedBox(width: Spacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Задача дня', style: textTheme.titleMedium),
-                Text(
-                  challenge.isCompleted
-                      ? 'Выполнено — возвращайтесь завтра'
-                      : '${challenge.level.title} · '
-                          '+${challenge.bonus.xp} XP, '
-                          '+${challenge.bonus.coins} 🪙',
-                ),
-              ],
-            ),
+          Icon(
+            done ? Icons.check_circle_rounded : Icons.event_rounded,
+            size: 28,
+            color: done ? game.success : Theme.of(context).colorScheme.primary,
           ),
-          if (challenge.isCompleted)
-            Icon(Icons.check_circle_rounded, color: game.success)
-          else
-            const Icon(Icons.chevron_right_rounded),
+          const SizedBox(height: Spacing.md),
+          Text('Задача дня', style: textTheme.titleMedium),
+          const SizedBox(height: Spacing.xs),
+          Text(
+            done
+                ? 'Выполнено. Новая будет завтра'
+                : '+${challenge.bonus.xp} XP и ${challenge.bonus.coins} '
+                    '${plural(challenge.bonus.coins, 'монета', 'монеты', 'монет')}',
+            style: textTheme.bodySmall?.copyWith(color: game.textMuted),
+          ),
         ],
       ),
     );
   }
 }
 
-class _Tile extends StatelessWidget {
-  const _Tile({required this.glyph, required this.title, required this.onTap});
+class _TimedTile extends StatelessWidget {
+  const _TimedTile({required this.onTap});
 
-  final String glyph;
-  final String title;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) => AppCard(
-        onTap: onTap,
-        child: Column(
-          children: [
-            Text(glyph, style: const TextStyle(fontSize: 28)),
-            const SizedBox(height: Spacing.xs),
-            Text(title, style: Theme.of(context).textTheme.titleSmall),
-          ],
-        ),
-      );
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    const night = GameColors.timed;
+    return AppCard(
+      semanticLabel: 'Режим на время',
+      onTap: onTap,
+      color: night.background,
+      borderColor: night.background,
+      edgeColor: night.track,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.timer_outlined, size: 28, color: night.streak),
+          const SizedBox(height: Spacing.md),
+          Text(
+            'На время',
+            style: textTheme.titleMedium?.copyWith(color: Colors.white),
+          ),
+          const SizedBox(height: Spacing.xs),
+          Text(
+            'Модуль на скорость, ×2 XP',
+            style: textTheme.bodySmall?.copyWith(color: night.textMuted),
+          ),
+        ],
+      ),
+    );
+  }
 }

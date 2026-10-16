@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_spacing.dart';
+import '../../../core/theme/game_colors.dart';
 import '../../../shared/widgets/code_block.dart';
 import '../domain/answer.dart';
 import 'question_renderer.dart';
@@ -32,11 +33,6 @@ class BugFinderView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          'Нажмите на строку с ошибкой',
-          style: Theme.of(context).textTheme.labelLarge,
-        ),
-        const SizedBox(height: Spacing.sm),
         CodeBlock(
           code: question.level.code ?? '',
           selectedLines: answer.lines,
@@ -49,6 +45,14 @@ class BugFinderView extends StatelessWidget {
           onLineTap: question.isLocked
               ? null
               : (line) => question.onChanged(answer.toggle(line)),
+        ),
+        const SizedBox(height: Spacing.md),
+        Text(
+          'Нажмите на строку с ошибкой',
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: context.gameColors.textMuted),
         ),
       ],
     );

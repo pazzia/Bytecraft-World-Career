@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/game_colors.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/stat_badges.dart';
 
-/// Bottom panel with instant feedback after checking an answer.
-class FeedbackPanel extends StatelessWidget {
+/// Bottom sheet with instant feedback after checking an answer.
+class FeedbackPanel extends StatefulWidget {
   const FeedbackPanel({
     super.key,
     required this.isCorrect,
@@ -21,69 +23,92 @@ class FeedbackPanel extends StatelessWidget {
   final VoidCallback onPressed;
   final int? livesLeft;
 
-  static const double _backgroundAlpha = 0.14;
+  @override
+  State<FeedbackPanel> createState() => _FeedbackPanelState();
+}
+
+class _FeedbackPanelState extends State<FeedbackPanel> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isCorrect) {
+      HapticFeedback.lightImpact();
+    } else {
+      HapticFeedback.heavyImpact();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final game = context.gameColors;
-    final color = isCorrect ? game.success : game.error;
     final textTheme = Theme.of(context).textTheme;
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Color.alphaBlend(
-          color.withValues(alpha: _backgroundAlpha),
-          Theme.of(context).colorScheme.surface,
+    final accent = widget.isCorrect ? game.success : game.error;
+    final accentText = widget.isCorrect ? game.successEdge : game.errorEdge;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark
+        ? (widget.isCorrect ? game.successBright : game.errorBright)
+        : accentText;
+    final lives = widget.livesLeft;
+    return Semantics(
+      liveRegion: true,
+      container: true,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: widget.isCorrect ? game.successTint : game.errorTint,
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(AppRadius.sheet),
+          ),
         ),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppRadius.xl),
+        padding: const EdgeInsets.fromLTRB(
+          Spacing.page,
+          Spacing.xxl,
+          Spacing.page,
+          Spacing.lg,
         ),
-      ),
-      padding: const EdgeInsets.fromLTRB(
-        Spacing.page,
-        Spacing.xl,
-        Spacing.page,
-        Spacing.lg,
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  isCorrect ? Icons.check_circle_rounded : Icons.cancel_rounded,
-                  color: color,
-                  size: 32,
-                ),
-                const SizedBox(width: Spacing.sm),
-                Expanded(
-                  child: Text(
-                    isCorrect ? 'Верно!' : 'Не совсем',
-                    style: textTheme.headlineSmall?.copyWith(color: color),
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    widget.isCorrect
+                        ? Icons.check_circle_rounded
+                        : Icons.cancel_rounded,
+                    color: accent,
+                    size: 32,
                   ),
-                ),
-                if (!isCorrect && livesLeft != null)
-                  Text(
-                    '❤️ $livesLeft',
-                    style: textTheme.titleMedium?.copyWith(color: game.life),
+                  const SizedBox(width: Spacing.sm),
+                  Expanded(
+                    child: Text(
+                      widget.isCorrect ? 'Верно!' : 'Не то',
+                      style: textTheme.headlineSmall?.copyWith(color: titleColor),
+                    ),
                   ),
+                  if (!widget.isCorrect && lives != null)
+                    Text(
+                      'осталось $lives ${plural(lives, 'жизнь', 'жизни', 'жизней')}',
+                      style: textTheme.titleSmall?.copyWith(color: titleColor),
+                    ),
+                ],
+              ),
+              if (widget.message != null && widget.message!.isNotEmpty) ...[
+                const SizedBox(height: Spacing.sm),
+                Text(widget.message!, style: textTheme.bodyLarge),
               ],
-            ),
-            if (message != null && message!.isNotEmpty) ...[
-              const SizedBox(height: Spacing.sm),
-              Text(message!, style: textTheme.bodyLarge),
+              const SizedBox(height: Spacing.lg),
+              AppButton(
+                label: widget.buttonLabel,
+                variant: widget.isCorrect
+                    ? AppButtonVariant.success
+                    : AppButtonVariant.danger,
+                onPressed: widget.onPressed,
+              ),
             ],
-            const SizedBox(height: Spacing.lg),
-            AppButton(
-              label: buttonLabel,
-              variant:
-                  isCorrect ? AppButtonVariant.success : AppButtonVariant.danger,
-              onPressed: onPressed,
-            ),
-          ],
+          ),
         ),
       ),
     );
