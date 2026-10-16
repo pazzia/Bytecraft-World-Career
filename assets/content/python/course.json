@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "python",
+  "title": "Python Basics",
+  "language": "python",
+  "version": 1,
+  "modules": [
+    {
+      "id": "variables",
+      "title": "Переменные",
+      "description": "Как хранить данные",
+      "icon": "📦",
+      "file": "modules/variables.json",
+      "timedRunSeconds": 300
+    },
+    {
+      "id": "types",
+      "title": "Типы данных",
+      "description": "Числа, строки и логика",
+      "icon": "🔢",
+      "file": "modules/types.json",
+      "timedRunSeconds": 360
+    },
+    {
+      "id": "operators",
+      "title": "Операторы",
+      "description": "Считаем и сравниваем",
+      "icon": "➗",
+      "file": "modules/operators.json",
+      "timedRunSeconds": 420
+    },
+    {
+      "id": "conditions",
+      "title": "Условия",
+      "description": "if, elif, else",
+      "icon": "🔀",
+      "file": "modules/conditions.json",
+      "timedRunSeconds": 480
+    },
+    {
+      "id": "loops",
+      "title": "Циклы",
+      "description": "for и while",
+      "icon": "🔁",
+      "file": "modules/loops.json",
+      "timedRunSeconds": 600
+    }
+  ]
+}
