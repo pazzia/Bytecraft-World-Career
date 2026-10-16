@@ -53,7 +53,7 @@ class _LearningMapScreenState extends State<LearningMapScreen> {
           if (hardcore)
             const Padding(
               padding: EdgeInsets.only(right: 16),
-              child: Center(child: Text('×2 XP + time bonus', style: TextStyle(fontWeight: FontWeight.w800))),
+              child: Center(child: Text('×2 XP', style: TextStyle(fontWeight: FontWeight.w800))),
             ),
         ],
       ),
@@ -66,24 +66,21 @@ class _LearningMapScreenState extends State<LearningMapScreen> {
           final done = widget.controller.isCompleted(level);
           final unlocked = widget.controller.isUnlocked(widget.levels, index);
           final remaining = hardcore ? widget.controller.hardcoreRemainingFor(level.module) : null;
-          final limit = widget.controller.hardcoreDurationFor(level.module);
           return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             if (showHeader)
               Padding(
                 padding: const EdgeInsets.only(top: 18, bottom: 10),
                 child: Row(children: [
                   Expanded(
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(
-                        level.module,
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
-                      ),
-                      if (hardcore && remaining == null)
-                        Text('Лимит: ${limit.inMinutes} мин • до +100 XP за скорость', style: Theme.of(context).textTheme.bodySmall),
-                    ]),
+                    child: Text(
+                      level.module,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+                    ),
                   ),
                   if (hardcore && remaining != null)
-                    _TimerBadge(remaining: remaining),
+                    _TimerBadge(remaining: remaining)
+                  else if (hardcore)
+                    Text('${widget.controller.hardcoreDurationFor(level.module).inMinutes} мин', style: const TextStyle(fontWeight: FontWeight.w700)),
                 ]),
               ),
             Card(

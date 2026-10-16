@@ -17,9 +17,6 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final completed = progress.hardcoreMode
-        ? progress.hardcoreCompletedLevelIds.length
-        : progress.completedLevelIds.length;
     return Scaffold(
       appBar: AppBar(
         title: const Text('CodeQuest', style: TextStyle(fontWeight: FontWeight.w800)),
@@ -40,9 +37,9 @@ class HomeScreen extends StatelessWidget {
             child: SwitchListTile(
               value: progress.hardcoreMode,
               onChanged: onHardcoreChanged,
-              secondary: Icon(progress.hardcoreMode ? Icons.timer : Icons.timer_outlined),
+              secondary: const Icon(Icons.local_fire_department_outlined),
               title: const Text('Hardcore Mode', style: TextStyle(fontWeight: FontWeight.w800)),
-              subtitle: const Text('5–10 минут на рубрику. Не успел — прогресс рубрики сбрасывается.'),
+              subtitle: const Text('Пройди всю рубрику до истечения таймера. Ошибка по времени сбрасывает хардкор-прогресс рубрики. ×2 XP.'),
             ),
           ),
           const SizedBox(height: 18),
@@ -52,24 +49,15 @@ class HomeScreen extends StatelessWidget {
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(progress.hardcoreMode ? 'PYTHON HARDCORE' : 'PYTHON PATH', style: const TextStyle(fontWeight: FontWeight.w700)),
                 const SizedBox(height: 8),
-                Text('Основы Python', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+                Text(progress.hardcoreMode ? 'Испытание на время' : 'Основы Python', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
                 const SizedBox(height: 8),
-                Text('$completed из 20 уровней завершено'),
-                if (progress.hardcoreMode) ...[
-                  const SizedBox(height: 6),
-                  const Text('×2 XP за задания + до 100 XP за скорость.'),
-                ],
+                Text(progress.hardcoreMode
+                    ? '${progress.hardcoreCompletedLevelIds.length} из 20 хардкор-уровней завершено'
+                    : '${progress.completedLevelIds.length} из 20 уровней завершено'),
                 const SizedBox(height: 14),
-                LinearProgressIndicator(value: completed / 20),
+                LinearProgressIndicator(value: (progress.hardcoreMode ? progress.hardcoreCompletedLevelIds.length : progress.completedLevelIds.length) / 20),
                 const SizedBox(height: 18),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    onPressed: onContinue,
-                    icon: Icon(progress.hardcoreMode ? Icons.timer : Icons.play_arrow),
-                    label: Text(progress.hardcoreMode ? 'Начать испытание' : 'Продолжить обучение'),
-                  ),
-                ),
+                SizedBox(width: double.infinity, child: FilledButton.icon(onPressed: onContinue, icon: Icon(progress.hardcoreMode ? Icons.timer : Icons.play_arrow), label: Text(progress.hardcoreMode ? 'Начать Hardcore' : 'Продолжить обучение'))),
               ]),
             ),
           ),
