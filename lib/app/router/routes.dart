@@ -1,3 +1,5 @@
+import '../../features/level/domain/level_session.dart';
+
 /// Route paths in one place — screens never hardcode URLs.
 abstract final class Routes {
   static const String splash = '/splash';
@@ -12,14 +14,24 @@ abstract final class Routes {
   static const String levelPattern = '/level/:courseId/:levelId';
   static const String courseIdParam = 'courseId';
   static const String levelIdParam = 'levelId';
-  static const String dailyQuery = 'daily';
+  static const String modeQuery = 'mode';
   static const String experienceQuery = 'experience';
 
-  static String level(String courseId, String levelId, {bool daily = false}) =>
+  static String level(
+    String courseId,
+    String levelId, {
+    LevelMode mode = LevelMode.standard,
+  }) =>
       Uri(
         path: '/level/$courseId/$levelId',
-        queryParameters: daily ? {dailyQuery: '1'} : null,
+        queryParameters:
+            mode == LevelMode.standard ? null : {modeQuery: mode.name},
       ).toString();
+
+  static LevelMode modeFrom(String? value) => LevelMode.values.firstWhere(
+        (mode) => mode.name == value,
+        orElse: () => LevelMode.standard,
+      );
 
   static String onboardingCourseFor(String experienceId) => Uri(
         path: onboardingCourse,

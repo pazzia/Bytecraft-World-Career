@@ -66,6 +66,10 @@ class ContentParser {
           title: module.requireString('title'),
           description: module.optionalString('description') ?? '',
           icon: module.optionalString('icon') ?? '',
+          timedRunDuration: switch (module.optionalInt('timedRunSeconds')) {
+            final int seconds when seconds > 0 => Duration(seconds: seconds),
+            _ => null,
+          },
           levels: module
               .requireObjectList('levels')
               .map((level) => parseLevel(level, courseId, moduleId))

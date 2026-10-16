@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/di/providers.dart';
 import '../../../app/router/routes.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../shared/widgets/app_progress_bar.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../../services/feature_flags/feature_flag_service.dart';
+import '../../timed_run/presentation/timed_runs_view.dart';
 import '../domain/learning_map_model.dart';
 import 'learning_map_providers.dart';
 import 'widgets/map_node.dart';
@@ -24,6 +27,68 @@ class LearningMapScreen extends ConsumerWidget {
     }
     context.push(Routes.level(model.course.id, node.level.id));
   }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final timedEnabled =
+        ref.watch(featureFlagsProvider).isEnabled(FeatureFlag.timedRuns);
+    final mode = timedEnabled ? ref.watch(mapModeProvider) : MapMode.learn;
+    final content = mode == MapMode.timed
+        ? const TimedRunsView()
+        : _LearnPath(onOpen: _open);
+    if (!timedEnabled) return Scaffold(body: content);
+    return Scaffold(
+      body: Column(
+        children: [
+          SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                Spacing.page,
+                Spacing.sm,
+                Spacing.page,
+                0,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: SegmentedButton<MapMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: MapMode.learn,
+                      label: Text('Обучение'),
+                      icon: Icon(Icons.map_outlined),
+                    ),
+                    ButtonSegment(
+                      value: MapMode.timed,
+                      label: Text('На время'),
+                      icon: Icon(Icons.timer_outlined),
+                    ),
+                  ],
+                  selected: {mode},
+                  onSelectionChanged: (selection) => ref
+                      .read(mapModeProvider.notifier)
+                      .select(selection.first),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: MediaQuery.removePadding(
+              context: context,
+              removeTop: true,
+              child: content,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LearnPath extends ConsumerWidget {
+  const _LearnPath({required this.onOpen});
+
+  final void Function(BuildContext, LearningMapModel, MapNode) onOpen;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -63,7 +128,7 @@ class LearningMapScreen extends ConsumerWidget {
                       node: node,
                       isFirst: index == 0,
                       isLast: index == section.nodes.length - 1,
-                      onTap: () => _open(context, model, node),
+                      onTap: () => onOpen(context, model, node),
                     );
                   },
                 ),

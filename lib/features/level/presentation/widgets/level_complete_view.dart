@@ -6,6 +6,7 @@ import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_card.dart';
 import '../../../../shared/widgets/app_progress_bar.dart';
 import '../../../../shared/widgets/stat_badges.dart';
+import '../../../timed_run/presentation/countdown.dart';
 import '../../domain/level_result.dart';
 
 /// Rewards screen after a level: stars, XP, coins, streak, course progress.
@@ -89,6 +90,9 @@ class LevelCompleteView extends StatelessWidget {
                     ),
                   ],
                   const SizedBox(height: Spacing.xl),
+                  if (result.timedRun != null)
+                    _TimedSummary(run: result.timedRun!)
+                  else
                   AppCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,6 +153,54 @@ class LevelCompleteView extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _TimedSummary extends StatelessWidget {
+  const _TimedSummary({required this.run});
+
+  final TimedRunProgress run;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final game = context.gameColors;
+    return AppCard(
+      borderColor: game.streak,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (run.moduleCleared) ...[
+            Text(
+              'Модуль пройден за ${formatClock(run.clearTime!)}',
+              style: textTheme.titleMedium,
+            ),
+            if (run.speedBonus > 0)
+              Text('Бонус за скорость: +${run.speedBonus} XP'),
+            if (run.bestTime != null)
+              Text(
+                run.isNewRecord
+                    ? 'Новый рекорд!'
+                    : 'Рекорд: ${formatClock(run.bestTime!)}',
+              ),
+          ] else ...[
+            Text(
+              'Осталось ${formatClock(run.timeLeft)}',
+              style: textTheme.titleMedium?.copyWith(color: game.streak),
+            ),
+            const SizedBox(height: Spacing.sm),
+            AppProgressBar(
+              value: run.levelsInRun == 0
+                  ? 0
+                  : run.completedInRun / run.levelsInRun,
+              color: game.streak,
+            ),
+            const SizedBox(height: Spacing.xs),
+            Text('${run.completedInRun} из ${run.levelsInRun} уровней'),
+          ],
+        ],
       ),
     );
   }

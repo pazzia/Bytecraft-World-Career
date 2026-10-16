@@ -22,6 +22,7 @@ class LevelResult {
     required this.dailyChallengeCompleted,
     this.nextLevelId,
     this.newlyUnlockedLevelId,
+    this.timedRun,
   });
 
   final String levelId;
@@ -47,14 +48,56 @@ class LevelResult {
   /// Set when this completion unlocked a previously locked level.
   final String? newlyUnlockedLevelId;
 
+  /// Set for [LevelMode.timed] completions. In that case [nextLevelId] is
+  /// the next level of the run (null when the module is cleared).
+  final TimedRunProgress? timedRun;
+
   bool get isPerfect => stars >= 3;
   bool get leveledUp => accountLevelAfter > accountLevelBefore;
   double get courseProgress =>
       playableInCourse == 0 ? 0 : completedInCourse / playableInCourse;
 }
 
+/// Run state after a timed level completion.
+class TimedRunProgress {
+  const TimedRunProgress({
+    required this.moduleId,
+    required this.completedInRun,
+    required this.levelsInRun,
+    required this.timeLeft,
+    required this.moduleCleared,
+    required this.isFirstClear,
+    required this.speedBonus,
+    this.bestTime,
+    this.clearTime,
+  });
+
+  final String moduleId;
+  final int completedInRun;
+  final int levelsInRun;
+  final Duration timeLeft;
+  final bool moduleCleared;
+  final bool isFirstClear;
+  final int speedBonus;
+  final Duration? bestTime;
+
+  /// Time taken by this run, set when the module was cleared.
+  final Duration? clearTime;
+
+  bool get isNewRecord =>
+      clearTime != null && bestTime != null && clearTime == bestTime;
+}
+
 /// Why a level can't be started.
-enum LevelStartDenial { notFound, locked, unsupported, noLives }
+enum LevelStartDenial {
+  notFound,
+  locked,
+  unsupported,
+  noLives,
+
+  /// Timed level opened without an active run (or the run expired).
+  noActiveRun,
+}
 
 sealed class LevelStartResult {
   const LevelStartResult();
@@ -115,6 +158,7 @@ class SubmissionResult {
     required this.outcome,
     required this.lives,
     this.completion,
+    this.timeUp = false,
   });
 
   final LevelSession session;
@@ -123,6 +167,9 @@ class SubmissionResult {
 
   /// Non-null when the answer completed the level.
   final LevelResult? completion;
+
+  /// The timed run's deadline passed before this answer.
+  final bool timeUp;
 
   bool get isFailed => session.isFailed;
 }

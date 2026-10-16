@@ -112,7 +112,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           args: (
             courseId: state.pathParameters[Routes.courseIdParam]!,
             levelId: state.pathParameters[Routes.levelIdParam]!,
-            isDaily: state.uri.queryParameters[Routes.dailyQuery] == '1',
+            mode: Routes.modeFrom(state.uri.queryParameters[Routes.modeQuery]),
           ),
         ),
       ),

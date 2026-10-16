@@ -12,7 +12,7 @@ import '../domain/validation_outcome.dart';
 import '../engine/level_engine.dart';
 import 'level_ui_state.dart';
 
-typedef LevelArgs = ({String courseId, String levelId, bool isDaily});
+typedef LevelArgs = ({String courseId, String levelId, LevelMode mode});
 
 final levelControllerProvider = NotifierProvider.autoDispose
     .family<LevelController, LevelUiState, LevelArgs>(LevelController.new);
@@ -37,7 +37,7 @@ class LevelController extends Notifier<LevelUiState> {
       final result = await _engine.start(
         courseId: args.courseId,
         levelId: args.levelId,
-        mode: args.isDaily ? LevelMode.dailyChallenge : LevelMode.standard,
+        mode: args.mode,
       );
       if (!ref.mounted) return;
       ref.read(progressRevisionProvider.notifier).bump();
@@ -81,7 +81,9 @@ class LevelController extends Notifier<LevelUiState> {
       if (!ref.mounted) return;
       ref.read(progressRevisionProvider.notifier).bump();
       final LevelPhase phase;
-      if (result.completion != null) {
+      if (result.timeUp) {
+        phase = LevelPhase.timeUp;
+      } else if (result.completion != null) {
         phase = LevelPhase.correctAnswer;
       } else if (result.isFailed) {
         phase = LevelPhase.outOfLives;
@@ -100,6 +102,21 @@ class LevelController extends Notifier<LevelUiState> {
       if (!ref.mounted) return;
       state = LevelUiState(phase: LevelPhase.error, errorMessage: '$error');
     }
+  }
+
+  /// Called by the countdown when it reaches zero. The engine has the final
+  /// word (the device clock in the widget may be a second off).
+  Future<void> onCountdownFinished() async {
+    final session = state.session;
+    if (session == null || session.mode != LevelMode.timed) return;
+    if (state.phase != LevelPhase.playing &&
+        state.phase != LevelPhase.wrongAnswer) {
+      return;
+    }
+    final alive = await _engine.isRunAlive(session);
+    if (!ref.mounted || alive) return;
+    ref.read(progressRevisionProvider.notifier).bump();
+    state = state.copyWith(phase: LevelPhase.timeUp);
   }
 
   /// Closes the wrong-answer feedback and lets the player try again.

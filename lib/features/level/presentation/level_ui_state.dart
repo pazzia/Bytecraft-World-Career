@@ -21,6 +21,9 @@ enum LevelPhase {
   /// No lives left (at start or mid-level).
   outOfLives,
 
+  /// The timed run's deadline passed.
+  timeUp,
+
   /// Level can't be opened (locked, unsupported, not found).
   denied,
   error,

@@ -25,6 +25,8 @@ import '../../features/progress/domain/progress_repository.dart';
 import '../../features/settings/data/local_settings_repository.dart';
 import '../../features/settings/domain/settings_repository.dart';
 import '../../features/shop/domain/economy_service.dart';
+import '../../features/timed_run/domain/timed_run.dart';
+import '../../features/timed_run/domain/timed_run_service.dart';
 import '../../services/ai_tutor/ai_tutor_service.dart';
 import '../../services/analytics/analytics_service.dart';
 import '../../services/auth/auth_service.dart';
@@ -151,6 +153,21 @@ final validatorRegistryProvider = Provider<ValidatorRegistry>(
   (ref) => ValidatorRegistry.standard(),
 );
 
+final timedRunPolicyProvider = Provider<TimedRunPolicy>(
+  (ref) => TimedRunPolicy(ref.watch(gameRulesProvider)),
+);
+
+final timedRunServiceProvider = Provider<TimedRunService>(
+  (ref) => TimedRunService(
+    content: ref.watch(contentRepositoryProvider),
+    progress: ref.watch(progressRepositoryProvider),
+    settings: ref.watch(settingsRepositoryProvider),
+    policy: ref.watch(timedRunPolicyProvider),
+    clock: ref.watch(clockProvider),
+    analytics: ref.watch(analyticsProvider),
+  ),
+);
+
 final levelEngineProvider = Provider<LevelEngine>(
   (ref) => LevelEngine(
     content: ref.watch(contentRepositoryProvider),
@@ -161,6 +178,7 @@ final levelEngineProvider = Provider<LevelEngine>(
     clock: ref.watch(clockProvider),
     analytics: ref.watch(analyticsProvider),
     flags: ref.watch(featureFlagsProvider),
+    timedRuns: ref.watch(timedRunServiceProvider),
   ),
 );
 

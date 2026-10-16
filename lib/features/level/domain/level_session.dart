@@ -1,6 +1,12 @@
 import '../../courses/domain/level_definition.dart';
 
-enum LevelMode { standard, dailyChallenge }
+enum LevelMode {
+  standard,
+  dailyChallenge,
+
+  /// Part of a timed module run ("На время").
+  timed,
+}
 
 /// In-memory state of one play-through. Immutable: the engine returns an
 /// updated copy after every submission.
@@ -14,6 +20,7 @@ class LevelSession {
     this.hintsUsed = 0,
     this.isCompleted = false,
     this.isFailed = false,
+    this.deadline,
   });
 
   final LevelDefinition level;
@@ -24,6 +31,9 @@ class LevelSession {
   final int hintsUsed;
   final bool isCompleted;
   final bool isFailed;
+
+  /// Run deadline for [LevelMode.timed] sessions.
+  final DateTime? deadline;
 
   bool get isFinished => isCompleted || isFailed;
 
@@ -43,5 +53,6 @@ class LevelSession {
         hintsUsed: hintsUsed ?? this.hintsUsed,
         isCompleted: isCompleted ?? this.isCompleted,
         isFailed: isFailed ?? this.isFailed,
+        deadline: deadline,
       );
 }

@@ -12,7 +12,11 @@ import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/code_block.dart';
 import '../../../shared/widgets/stat_badges.dart';
 import '../../courses/domain/level_type.dart';
+import '../../timed_run/domain/timed_run_service.dart';
+import '../../timed_run/presentation/countdown.dart';
+import '../../timed_run/presentation/time_up_view.dart';
 import '../domain/level_result.dart';
+import '../domain/level_session.dart';
 import '../renderers/question_renderer.dart';
 import 'level_controller.dart';
 import 'level_ui_state.dart';
@@ -46,6 +50,28 @@ class LevelScreen extends ConsumerWidget {
     context.push(Routes.premium);
   }
 
+  /// Starts a new run of the same module and opens its first level.
+  Future<void> _restartRun(BuildContext context, WidgetRef ref) async {
+    final course =
+        await ref.read(contentRepositoryProvider).loadCourse(args.courseId);
+    final moduleId = course.levelById(args.levelId)?.moduleId;
+    if (moduleId == null) return;
+    final result =
+        await ref.read(timedRunServiceProvider).startRun(args.courseId, moduleId);
+    if (!context.mounted) return;
+    if (result is RunStarted) {
+      context.pushReplacement(
+        Routes.level(
+          args.courseId,
+          result.firstLevel.id,
+          mode: LevelMode.timed,
+        ),
+      );
+    } else {
+      context.go(Routes.map);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = levelControllerProvider(args);
@@ -75,9 +101,19 @@ class LevelScreen extends ConsumerWidget {
           onContinue: state.result!.nextLevelId == null
               ? null
               : () => context.pushReplacement(
-                    Routes.level(args.courseId, state.result!.nextLevelId!),
+                    Routes.level(
+                      args.courseId,
+                      state.result!.nextLevelId!,
+                      mode: args.mode == LevelMode.timed
+                          ? LevelMode.timed
+                          : LevelMode.standard,
+                    ),
                   ),
           onBackToMap: () => context.go(Routes.map),
+        ),
+      LevelPhase.timeUp => TimeUpView(
+          onRestart: () => _restartRun(context, ref),
+          onExit: () => context.go(Routes.map),
         ),
       LevelPhase.playing ||
       LevelPhase.wrongAnswer ||
@@ -145,6 +181,13 @@ class _PlayingView extends StatelessWidget {
                     padding: EdgeInsets.only(right: Spacing.sm),
                     child: Text('👑', style: TextStyle(fontSize: 20)),
                   ),
+                if (session.deadline != null) ...[
+                  CountdownBadge(
+                    deadline: session.deadline!,
+                    onFinished: controller.onCountdownFinished,
+                  ),
+                  const SizedBox(width: Spacing.sm),
+                ],
                 if (lives != null)
                   LivesBadge(
                     current: lives.current,
@@ -218,6 +261,7 @@ class _BottomBar extends StatelessWidget {
       case LevelPhase.playing:
       case LevelPhase.completed:
       case LevelPhase.outOfLives:
+      case LevelPhase.timeUp:
       case LevelPhase.denied:
       case LevelPhase.error:
         return SafeArea(
@@ -296,6 +340,8 @@ class _DeniedView extends StatelessWidget {
           'Обновите приложение, чтобы открыть этот уровень',
         LevelStartDenial.notFound => 'Уровень не найден',
         LevelStartDenial.noLives => 'Жизни закончились',
+        LevelStartDenial.noActiveRun =>
+          'Забег закончился. Начните его заново на карте',
         null => 'Уровень недоступен',
       };
 

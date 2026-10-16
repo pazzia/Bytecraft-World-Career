@@ -17,9 +17,12 @@ import '../../progress/domain/progress_repository.dart';
 import '../../progress/domain/unlock_policy.dart';
 import '../../progress/domain/user_profile.dart';
 import '../../settings/domain/settings_repository.dart';
+import '../../timed_run/domain/timed_run.dart';
+import '../../timed_run/domain/timed_run_service.dart';
 import '../domain/answer.dart';
 import '../domain/level_result.dart';
 import '../domain/level_session.dart';
+import '../domain/validation_outcome.dart';
 import 'answer_validator.dart';
 
 /// Orchestrates a level from start to completion.
@@ -27,6 +30,10 @@ import 'answer_validator.dart';
 ///   start()  -> loads level, checks unlock + lives, records the attempt
 ///   submit() -> validates, applies lives / XP / stars / streak /
 ///               achievements, persists progress, unlocks next level
+///
+/// [LevelMode.timed] levels belong to a timed module run: they are opened in
+/// run order instead of by the unlock path, fail when the run's deadline
+/// passes, and are rewarded by the timed-run rules.
 ///
 /// UI-agnostic: renderers produce [Answer]s, the engine never touches widgets.
 class LevelEngine {
@@ -39,6 +46,7 @@ class LevelEngine {
     required Clock clock,
     required AnalyticsService analytics,
     required FeatureFlagService flags,
+    required TimedRunService timedRuns,
     UnlockPolicy unlockPolicy = const UnlockPolicy(),
     StreakPolicy streakPolicy = const StreakPolicy(),
     AchievementEvaluator achievements = const AchievementEvaluator(),
@@ -49,6 +57,9 @@ class LevelEngine {
         _clock = clock,
         _analytics = analytics,
         _flags = flags,
+        _timedRuns = timedRuns,
+        _timedPolicy = TimedRunPolicy(rules),
+        _rules = rules,
         _unlock = unlockPolicy,
         _streak = streakPolicy,
         _achievements = achievements,
@@ -64,6 +75,9 @@ class LevelEngine {
   final Clock _clock;
   final AnalyticsService _analytics;
   final FeatureFlagService _flags;
+  final TimedRunService _timedRuns;
+  final TimedRunPolicy _timedPolicy;
+  final GameRules _rules;
   final UnlockPolicy _unlock;
   final StreakPolicy _streak;
   final AchievementEvaluator _achievements;
@@ -101,9 +115,20 @@ class LevelEngine {
     }
 
     final progress = await _progress.loadCourseProgress(courseId);
-    final unlockMode = await _unlockMode();
-    if (!_unlock.isUnlocked(course, progress, levelId, mode: unlockMode)) {
-      return const LevelStartDenied(LevelStartDenial.locked);
+    DateTime? deadline;
+    if (mode == LevelMode.timed) {
+      final run = (await _timedRuns.load(courseId)).activeRun;
+      if (run == null ||
+          run.moduleId != level.moduleId ||
+          _timedPolicy.nextLevel(course, run)?.id != levelId) {
+        return const LevelStartDenied(LevelStartDenial.noActiveRun);
+      }
+      deadline = run.deadline;
+    } else {
+      final unlockMode = await _unlockMode();
+      if (!_unlock.isUnlocked(course, progress, levelId, mode: unlockMode)) {
+        return const LevelStartDenied(LevelStartDenial.locked);
+      }
     }
 
     final now = _clock.now();
@@ -124,10 +149,20 @@ class LevelEngine {
       mode == LevelMode.dailyChallenge
           ? AnalyticsEvent.dailyChallengeStarted
           : AnalyticsEvent.levelStarted,
-      {'level_id': levelId, 'type': level.type.id, 'replay': previous.completed},
+      {
+        'level_id': levelId,
+        'type': level.type.id,
+        'replay': previous.completed,
+        'mode': mode.name,
+      },
     );
     return LevelStarted(
-      session: LevelSession(level: level, mode: mode, startedAt: now),
+      session: LevelSession(
+        level: level,
+        mode: mode,
+        startedAt: now,
+        deadline: deadline,
+      ),
       lives: lives,
     );
   }
@@ -143,6 +178,15 @@ class LevelEngine {
       throw const InvalidLevelStateException('Level session already finished');
     }
     final level = session.level;
+    if (session.mode == LevelMode.timed && !await _isRunAlive(session)) {
+      final profile = await _progress.loadProfile();
+      return SubmissionResult(
+        session: session.copyWith(isFailed: true),
+        outcome: ValidationOutcome.incorrect(),
+        lives: _livesSnapshot(profile, _clock.now()),
+        timeUp: true,
+      );
+    }
     final outcome = _validators.validate(level, answer);
     final submitted = session.copyWith(submissions: session.submissions + 1);
     _analytics.track(AnalyticsEvent.answerSubmitted, {
@@ -177,7 +221,9 @@ class LevelEngine {
       );
     }
 
-    final completion = await _complete(submitted, profile, now);
+    final completion = session.mode == LevelMode.timed
+        ? await _completeTimed(submitted, profile, now)
+        : await _complete(submitted, profile, now);
     return SubmissionResult(
       session: submitted.copyWith(isCompleted: true),
       outcome: outcome,
@@ -224,28 +270,18 @@ class LevelEngine {
       ),
     );
 
-    final streakUpdate = _streak.registerActivity(profile.streak, today);
-    final levelBefore = _accountLevels.levelFor(profile.totalXp).level;
-    profile = profile.copyWith(
-      totalXp: profile.totalXp + reward.xp,
-      coins: profile.coins + reward.coins,
-      streak: streakUpdate.state,
-      lastActivityAt: now,
-      lastDailyChallengeDay: isDaily ? today : null,
+    final applied = _applyReward(
+      profile,
+      reward,
+      now,
+      course,
+      progress,
+      isDaily: isDaily,
     );
-
-    final newAchievements = _achievements.newlyUnlocked(
-      _statsFor(profile, course, progress),
-      profile.unlockedAchievements,
-    );
-    if (newAchievements.isNotEmpty) {
-      profile = profile.copyWith(
-        unlockedAchievements: {
-          ...profile.unlockedAchievements,
-          ...newAchievements.map((achievement) => achievement.id),
-        },
-      );
-    }
+    profile = applied.profile;
+    final streakUpdate = applied.streak;
+    final levelBefore = applied.levelBefore;
+    final newAchievements = applied.achievements;
 
     // Course progress first: a crash between writes can only lose the
     // reward, never the completion itself.
@@ -279,6 +315,170 @@ class LevelEngine {
       newlyUnlockedLevelId: newlyUnlocked,
     );
     return (result: result, profile: profile);
+  }
+
+  /// Whether the run this session belongs to is still running.
+  /// Used by the UI when the countdown reaches zero as well.
+  Future<bool> isRunAlive(LevelSession session) => _isRunAlive(session);
+
+  Future<bool> _isRunAlive(LevelSession session) async {
+    final run = (await _timedRuns.load(session.level.courseId)).activeRun;
+    return run != null &&
+        run.moduleId == session.level.moduleId &&
+        run.deadline == session.deadline &&
+        !run.isExpired(_clock.now());
+  }
+
+  Future<({LevelResult result, UserProfile profile})> _completeTimed(
+    LevelSession session,
+    UserProfile profile,
+    DateTime now,
+  ) async {
+    final level = session.level;
+    final course = await _content.loadCourse(level.courseId);
+    final module = course.moduleById(level.moduleId)!;
+    var timed = await _timedRuns.load(level.courseId);
+    final active = timed.activeRun;
+    if (active == null) {
+      throw const InvalidLevelStateException('Timed run ended mid-answer');
+    }
+    final run = active.withCompleted(level.id);
+    final progress = await _progress.loadCourseProgress(level.courseId);
+
+    // Boosted XP only for the first-ever timed completion of a level: an
+    // expired run never makes a level "new" again (CodeQuest XP-farm fix).
+    final isFirstEver = !timed.everCompletedLevelIds.contains(level.id);
+    final stars = _stars.starsFor(session.mistakes);
+    final levelXp = isFirstEver
+        ? _rewards.xpFor(
+              level: level,
+              mistakes: session.mistakes,
+              isFirstCompletion: true,
+            ) *
+            _rules.timedXpMultiplier
+        : _rewards.xpFor(
+            level: level,
+            mistakes: session.mistakes,
+            isFirstCompletion: false,
+          );
+
+    final cleared = _timedPolicy.isCleared(course, run);
+    final isFirstClear = cleared && !timed.hasCleared(module.id);
+    var speedBonus = 0;
+    var coins = 0;
+    Duration? clearTime;
+    var bestTimes = timed.bestTimes;
+    if (cleared) {
+      clearTime = now.difference(run.startedAt);
+      speedBonus = _timedPolicy.speedBonus(
+        remaining: run.remaining(now),
+        total: run.totalDuration,
+        isFirstClear: isFirstClear,
+      );
+      if (isFirstClear) coins = _rules.timedFirstClearCoins;
+      final best = bestTimes[module.id];
+      if (best == null || clearTime < best) {
+        bestTimes = {...bestTimes, module.id: clearTime};
+      }
+    }
+    final reward = Reward(xp: levelXp + speedBonus, coins: coins);
+
+    timed = TimedProgress(
+      courseId: timed.courseId,
+      activeRun: cleared ? null : run,
+      everCompletedLevelIds: {...timed.everCompletedLevelIds, level.id},
+      bestTimes: bestTimes,
+    );
+    final applied = _applyReward(profile, reward, now, course, progress);
+    await _progress.saveTimedProgress(timed);
+    await _progress.saveProfile(applied.profile);
+
+    _track(level.id, stars, reward, isFirstEver, applied.streak, false);
+    if (cleared) {
+      _analytics.track(AnalyticsEvent.timedRunCompleted, {
+        'module_id': module.id,
+        'seconds': clearTime!.inSeconds,
+        'time_left_percent':
+            _timedPolicy.percentLeft(run.remaining(now), run.totalDuration),
+        'speed_bonus': speedBonus,
+        'first_clear': isFirstClear,
+      });
+    }
+
+    final result = LevelResult(
+      levelId: level.id,
+      stars: stars,
+      previousBestStars: 0,
+      xpEarned: reward.xp,
+      coinsEarned: reward.coins,
+      isFirstCompletion: isFirstEver,
+      streak: applied.profile.streak.current,
+      streakExtended: applied.streak.extended,
+      accountLevelBefore: applied.levelBefore,
+      accountLevelAfter:
+          _accountLevels.levelFor(applied.profile.totalXp).level,
+      completedInCourse: _completedPlayable(course, progress),
+      playableInCourse: course.playableLevels.length,
+      newAchievements: applied.achievements,
+      dailyChallengeCompleted: false,
+      nextLevelId: _timedPolicy.nextLevel(course, run)?.id,
+      timedRun: TimedRunProgress(
+        moduleId: module.id,
+        completedInRun: run.completedLevelIds.length,
+        levelsInRun: module.playableLevels.length,
+        timeLeft: run.remaining(now),
+        moduleCleared: cleared,
+        isFirstClear: isFirstClear,
+        speedBonus: speedBonus,
+        bestTime: bestTimes[module.id],
+        clearTime: clearTime,
+      ),
+    );
+    return (result: result, profile: applied.profile);
+  }
+
+  /// Applies a reward to the profile: XP, coins, streak, achievements.
+  ({
+    UserProfile profile,
+    StreakUpdate streak,
+    int levelBefore,
+    List<Achievement> achievements,
+  }) _applyReward(
+    UserProfile profile,
+    Reward reward,
+    DateTime now,
+    Course course,
+    CourseProgress progress, {
+    bool isDaily = false,
+  }) {
+    final today = CalendarDay.fromDateTime(now);
+    final streakUpdate = _streak.registerActivity(profile.streak, today);
+    final levelBefore = _accountLevels.levelFor(profile.totalXp).level;
+    var next = profile.copyWith(
+      totalXp: profile.totalXp + reward.xp,
+      coins: profile.coins + reward.coins,
+      streak: streakUpdate.state,
+      lastActivityAt: now,
+      lastDailyChallengeDay: isDaily ? today : null,
+    );
+    final achievements = _achievements.newlyUnlocked(
+      _statsFor(next, course, progress),
+      next.unlockedAchievements,
+    );
+    if (achievements.isNotEmpty) {
+      next = next.copyWith(
+        unlockedAchievements: {
+          ...next.unlockedAchievements,
+          ...achievements.map((achievement) => achievement.id),
+        },
+      );
+    }
+    return (
+      profile: next,
+      streak: streakUpdate,
+      levelBefore: levelBefore,
+      achievements: achievements,
+    );
   }
 
   void _track(

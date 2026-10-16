@@ -7,6 +7,7 @@ class CourseModule {
     required this.description,
     required this.icon,
     required List<LevelDefinition> levels,
+    this.timedRunDuration,
   }) : levels = List.unmodifiable(levels);
 
   final String id;
@@ -16,6 +17,12 @@ class CourseModule {
   /// Emoji or short glyph used on the map header.
   final String icon;
   final List<LevelDefinition> levels;
+
+  /// Time limit for a timed run of this module; null = game default.
+  final Duration? timedRunDuration;
+
+  List<LevelDefinition> get playableLevels =>
+      levels.where((level) => level.isSupported).toList(growable: false);
 }
 
 /// A course: ordered modules, each with ordered levels.
@@ -61,6 +68,13 @@ class Course {
   }
 
   CourseModule? moduleOf(String levelId) => _moduleByLevelId[levelId];
+
+  CourseModule? moduleById(String moduleId) {
+    for (final module in modules) {
+      if (module.id == moduleId) return module;
+    }
+    return null;
+  }
 
   List<LevelDefinition> get playableLevels =>
       levels.where((level) => level.isSupported).toList(growable: false);

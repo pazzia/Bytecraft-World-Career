@@ -13,6 +13,9 @@ import '../../../shared/widgets/app_progress_bar.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/stat_badges.dart';
 import '../../daily_challenge/domain/daily_challenge.dart';
+import '../../learning_map/presentation/learning_map_providers.dart';
+import '../../level/domain/level_session.dart';
+import '../../../services/feature_flags/feature_flag_service.dart';
 import 'home_providers.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -37,6 +40,46 @@ class HomeScreen extends ConsumerWidget {
                 if (vm.dailyChallenge != null) ...[
                   const SizedBox(height: Spacing.lg),
                   _DailyChallengeCard(challenge: vm.dailyChallenge!),
+                ],
+                if (ref
+                    .watch(featureFlagsProvider)
+                    .isEnabled(FeatureFlag.timedRuns)) ...[
+                  const SizedBox(height: Spacing.lg),
+                  AppCard(
+                    borderColor: context.gameColors.streak,
+                    onTap: () {
+                      ref
+                          .read(mapModeProvider.notifier)
+                          .select(MapMode.timed);
+                      context.go(Routes.map);
+                    },
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.timer_outlined,
+                          size: 36,
+                          color: context.gameColors.streak,
+                        ),
+                        const SizedBox(width: Spacing.lg),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'На время',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text('Пройденный модуль на скорость, ×2 опыта'),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded),
+                      ],
+                    ),
+                  ),
                 ],
                 const SectionTitle('Магазин'),
                 Row(
@@ -166,7 +209,7 @@ class _DailyChallengeCard extends StatelessWidget {
                 Routes.level(
                   challenge.level.courseId,
                   challenge.level.id,
-                  daily: true,
+                  mode: LevelMode.dailyChallenge,
                 ),
               ),
       child: Row(
