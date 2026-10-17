@@ -8,64 +8,6 @@ importScripts(base + 'pyodide/pyodide.js');
 
 let pyodide = null;
 
-// Runs user code as the file main.py with fresh globals; prints a
-// traceback without the runner's own frames.
-const RUNNER_PY = `
-import builtins, sys, traceback
-
-_bytecraft_input = builtins.input
-
-def _bytecraft_quiet_input(prompt=""):
-    # Like input(), but the prompt is not printed (practice tests).
-    line = sys.stdin.readline()
-    if not line:
-        raise EOFError("EOF when reading a line")
-    return line[:-1] if line.endswith("\n") else line
-
-def _bytecraft_run(code, quiet_input=False):
-    builtins.input = _bytecraft_quiet_input if quiet_input else _bytecraft_input
-    g = {"__name__": "__main__", "__builtins__": builtins}
-    status = "ok"
-    compile_program = getattr(builtins, "_bytecraft_compile", None)
-    reset = getattr(builtins, "_bytecraft_threads_reset", None)
-    finish = getattr(builtins, "_bytecraft_threads_finish", None)
-    try:
-        if reset:
-            reset()
-        program = compile_program(code) if compile_program else compile(code, "main.py", "exec")
-        exec(program, g)
-        if finish:
-            finish()  # like CPython at exit: wait for non-daemon threads
-    except SystemExit as error:
-        if error.code not in (None, 0):
-            print(error.code, file=sys.stderr)
-            status = "error"
-    except KeyboardInterrupt:
-        status = "interrupted"
-    except BaseException as error:
-        status = "error"
-        # Only the program's own frames: the sandbox machinery (threads,
-        # asyncio) would just be noise for a learner.
-        frames = [f for f in traceback.extract_tb(error.__traceback__) if f.filename == "main.py"]
-        lines = traceback.format_list(frames)
-        if lines:
-            lines.insert(0, "Traceback (most recent call last):\n")
-        lines += traceback.format_exception_only(type(error), error)
-        sys.stderr.write("".join(lines))
-        if finish and not isinstance(error, (KeyboardInterrupt,)) and type(error).__name__ != "DeadlockError":
-            # Like CPython: other threads still run to the end.
-            try:
-                finish()
-            except BaseException:
-                pass
-    finally:
-        try:
-            sys.stdout.flush()
-            sys.stderr.flush()
-        except BaseException:
-            pass
-    return status
-`;
 
 function makeStream() {
   const decoder = new TextDecoder();
@@ -88,7 +30,9 @@ async function init(interruptBuffer) {
   try {
     pyodide = await loadPyodide({ indexURL: base + 'pyodide/' });
     if (interruptBuffer) pyodide.setInterruptBuffer(interruptBuffer);
-    pyodide.runPython(RUNNER_PY);
+    // The runner itself (runner.py) is required; it is a separate file so
+    // that CI runs every course program through exactly the same code.
+    pyodide.runPython(await (await fetch(base + 'python_runner/runner.py')).text());
     // A blocking event loop, so that asyncio.run() works (see the file).
     // Blocking asyncio loop and emulated threads (see the files). Without
     // them everything except asyncio.run() / threads still works.

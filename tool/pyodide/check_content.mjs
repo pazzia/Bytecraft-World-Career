@@ -11,28 +11,23 @@ import { loadPyodide } from 'pyodide';
 const root = process.argv[2] || 'assets/content/python';
 const read = (path) => JSON.parse(readFileSync(join(root, path), 'utf8'));
 
-const RUNNER = `
+// Every program goes through the app's own runner (runner.py), so a bug
+// there fails CI instead of reaching the phone.
+const RUNNER = String.raw`
 import contextlib, io, os, sys, tempfile
 
-def _bytecraft_check(code, stdin):
-    out = io.StringIO()
+def _bytecraft_check(code, stdin, quiet):
+    out, err = io.StringIO(), io.StringIO()
     old_cwd = os.getcwd()
     os.chdir(tempfile.mkdtemp())
     sys.stdin = io.StringIO(stdin)
-    error = None
     try:
-        with contextlib.redirect_stdout(out):
-            _bytecraft_threads_reset()
-            exec(_bytecraft_compile(code), {"__name__": "__main__"})
-            _bytecraft_threads_finish()
-    except SystemExit as e:
-        if e.code not in (None, 0):
-            error = f"SystemExit: {e.code}"
-    except BaseException as e:
-        error = f"{type(e).__name__}: {e}"
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            status = _bytecraft_run(code, quiet)
     finally:
         sys.stdin = sys.__stdin__
         os.chdir(old_cwd)
+    error = None if status == "ok" else f"{status}: {err.getvalue()[-400:]}"
     return [out.getvalue(), error]
 `;
 
@@ -53,7 +48,7 @@ for (const topic of read('topics.json').topics) {
 const practice = read('practice.json');
 for (const task of practice.tasks) {
   task.tests.forEach((test, i) => {
-    items.push({ id: `${task.id}#${i + 1}`, code: task.solution, stdin: test.stdin, expected: test.expected });
+    items.push({ id: `${task.id}#${i + 1}`, code: task.solution, stdin: test.stdin, expected: test.expected, quiet: true });
   });
   // The requirement checker (run by the app before the tests) must accept
   // the reference solution in Pyodide too.
@@ -66,9 +61,9 @@ for (const task of practice.tasks) {
 }
 
 const pyodide = await loadPyodide();
+// The same files, in the same order, as assets/python_runner/worker.js.
+pyodide.runPython(readFileSync(new URL('../../assets/python_runner/runner.py', import.meta.url), 'utf8'));
 pyodide.runPython(RUNNER);
-// The same blocking asyncio loop and emulated threads as in the app
-// (assets/python_runner/worker.js).
 for (const name of ['sandbox_asyncio.py', 'sandbox_threads.py']) {
   const source = readFileSync(new URL(`../../assets/python_runner/${name}`, import.meta.url), 'utf8');
   pyodide.runPython(source, { globals: pyodide.toPy({ __name__: name.replace('.py', '') }) });
@@ -78,7 +73,7 @@ console.log(`Pyodide ${pyodide.version}, Python ${pyodide.runPython('import sys;
 
 const failures = [];
 for (const item of items) {
-  const result = check(item.code, item.stdin);
+  const result = check(item.code, item.stdin, !!item.quiet);
   const [out, error] = result.toJs();
   result.destroy();
   if (error || out !== item.expected) {

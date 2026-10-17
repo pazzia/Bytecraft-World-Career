@@ -145,7 +145,7 @@ MODULES.append(dict(
                     if x not in result:
                         result.append(x)
                 print(" ".join(result))""",
-             tests=["3 1 3 2 1\n", "5\n", "1 1 1 1\n", " ".join(str(i % 30011) for i in range(60000)) + "\n"],
+             tests=["3 1 3 2 1\n", "5\n", "1 1 1 1\n", " ".join(str(i % 60013) for i in range(120000)) + "\n"],
              hint="Множество проверяет «было ли уже» за O(1), список — за O(n).", difficulty=3),
     ],
     levels=[

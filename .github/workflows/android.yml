@@ -103,6 +103,15 @@ jobs:
           set -o pipefail
           node tool/pyodide/check_content.mjs assets/content/python 2>&1 | tee pyodide.txt
 
+      # The sandbox page itself (index.html + runner.js + worker.js +
+      # runner.py) in a real browser engine, as in the phone's WebView.
+      - name: Sandbox in a browser
+        id: sandbox
+        run: |
+          set -o pipefail
+          (cd tool/pyodide && npx playwright install --with-deps chromium > /dev/null 2>&1)
+          node tool/pyodide/browser_check.mjs assets 2>&1 | tee sandbox.txt
+
       - name: Install dependencies
         run: |
           flutter pub get 2>&1 | tee pub.txt
@@ -250,12 +259,13 @@ jobs:
             echo "</details>"
           }
           {
-            echo "### CI: version=${{ steps.apk.outputs.version }}+${{ github.run_number }} · content=${{ steps.content.outcome }} · pyodide=${{ steps.pyodide.outcome }} · analyze=${{ steps.analyze.outcome }} · tests=${{ steps.tests.outcome }} · apk=${{ steps.apk.outcome }} · release-signed=${{ steps.sign.outputs.signed || 'n/a' }} · key=${{ steps.sign.outputs.source || 'n/a' }}"
+            echo "### CI: version=${{ steps.apk.outputs.version }}+${{ github.run_number }} · content=${{ steps.content.outcome }} · pyodide=${{ steps.pyodide.outcome }} · sandbox=${{ steps.sandbox.outcome }} · analyze=${{ steps.analyze.outcome }} · tests=${{ steps.tests.outcome }} · apk=${{ steps.apk.outcome }} · release-signed=${{ steps.sign.outputs.signed || 'n/a' }} · key=${{ steps.sign.outputs.source || 'n/a' }}"
             echo
             section "Flutter version" flutter-version.txt 6
             section "pub get" pub.txt 40
             section "content" content.txt 40
             section "pyodide" pyodide.txt 80
+            section "sandbox in a browser" sandbox.txt 60
             section "flutter analyze" analyze.txt 150
             if grep -q "EXCEPTION CAUGHT BY" test.txt 2>/dev/null; then
               awk '/EXCEPTION CAUGHT BY/{found=1} found{print; n++} n>=70{exit}' test.txt > first-failure.txt
