@@ -1002,6 +1002,214 @@
     "Кэшировать функцию со списком в аргументах: TypeError unhashable type."
    ],
    "module": "recursion"
+  },
+  {
+   "id": "exc_try",
+   "title": "try / except / else / finally",
+   "summary": "try выполняет код, except перехватывает ошибку, else — если ошибки не было, finally — всегда.",
+   "body": "Код, который может упасть, помещают в try. Если внутри возникло исключение, Python ищет первый подходящий except и выполняет его. Остаток try после ошибки не выполняется.\n\nelse выполняется, только если в try не было исключения: туда кладут код, который зависит от успеха, но сам не должен перехватываться.\n\nfinally выполняется всегда: и после успеха, и после ошибки, и даже если в try был return. Там закрывают ресурсы.\n\nexcept ValueError as e — в e попадает объект исключения; str(e) — сообщение.",
+   "examples": [
+    {
+     "code": "def check(x):\n    try:\n        r = 10 / x\n    except ZeroDivisionError:\n        print(\"ошибка\")\n    else:\n        print(\"ok\", r)\n    finally:\n        print(\"конец\")\n\ncheck(2)\ncheck(0)",
+     "output": "ok 5.0\nконец\nошибка\nконец\n"
+    },
+    {
+     "code": "try:\n    int(\"12a\")\nexcept ValueError as e:\n    print(\"Сообщение:\", e)",
+     "output": "Сообщение: invalid literal for int() with base 10: '12a'\n"
+    }
+   ],
+   "pitfalls": [
+    "Голый except: перехватывает всё подряд, включая опечатки в коде, и прячет ошибки.",
+    "Слишком большой блок try: непонятно, какая строка на самом деле упала."
+   ],
+   "module": "exceptions"
+  },
+  {
+   "id": "exc_types",
+   "title": "Иерархия исключений",
+   "summary": "Исключения — классы. except ловит указанный класс и все его подклассы, поэтому важен порядок блоков except.",
+   "body": "Частые: ValueError (неподходящее значение: int(\"abc\")), TypeError (неподходящий тип: \"5\" + 5), KeyError и IndexError (нет ключа или индекса), ZeroDivisionError, NameError, AttributeError, FileNotFoundError.\n\nKeyError и IndexError — подклассы LookupError, почти все — подклассы Exception. except Exception ловит практически всё, поэтому его ставят последним: Python проверяет блоки сверху вниз и выполняет первый подходящий.\n\nПодход EAFP («проще попросить прощения, чем разрешения»): попробовать действие и обработать исключение, вместо множества предварительных проверок.",
+   "examples": [
+    {
+     "code": "for code in [\"[1][5]\", \"{}['k']\", \"1/0\"]:\n    try:\n        eval(code)\n    except LookupError as e:\n        print(\"поиск:\", type(e).__name__)\n    except Exception as e:\n        print(\"другое:\", type(e).__name__)",
+     "output": "поиск: IndexError\nпоиск: KeyError\nдругое: ZeroDivisionError\n",
+     "note": "LookupError ловит и IndexError, и KeyError."
+    }
+   ],
+   "pitfalls": [
+    "except Exception перед except ValueError: второй блок никогда не сработает."
+   ],
+   "module": "exceptions"
+  },
+  {
+   "id": "exc_raise",
+   "title": "raise и свои исключения",
+   "summary": "raise создаёт исключение. Своё исключение — класс-наследник Exception. raise ... from e сохраняет причину.",
+   "body": "raise ValueError(\"сообщение\") прерывает функцию и передаёт ошибку вызывающему коду. Так функция сообщает, что не может выполнить работу с такими данными.\n\nСвоё исключение объявляют как class InsufficientFunds(Exception): pass — его можно ловить отдельно от остальных. Подробно о классах — в модуле про ООП.\n\nraise NewError(...) from e связывает новую ошибку с исходной (e становится __cause__) — в трассировке видны обе. Голый raise внутри except пробрасывает текущее исключение дальше.",
+   "examples": [
+    {
+     "code": "class InsufficientFunds(Exception):\n    pass\n\ndef withdraw(balance, amount):\n    if amount > balance:\n        raise InsufficientFunds(f\"не хватает {amount - balance}\")\n    return balance - amount\n\ntry:\n    withdraw(50, 80)\nexcept InsufficientFunds as e:\n    print(\"Ошибка:\", e)",
+     "output": "Ошибка: не хватает 30\n"
+    }
+   ],
+   "pitfalls": [
+    "raise без аргумента вне except: RuntimeError No active exception to reraise.",
+    "Возвращать «магические» значения вроде -1 вместо исключения: вызывающий код их легко пропустит."
+   ],
+   "module": "exceptions"
+  },
+  {
+   "id": "files_open",
+   "title": "open и with",
+   "summary": "open(путь, режим, encoding=...) открывает файл; with закрывает его автоматически.",
+   "body": "Режимы: \"r\" — чтение (по умолчанию), \"w\" — запись с очисткой файла, \"a\" — дописывание в конец, \"x\" — создать новый (ошибка, если файл уже есть). Добавка \"b\" — двоичный режим.\n\nwith open(...) as f: закрывает файл при выходе из блока, даже если внутри случилась ошибка. Закрытый файл больше нельзя читать или писать: ValueError.\n\nДля текста указывайте кодировку: encoding=\"utf-8\". Иначе используется кодировка системы, и русский текст может прочитаться неверно.",
+   "examples": [
+    {
+     "code": "with open(\"notes.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"первая\\n\")\nwith open(\"notes.txt\", \"a\", encoding=\"utf-8\") as f:\n    f.write(\"вторая\\n\")\nwith open(\"notes.txt\", encoding=\"utf-8\") as f:\n    print(f.read(), end=\"\")",
+     "output": "первая\nвторая\n",
+     "note": "\"a\" дописывает, не стирая."
+    }
+   ],
+   "pitfalls": [
+    "Открыть существующий файл в режиме \"w\": его содержимое сразу стирается.",
+    "write не добавляет перевод строки сам: нужен \"\\n\"."
+   ],
+   "module": "files"
+  },
+  {
+   "id": "files_read",
+   "title": "Чтение построчно",
+   "summary": "read() — весь текст, readline() — одна строка, readlines() — список строк, for line in f — строки по одной.",
+   "body": "Каждая прочитанная строка заканчивается символом \\n (кроме, возможно, последней). Для обработки его обычно убирают: line.rstrip(\"\\n\") или line.strip().\n\nfor line in f читает файл лениво, по строке за раз — так обрабатывают даже очень большие файлы.\n\nint(\" 42\\n\") работает: int игнорирует пробелы и переводы строк по краям.",
+   "examples": [
+    {
+     "code": "with open(\"data.txt\", \"w\") as f:\n    f.write(\"3\\n5\\n8\\n\")\nwith open(\"data.txt\") as f:\n    lines = f.readlines()\nprint(lines)\nprint([int(line) for line in lines])",
+     "output": "['3\\n', '5\\n', '8\\n']\n[3, 5, 8]\n"
+    }
+   ],
+   "pitfalls": [
+    "Сравнивать прочитанную строку с текстом без strip: \"да\\n\" != \"да\"."
+   ],
+   "module": "files"
+  },
+  {
+   "id": "files_pathlib",
+   "title": "pathlib.Path",
+   "summary": "Path — объект пути: части пути, проверка существования, чтение и запись в одну строку.",
+   "body": "Path(\"reports\") / \"2024\" / \"summary.csv\" склеивает путь оператором /. У пути есть name (имя файла), stem (без расширения), suffix (расширение), parent (папка).\n\npath.write_text(text, encoding=\"utf-8\") и path.read_text(encoding=\"utf-8\") открывают и закрывают файл сами. path.exists() — существует ли путь, path.mkdir(parents=True, exist_ok=True) — создать папки, Path(\".\").glob(\"*.txt\") — найти файлы по шаблону.",
+   "examples": [
+    {
+     "code": "from pathlib import Path\n\np = Path(\"reports\") / \"2024\" / \"summary.final.csv\"\nprint(p.name, p.stem, p.suffix, p.parent, sep=\" | \")",
+     "output": "summary.final.csv | summary.final | .csv | reports/2024\n"
+    },
+    {
+     "code": "from pathlib import Path\n\np = Path(\"hello.txt\")\np.write_text(\"Привет!\", encoding=\"utf-8\")\nprint(p.exists(), p.read_text(encoding=\"utf-8\"))",
+     "output": "True Привет!\n"
+    }
+   ],
+   "pitfalls": [
+    "Склеивать пути строками через \"+\" и \"/\": Path делает это правильно на любой системе."
+   ],
+   "module": "files"
+  },
+  {
+   "id": "std_import",
+   "title": "Импорт модулей",
+   "summary": "import модуль — доступ через модуль.имя; from модуль import имя — имя напрямую; as — псевдоним.",
+   "body": "import math → math.sqrt(16). from math import sqrt → sqrt(16). import numpy as np — короткий псевдоним.\n\nfrom модуль import * захламляет пространство имён и прячет, откуда взялось имя, — в рабочем коде так не делают.\n\nМодуль выполняется один раз при первом импорте. Свой файл можно импортировать так же, как стандартный модуль, поэтому не называйте файлы как стандартные модули (random.py, json.py): import подхватит ваш файл.",
+   "examples": [
+    {
+     "code": "import math\nfrom statistics import mean as average\n\nprint(math.sqrt(16), math.pi > 3, average([1, 2, 3, 4]))",
+     "output": "4.0 True 2.5\n"
+    }
+   ],
+   "pitfalls": [
+    "Файл random.py в папке проекта перекрывает стандартный модуль random."
+   ],
+   "module": "stdlib"
+  },
+  {
+   "id": "std_collections",
+   "title": "collections",
+   "summary": "Counter — подсчёт, defaultdict — значение по умолчанию, deque — быстрая очередь с двух концов, namedtuple — кортеж с именами полей.",
+   "body": "Counter(\"abracadabra\") считает элементы; most_common(n) — n самых частых (при равенстве — в порядке первого появления).\n\ndefaultdict(list) создаёт пустой список для нового ключа при первом обращении: groups[key].append(x) без проверок.\n\ndeque — двусторонняя очередь: append/appendleft и pop/popleft за O(1). deque(maxlen=3) хранит только последние 3 элемента.\n\nnamedtuple(\"Point\", \"x y\") создаёт неизменяемый тип с полями p.x и p.y и понятным выводом.",
+   "examples": [
+    {
+     "code": "from collections import Counter, defaultdict, deque\n\nprint(Counter(\"abracadabra\").most_common(2))\ngroups = defaultdict(list)\nfor word in [\"apple\", \"avocado\", \"banana\"]:\n    groups[word[0]].append(word)\nprint(dict(groups))\nlast = deque(maxlen=2)\nfor x in [1, 2, 3]:\n    last.append(x)\nprint(list(last))",
+     "output": "[('a', 5), ('b', 2)]\n{'a': ['apple', 'avocado'], 'b': ['banana']}\n[2, 3]\n"
+    }
+   ],
+   "pitfalls": [
+    "list.pop(0) в цикле — медленно для больших списков: для очереди есть deque.popleft()."
+   ],
+   "module": "stdlib"
+  },
+  {
+   "id": "std_itertools",
+   "title": "itertools",
+   "summary": "Инструменты для перебора: chain, product, permutations, combinations, accumulate, groupby, islice.",
+   "body": "chain(a, b) — последовательно a, затем b. product(\"ab\", repeat=2) — все пары с повторениями (декартово произведение). permutations — перестановки, combinations — сочетания без учёта порядка. accumulate — накопленные суммы.\n\ngroupby группирует только соседние одинаковые элементы — поэтому данные сначала сортируют по тому же ключу.\n\nВсе они ленивые: возвращают итераторы, для печати нужен list().",
+   "examples": [
+    {
+     "code": "from itertools import combinations, groupby\n\nprint(list(combinations(\"abc\", 2)))\nwords = sorted([\"bob\", \"apple\", \"banana\", \"avocado\"])\nfor letter, group in groupby(words, key=lambda w: w[0]):\n    print(letter, list(group))",
+     "output": "[('a', 'b'), ('a', 'c'), ('b', 'c')]\na ['apple', 'avocado']\nb ['banana', 'bob']\n"
+    }
+   ],
+   "pitfalls": [
+    "groupby без сортировки разбивает одну группу на несколько."
+   ],
+   "module": "stdlib"
+  },
+  {
+   "id": "data_json",
+   "title": "JSON",
+   "summary": "json.dumps превращает данные Python в строку JSON, json.loads — обратно. dump/load работают с файлами.",
+   "body": "Соответствие: dict ↔ объект {}, list ↔ массив [], str ↔ строка в двойных кавычках, True/False ↔ true/false, None ↔ null.\n\nВ JSON строки только в двойных кавычках: '{\"a\": 1}' — правильно, \"{'a': 1}\" — json.JSONDecodeError.\n\nПо умолчанию dumps экранирует не-ASCII символы (\\u0410…). ensure_ascii=False оставляет русский текст как есть, indent=2 делает вывод многострочным и читаемым.",
+   "examples": [
+    {
+     "code": "import json\n\ndata = {\"name\": \"Ада\", \"langs\": [\"Python\"], \"admin\": False, \"boss\": None}\ntext = json.dumps(data, ensure_ascii=False)\nprint(text)\nprint(json.loads(text)[\"langs\"][0])",
+     "output": "{\"name\": \"Ада\", \"langs\": [\"Python\"], \"admin\": false, \"boss\": null}\nPython\n"
+    }
+   ],
+   "pitfalls": [
+    "Путать dumps/loads (строки) и dump/load (файлы).",
+    "Одинарные кавычки внутри JSON-строки: это не JSON."
+   ],
+   "module": "textdata"
+  },
+  {
+   "id": "data_re",
+   "title": "Регулярные выражения",
+   "summary": "Модуль re ищет текст по шаблону: search — первое совпадение, findall — все, sub — замена, fullmatch — вся строка целиком.",
+   "body": "Основы шаблонов: \\d — цифра, \\w — буква, цифра или _, \\s — пробельный символ, . — любой символ кроме перевода строки, + — один или больше, * — ноль или больше, ? — ноль или один, {3} — ровно три, [a-z] — символ из набора, ^ и $ — начало и конец строки.\n\nСкобки ( ) создают группу: m.group(1) — её текст. findall с группами возвращает только группы.\n\n+ и * жадные: захватывают как можно больше. +? и *? — ленивые, захватывают как можно меньше.\n\nШаблоны пишут в сырых строках r\"...\" — тогда \\d не нужно экранировать ещё раз.",
+   "examples": [
+    {
+     "code": "import re\n\ntext = \"Order 15: 3 apples, 12 pears\"\nprint(re.findall(r\"\\d+\", text))\nprint(re.sub(r\"\\d+\", \"#\", text))\nm = re.search(r\"(\\w+)@(\\w+)\\.com\", \"mail: ada@lovelace.com\")\nprint(m.group(1), m.group(2))",
+     "output": "['15', '3', '12']\nOrder #: # apples, # pears\nada lovelace\n"
+    }
+   ],
+   "pitfalls": [
+    "re.match проверяет только начало строки, re.search ищет везде.",
+    "Жадный .+ между тегами захватывает лишнее: <.+> на \"<a><b>\" найдёт всю строку."
+   ],
+   "module": "textdata"
+  },
+  {
+   "id": "data_datetime",
+   "title": "Даты и время",
+   "summary": "datetime.date и datetime.datetime хранят даты, timedelta — промежутки. Вычитание дат даёт timedelta.",
+   "body": "date(2024, 2, 28) + timedelta(days=2) учитывает длину месяцев и високосные годы: получится 2024-03-01.\n\nstrftime форматирует: d.strftime(\"%d.%m.%Y\") → «01.03.2024». datetime.strptime(\"01.03.2024\", \"%d.%m.%Y\") разбирает строку в дату.\n\n(date2 - date1).days — количество дней между датами.",
+   "examples": [
+    {
+     "code": "from datetime import date, timedelta\n\nd = date(2024, 2, 28) + timedelta(days=2)\nprint(d, d.strftime(\"%d.%m.%Y\"))\nprint((date(2025, 1, 1) - date(2024, 1, 1)).days)",
+     "output": "2024-03-01 01.03.2024\n366\n",
+     "note": "2024 — високосный год: 366 дней."
+    }
+   ],
+   "pitfalls": [
+    "Сравнивать даты как строки в формате «дд.мм.гггг»: «02.01.2024» > «01.12.2024» по тексту, хотя раньше по времени."
+   ],
+   "module": "textdata"
   }
  ]
 }

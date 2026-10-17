@@ -11,6 +11,17 @@ import 'package:flutter_test/flutter_test.dart';
 /// End-to-end smoke test on a phone-sized screen with the real bundled
 /// course: onboarding → home → first level → rewards → map.
 /// Any layout overflow fails the test.
+/// Prints visible texts: CI only shows test output, so this is how a
+/// failing screen can be inspected.
+void dumpTexts(WidgetTester tester, String screen) {
+  final texts = tester
+      .widgetList<Text>(find.byType(Text))
+      .map((text) => text.data ?? text.textSpan?.toPlainText() ?? '')
+      .where((text) => text.isNotEmpty)
+      .join(' | ');
+  debugPrint('SCREEN[$screen]: $texts');
+}
+
 void main() {
   testWidgets('a new player completes the first level', (tester) async {
     tester.view.physicalSize = const Size(390, 844);
@@ -54,6 +65,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Home: the next level on the board.
+    dumpTexts(tester, 'home');
     expect(find.text('Переменные'), findsWidgets);
     expect(find.text('Первая переменная'), findsOneWidget);
     await tester.tap(find.text('Продолжить'));

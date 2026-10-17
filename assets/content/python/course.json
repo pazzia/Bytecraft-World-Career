@@ -140,6 +140,38 @@
    "icon": "🪆",
    "file": "modules/recursion.json",
    "timedRunSeconds": 690
+  },
+  {
+   "id": "exceptions",
+   "title": "Исключения",
+   "description": "try, except, raise",
+   "icon": "🛟",
+   "file": "modules/exceptions.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "files",
+   "title": "Файлы",
+   "description": "open, with, pathlib",
+   "icon": "📄",
+   "file": "modules/files.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "stdlib",
+   "title": "Стандартная библиотека",
+   "description": "import, collections, itertools",
+   "icon": "🧰",
+   "file": "modules/stdlib.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "textdata",
+   "title": "Текст и данные",
+   "description": "json, регулярные выражения, даты",
+   "icon": "🗂️",
+   "file": "modules/textdata.json",
+   "timedRunSeconds": 690
   }
  ]
 }

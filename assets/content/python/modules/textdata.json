@@ -1,0 +1,274 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_data_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Python → JSON",
+   "prompt": "Что выведет код?",
+   "topic": "data_json",
+   "difficulty": 1,
+   "hint": "В JSON строки — в двойных кавычках, True — true, None — null.",
+   "explanation": "dumps переводит в формат JSON: двойные кавычки, true вместо True, null вместо None.",
+   "code": "import json\nprint(json.dumps({\"name\": \"Ada\", \"ok\": True, \"tags\": None}))",
+   "payload": {
+    "options": [
+     "{'name': 'Ada', 'ok': True, 'tags': None}",
+     "{\"name\": \"Ada\", \"ok\": True, \"tags\": None}",
+     "{\"name\": \"Ada\", \"ok\": true, \"tags\": null}",
+     "{name: Ada, ok: true, tags: null}"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Так печатается словарь Python, а dumps даёт строку JSON.",
+     "В JSON логические значения и None пишутся по-другому: true, null.",
+     "",
+     "Ключи и строки в JSON всегда в двойных кавычках."
+    ]
+   },
+   "solution": {
+    "code": "import json\nprint(json.dumps({\"name\": \"Ada\", \"ok\": True, \"tags\": None}))",
+    "output": "{\"name\": \"Ada\", \"ok\": true, \"tags\": null}\n"
+   }
+  },
+  {
+   "id": "py_data_002",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Прочитать JSON",
+   "prompt": "Превратите строку JSON в словарь",
+   "topic": "data_json",
+   "difficulty": 1,
+   "hint": "s на конце — от слова string.",
+   "explanation": "loads разбирает строку. load читает из файла, dumps и dump, наоборот, создают JSON.",
+   "payload": {
+    "template": "import json\ndata = json.{{0}}('{\"a\": 1}')\nprint(data[\"a\"])",
+    "options": [
+     "loads",
+     "load",
+     "dumps",
+     "dump"
+    ],
+    "answers": [
+     "loads"
+    ],
+    "variantResults": {
+     "load": "AttributeError: 'str' object has no attribute 'read'",
+     "dumps": "TypeError: string indices must be integers, not 'str'",
+     "dump": "TypeError: dump() missing 1 required positional argument: 'fp'"
+    }
+   },
+   "solution": {
+    "code": "import json\ndata = json.loads('{\"a\": 1}')\nprint(data[\"a\"])",
+    "output": "1\n"
+   }
+  },
+  {
+   "id": "py_data_003",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Регулярные выражения",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "data_re",
+   "difficulty": 2,
+   "hint": "search — первое совпадение, match — только в начале строки.",
+   "explanation": "findall находит все числа, search — первое, sub заменяет каждое число, слов из латинских букв три, а строка начинается с буквы, поэтому match с цифрой не совпадает.",
+   "code": "import re\ntext = 'Order 15: 3 apples, 12 pears'",
+   "payload": {
+    "pairs": [
+     {
+      "left": "re.findall(r'\\d+', text)",
+      "right": "['15', '3', '12']"
+     },
+     {
+      "left": "re.search(r'\\d+', text).group()",
+      "right": "15"
+     },
+     {
+      "left": "re.sub(r'\\d+', '#', text)",
+      "right": "Order #: # apples, # pears"
+     },
+     {
+      "left": "len(re.findall(r'[A-Za-z]+', text))",
+      "right": "3"
+     },
+     {
+      "left": "bool(re.match(r'\\d', text))",
+      "right": "False"
+     }
+    ]
+   },
+   "solution": {
+    "code": "import re\ntext = 'Order 15: 3 apples, 12 pears'\nprint(re.findall(r'\\d+', text))\nprint(re.search(r'\\d+', text).group())\nprint(re.sub(r'\\d+', '#', text))\nprint(len(re.findall(r'[A-Za-z]+', text)))\nprint(bool(re.match(r'\\d', text)))",
+    "output": "['15', '3', '12']\n15\nOrder #: # apples, # pears\n3\nFalse\n"
+   }
+  },
+  {
+   "id": "py_data_004",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Группы",
+   "prompt": "Напишите, что выведет код",
+   "topic": "data_re",
+   "difficulty": 2,
+   "hint": "Каждая пара скобок — отдельная группа, нумерация с 1.",
+   "explanation": "Первая группа захватывает имя до @, вторая — домен до .com.",
+   "code": "import re\nm = re.search(r\"(\\w+)@(\\w+)\\.com\", \"mail: ada@lovelace.com\")\nprint(m.group(1))\nprint(m.group(2))",
+   "payload": {
+    "expectedOutput": "ada\nlovelace"
+   },
+   "solution": {
+    "code": "import re\nm = re.search(r\"(\\w+)@(\\w+)\\.com\", \"mail: ada@lovelace.com\")\nprint(m.group(1))\nprint(m.group(2))",
+    "output": "ada\nlovelace\n"
+   }
+  },
+  {
+   "id": "py_data_005",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Високосный февраль",
+   "prompt": "Что выведет код?",
+   "topic": "data_datetime",
+   "difficulty": 1,
+   "hint": "2024 — високосный год.",
+   "explanation": "После 28 февраля 2024 идёт 29-е (високосный год), затем 1 марта.",
+   "code": "from datetime import date, timedelta\nd = date(2024, 2, 28) + timedelta(days=2)\nprint(d)",
+   "payload": {
+    "options": [
+     "2024-02-30",
+     "2024-03-02",
+     "2024-02-29",
+     "2024-03-01"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "30 февраля не бывает: date учитывает длину месяца.",
+     "В 2024 году в феврале 29 дней.",
+     "Это +1 день, а прибавили 2.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "from datetime import date, timedelta\nd = date(2024, 2, 28) + timedelta(days=2)\nprint(d)",
+    "output": "2024-03-01\n"
+   }
+  },
+  {
+   "id": "py_data_006",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Не JSON",
+   "prompt": "Найдите строку с ошибкой",
+   "topic": "data_json",
+   "difficulty": 2,
+   "hint": "Какие кавычки допустимы в JSON?",
+   "explanation": "В JSON строки и ключи только в двойных кавычках. С одинарными json.loads выбрасывает JSONDecodeError.",
+   "code": "import json\nraw = \"{'name': 'Ada'}\"\ndata = json.loads(raw)\nprint(data[\"name\"])",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "import json\nraw = '{\"name\": \"Ada\"}'\ndata = json.loads(raw)\nprint(data[\"name\"])",
+    "output": "Ada\n"
+   }
+  },
+  {
+   "id": "py_data_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Формат кода",
+   "prompt": "Какие строки полностью соответствуют шаблону r\"\\d{3}-\\d{2}\" (проверка re.fullmatch)?",
+   "topic": "data_re",
+   "difficulty": 2,
+   "hint": "Ровно три цифры, дефис, ровно две цифры.",
+   "explanation": "Подходят только 123-45 и 000-00. fullmatch требует, чтобы шаблону соответствовала вся строка.",
+   "payload": {
+    "options": [
+     "123-45",
+     "12-345",
+     "123-456",
+     "abc-12",
+     "000-00"
+    ],
+    "correctIndexes": [
+     0,
+     4
+    ],
+    "optionFeedback": [
+     "",
+     "До дефиса нужно ровно три цифры.",
+     "После дефиса ровно две цифры: fullmatch не допускает лишнего.",
+     "\\d — только цифры.",
+     ""
+    ]
+   }
+  },
+  {
+   "id": "py_data_008",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Жадность",
+   "prompt": "Что выведет код?",
+   "topic": "data_re",
+   "difficulty": 3,
+   "hint": "+? — ленивый квантификатор.",
+   "explanation": "+? захватывает как можно меньше, поэтому каждое совпадение заканчивается на ближайшей >.",
+   "code": "import re\nprint(re.findall(r\"<.+?>\", \"<a><b>\"))",
+   "payload": {
+    "options": [
+     "['<a><b>']",
+     "['<a>', '<b>']",
+     "['a', 'b']",
+     "[]"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Так сработал бы жадный <.+>. Знак ? делает его ленивым.",
+     "",
+     "Скобки < > входят в шаблон и в результат: групп нет.",
+     "Совпадения есть: <a> и <b>."
+    ]
+   },
+   "solution": {
+    "code": "import re\nprint(re.findall(r\"<.+?>\", \"<a><b>\"))",
+    "output": "['<a>', '<b>']\n"
+   }
+  },
+  {
+   "id": "py_data_009",
+   "type": "code_ordering",
+   "role": "boss",
+   "title": "Босс: отчёт по логу",
+   "prompt": "Соберите программу, которая выведет {\"count\": 2, \"last\": \"timeout\"}",
+   "topic": "data_re",
+   "difficulty": 3,
+   "hint": "Импорт → данные → поиск → отчёт → JSON.",
+   "explanation": "findall с двумя группами возвращает пары (дата, текст ошибки). . не захватывает перевод строки, поэтому каждая ошибка заканчивается в конце своей строки.",
+   "payload": {
+    "lines": [
+     "import json, re",
+     "log = \"2024-05-01 ERROR disk full\\n2024-05-01 INFO ok\\n2024-05-02 ERROR timeout\"",
+     "errors = re.findall(r\"(\\S+) ERROR (.+)\", log)",
+     "report = {\"count\": len(errors), \"last\": errors[-1][1]}",
+     "print(json.dumps(report))"
+    ],
+    "alternativeOrders": [
+     [
+      1,
+      0,
+      2,
+      3,
+      4
+     ]
+    ]
+   },
+   "solution": {
+    "code": "import json, re\nlog = \"2024-05-01 ERROR disk full\\n2024-05-01 INFO ok\\n2024-05-02 ERROR timeout\"\nerrors = re.findall(r\"(\\S+) ERROR (.+)\", log)\nreport = {\"count\": len(errors), \"last\": errors[-1][1]}\nprint(json.dumps(report))",
+    "output": "{\"count\": 2, \"last\": \"timeout\"}\n"
+   }
+  }
+ ]
+}

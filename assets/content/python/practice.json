@@ -612,6 +612,106 @@
    "difficulty": 3,
    "hint": "Перенесите n - 1 дисков на вспомогательный стержень, самый большой — на цель, затем n - 1 дисков сверху.",
    "module": "recursion"
+  },
+  {
+   "id": "t_exc_safe_div",
+   "title": "Безопасное деление",
+   "prompt": "В первой строке — число n, далее n строк вида «a b». Для каждой строки выведите a / b, округлив до 2 знаков, а при ошибке — «деление на ноль» или «не число».",
+   "starter": "n = int(input())\nfor _ in range(n):\n    a, b = input().split()\n    print(round(float(a) / float(b), 2))",
+   "solution": "n = int(input())\nfor _ in range(n):\n    a, b = input().split()\n    try:\n        print(round(float(a) / float(b), 2))\n    except ZeroDivisionError:\n        print(\"деление на ноль\")\n    except ValueError:\n        print(\"не число\")",
+   "tests": [
+    {
+     "stdin": "2\n1 4\n10 3\n",
+     "expected": "0.25\n3.33\n"
+    },
+    {
+     "stdin": "3\n5 0\nx 2\n9 3\n",
+     "expected": "деление на ноль\nне число\n3.0\n"
+    },
+    {
+     "stdin": "1\n7 abc\n",
+     "expected": "не число\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Два блока except: для ZeroDivisionError и для ValueError.",
+   "module": "exceptions"
+  },
+  {
+   "id": "t_files_reverse",
+   "title": "Обратный порядок",
+   "prompt": "Прочитайте число n и n строк. Запишите строки в файл lines.txt (каждую на своей строке), затем прочитайте файл и выведите строки в обратном порядке.",
+   "starter": "n = int(input())\nwith open(\"lines.txt\", \"w\", encoding=\"utf-8\") as f:\n    for _ in range(n):\n        f.write(input() + \"\\n\")\nwith open(\"lines.txt\", encoding=\"utf-8\") as f:\n    print(f.read())",
+   "solution": "n = int(input())\nwith open(\"lines.txt\", \"w\", encoding=\"utf-8\") as f:\n    for _ in range(n):\n        f.write(input() + \"\\n\")\nwith open(\"lines.txt\", encoding=\"utf-8\") as f:\n    lines = [line.rstrip(\"\\n\") for line in f]\nfor line in reversed(lines):\n    print(line)",
+   "tests": [
+    {
+     "stdin": "3\nраз\nдва\nтри\n",
+     "expected": "три\nдва\nраз\n"
+    },
+    {
+     "stdin": "1\nодин\n",
+     "expected": "один\n"
+    },
+    {
+     "stdin": "2\nab\ncd\n",
+     "expected": "cd\nab\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Прочитанные строки содержат \\n в конце — уберите его через rstrip.",
+   "module": "files"
+  },
+  {
+   "id": "t_std_anagrams",
+   "title": "Анаграммы",
+   "prompt": "Прочитайте слова через пробел. Сгруппируйте анаграммы (слова из одних и тех же букв) и выведите каждую группу в отдельной строке: слова группы через пробел в алфавитном порядке, группы — по алфавиту первого слова.",
+   "starter": "words = input().split()\nprint(\" \".join(words))",
+   "solution": "from collections import defaultdict\n\ngroups = defaultdict(list)\nfor word in input().split():\n    groups[\"\".join(sorted(word))].append(word)\nfor group in sorted(sorted(g) for g in groups.values()):\n    print(\" \".join(group))",
+   "tests": [
+    {
+     "stdin": "кот ток окт сон нос\n",
+     "expected": "кот окт ток\nнос сон\n"
+    },
+    {
+     "stdin": "a b a\n",
+     "expected": "a a\nb\n"
+    },
+    {
+     "stdin": "listen silent enlist google\n",
+     "expected": "enlist listen silent\ngoogle\n"
+    }
+   ],
+   "difficulty": 3,
+   "hint": "Ключ группы — буквы слова, отсортированные по алфавиту.",
+   "module": "stdlib"
+  },
+  {
+   "id": "t_data_sum_numbers",
+   "title": "Сумма чисел в тексте",
+   "prompt": "Прочитайте строку текста. Найдите в ней все целые числа (в том числе отрицательные, со знаком минус перед цифрами) и выведите их сумму.",
+   "starter": "text = input()\nprint(0)",
+   "solution": "import re\n\nprint(sum(int(x) for x in re.findall(r\"-?\\d+\", input())))",
+   "tests": [
+    {
+     "stdin": "было 10 яблок, съели 3, осталось 7\n",
+     "expected": "20\n"
+    },
+    {
+     "stdin": "температура -5, завтра -2\n",
+     "expected": "-7\n"
+    },
+    {
+     "stdin": "без чисел\n",
+     "expected": "0\n"
+    },
+    {
+     "stdin": "a1b22c333\n",
+     "expected": "356\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Шаблон r\"-?\\d+\": необязательный минус и одна или больше цифр.",
+   "module": "textdata"
   }
  ]
 }
