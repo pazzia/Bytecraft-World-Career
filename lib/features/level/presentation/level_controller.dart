@@ -8,6 +8,7 @@ import '../domain/answer.dart';
 import '../domain/initial_answer_factory.dart';
 import '../domain/level_result.dart';
 import '../domain/level_session.dart';
+import '../domain/mistake_analysis.dart';
 import '../domain/validation_outcome.dart';
 import '../engine/level_engine.dart';
 import 'level_ui_state.dart';
@@ -94,6 +95,7 @@ class LevelController extends Notifier<LevelUiState> {
       } else {
         phase = LevelPhase.wrongAnswer;
       }
+      final wrong = !result.outcome.isCorrect && !result.timeUp;
       state = current.copyWith(
         phase: phase,
         session: result.session,
@@ -101,7 +103,18 @@ class LevelController extends Notifier<LevelUiState> {
         lives: result.lives,
         result: result.completion,
         isSubmitting: false,
+        mistakeNote: wrong
+            ? const MistakeAnalyzer()
+                .analyze(session.level, answer, result.outcome)
+            : null,
+        clearMistakeNote: !wrong,
       );
+      if (wrong) {
+        await _recordMistake(session);
+      } else if (result.completion != null &&
+          session.mode == LevelMode.review) {
+        await _recordReview(session, remembered: result.session.mistakes == 0);
+      }
     } catch (error) {
       if (!ref.mounted) return;
       state = LevelUiState(phase: LevelPhase.error, errorMessage: '$error');
@@ -121,6 +134,60 @@ class LevelController extends Notifier<LevelUiState> {
     if (!ref.mounted || alive) return;
     ref.read(progressRevisionProvider.notifier).bump();
     state = state.copyWith(phase: LevelPhase.timeUp);
+  }
+
+  Future<void> _recordMistake(LevelSession session) async {
+    final topicId = session.level.topicId;
+    if (topicId == null) return;
+    try {
+      await ref
+          .read(journalServiceProvider)
+          .recordMistake(args.courseId, topicId, session.level.id);
+    } catch (_) {
+      return; // The journal is best-effort; the level goes on.
+    }
+    if (!ref.mounted) return;
+    ref.read(progressRevisionProvider.notifier).bump();
+  }
+
+  Future<void> _recordReview(
+    LevelSession session, {
+    required bool remembered,
+  }) async {
+    final topicId = session.level.topicId;
+    if (topicId == null) return;
+    try {
+      await ref
+          .read(journalServiceProvider)
+          .recordReview(args.courseId, topicId, remembered: remembered);
+    } catch (_) {
+      return;
+    }
+    if (!ref.mounted) return;
+    ref.read(progressRevisionProvider.notifier).bump();
+  }
+
+  /// Saves the level's topic to the journal (or removes it).
+  Future<void> toggleTopicInJournal({required bool save}) async {
+    final level = state.session?.level;
+    final topicId = level?.topicId;
+    if (level == null || topicId == null) return;
+    final journal = ref.read(journalServiceProvider);
+    if (save) {
+      await journal.add(args.courseId, topicId, levelId: level.id);
+    } else {
+      await journal.remove(args.courseId, topicId);
+    }
+    if (!ref.mounted) return;
+    ref.read(progressRevisionProvider.notifier).bump();
+  }
+
+  /// The player gave up: the solution becomes visible in the review and
+  /// the topic goes to the journal, so it comes back for practice.
+  Future<void> revealSolution() async {
+    if (!state.canRevealSolution) return;
+    state = state.copyWith(isSolutionRevealed: true);
+    await toggleTopicInJournal(save: true);
   }
 
   /// Closes the wrong-answer feedback and lets the player try again.
@@ -183,6 +250,19 @@ class LevelController extends Notifier<LevelUiState> {
       case LineSelectionAnswer(:final lines):
         final kept = lines.difference(outcome.wrongParts);
         return kept.isEmpty ? null : LineSelectionAnswer(kept);
+      case OptionSetAnswer(:final options):
+        final kept = options.difference(outcome.wrongParts);
+        return kept.isEmpty ? null : OptionSetAnswer(kept);
+      case MatchAnswer(:final links, :final pairCount):
+        // Keep the right pairs, drop the wrong ones.
+        return MatchAnswer(
+          {
+            for (final entry in links.entries)
+              if (!outcome.wrongParts.contains(entry.key)) entry.key: entry.value,
+          },
+          pairCount: pairCount,
+        );
+      case TextAnswer():
       case OrderingAnswer():
       case null:
         return answer;

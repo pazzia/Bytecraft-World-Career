@@ -18,8 +18,11 @@ import '../../../shared/widgets/stat_badges.dart';
 import '../../timed_run/domain/timed_run_service.dart';
 import '../../timed_run/presentation/countdown.dart';
 import '../../timed_run/presentation/time_up_view.dart';
+import '../../courses/domain/level_payload.dart';
+import '../domain/answer.dart';
 import '../domain/level_result.dart';
 import '../domain/level_session.dart';
+import '../domain/mistake_analysis.dart';
 import '../renderers/question_renderer.dart';
 import 'level_controller.dart';
 import 'level_position.dart';
@@ -27,6 +30,7 @@ import 'level_ui_state.dart';
 import 'widgets/feedback_panel.dart';
 import 'widgets/level_complete_view.dart';
 import 'widgets/out_of_lives_view.dart';
+import 'widgets/review_sheet.dart';
 
 final questionRendererRegistryProvider = Provider<QuestionRendererRegistry>(
   (ref) => QuestionRendererRegistry.standard,
@@ -110,7 +114,8 @@ class LevelScreen extends ConsumerWidget {
         ),
       LevelPhase.completed => LevelCompleteView(
           result: state.result!,
-          onContinue: state.result!.nextLevelId == null
+          onContinue: state.result!.nextLevelId == null ||
+                  args.mode == LevelMode.review
               ? null
               : () => context.pushReplacement(
                     Routes.level(
@@ -119,7 +124,9 @@ class LevelScreen extends ConsumerWidget {
                       mode: _isTimed ? LevelMode.timed : LevelMode.standard,
                     ),
                   ),
-          onBackToMap: () => context.go(Routes.map),
+          onBackToMap: args.mode == LevelMode.review
+              ? () => _exit(context)
+              : () => context.go(Routes.map),
         ),
       LevelPhase.playing ||
       LevelPhase.wrongAnswer ||
@@ -258,7 +265,7 @@ class _PlayingView extends ConsumerWidget {
             ],
           ),
         ),
-        _BottomBar(state: state, controller: controller),
+        _BottomBar(args: args, state: state, controller: controller),
       ],
     );
   }
@@ -293,10 +300,30 @@ class _FuseBar extends StatelessWidget {
 }
 
 class _BottomBar extends StatelessWidget {
-  const _BottomBar({required this.state, required this.controller});
+  const _BottomBar({
+    required this.args,
+    required this.state,
+    required this.controller,
+  });
 
+  final LevelArgs args;
   final LevelUiState state;
   final LevelController controller;
+
+  /// After a couple of wrong outputs, say where the first difference is.
+  static const int _typeOutputHintAfter = 2;
+
+  String? _hint() {
+    final level = state.session!.level;
+    final payload = level.payload;
+    final answer = state.answer;
+    if (payload is TypeOutputPayload &&
+        answer is TextAnswer &&
+        state.session!.mistakes >= _typeOutputHintAfter) {
+      return typeOutputProgressHint(payload, answer.text) ?? level.hint;
+    }
+    return level.hint;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -306,12 +333,15 @@ class _BottomBar extends StatelessWidget {
       case LevelPhase.wrongAnswer:
         return FeedbackPanel(
           isCorrect: false,
-          message: level.hint,
+          message: state.mistakeNote?.text,
+          programResult: state.mistakeNote?.programResult,
+          hint: _hint(),
           buttonLabel: 'Ещё раз',
           livesLeft: state.lives?.isUnlimited == false
               ? state.lives?.current
               : null,
           onPressed: controller.dismissMistake,
+          onDetails: () => showLevelReview(context, args),
         );
       case LevelPhase.correctAnswer:
         return FeedbackPanel(
@@ -319,6 +349,7 @@ class _BottomBar extends StatelessWidget {
           message: level.explanation,
           buttonLabel: 'Продолжить',
           onPressed: controller.showRewards,
+          onDetails: () => showLevelReview(context, args),
         );
       case LevelPhase.loading:
       case LevelPhase.playing:

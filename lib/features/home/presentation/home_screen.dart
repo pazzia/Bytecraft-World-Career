@@ -16,6 +16,7 @@ import '../../../shared/widgets/code_block.dart';
 import '../../../shared/widgets/keycap.dart';
 import '../../../shared/widgets/stat_badges.dart';
 import '../../daily_challenge/domain/daily_challenge.dart';
+import '../../journal/presentation/journal_providers.dart';
 import '../../learning_map/domain/learning_map_model.dart';
 import '../../learning_map/presentation/learning_map_providers.dart';
 import '../../level/domain/level_session.dart';
@@ -28,6 +29,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final home = ref.watch(homeViewModelProvider);
+    final dueReviews = ref.watch(dueReviewCountProvider).value ?? 0;
     final timedEnabled =
         ref.watch(featureFlagsProvider).isEnabled(FeatureFlag.timedRuns);
     return Scaffold(
@@ -50,6 +52,13 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: Spacing.xl),
                 _NextLevelBoard(vm: vm),
                 const SizedBox(height: Spacing.xl),
+                if (dueReviews > 0) ...[
+                  _ReviewTile(
+                    count: dueReviews,
+                    onTap: () => context.go(Routes.journal),
+                  ),
+                  const SizedBox(height: Spacing.xl),
+                ],
                 _CourseProgress(map: vm.map),
                 const SizedBox(height: Spacing.xl),
                 Row(
@@ -337,6 +346,42 @@ class _TimedTile extends StatelessWidget {
             'Модуль на скорость, ×2 XP',
             style: textTheme.bodySmall?.copyWith(color: night.textMuted),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReviewTile extends StatelessWidget {
+  const _ReviewTile({required this.count, required this.onTap});
+
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final game = context.gameColors;
+    return AppCard(
+      onTap: onTap,
+      semanticLabel: 'Повторить темы из журнала: $count',
+      child: Row(
+        children: [
+          Icon(Icons.menu_book_rounded, color: game.streak, size: 32),
+          const SizedBox(width: Spacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Повторение', style: textTheme.titleMedium),
+                Text(
+                  '$count ${plural(count, 'тема ждёт', 'темы ждут', 'тем ждут')} в журнале',
+                  style: textTheme.bodyMedium?.copyWith(color: game.textMuted),
+                ),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: game.textMuted),
         ],
       ),
     );

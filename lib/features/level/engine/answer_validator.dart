@@ -6,7 +6,10 @@ import '../domain/validation_outcome.dart';
 import 'validators/bug_finder_validator.dart';
 import 'validators/code_ordering_validator.dart';
 import 'validators/fill_code_validator.dart';
+import 'validators/match_pairs_validator.dart';
+import 'validators/multi_select_validator.dart';
 import 'validators/multiple_choice_validator.dart';
+import 'validators/type_output_validator.dart';
 
 /// Checks an answer against a level. One implementation per mechanic.
 ///
@@ -26,6 +29,9 @@ class ValidatorRegistry {
         LevelType.fillCode: FillCodeValidator(),
         LevelType.codeOrdering: CodeOrderingValidator(),
         LevelType.bugFinder: BugFinderValidator(),
+        LevelType.typeOutput: TypeOutputValidator(),
+        LevelType.matchPairs: MatchPairsValidator(),
+        LevelType.multiSelect: MultiSelectValidator(),
       });
 
   final Map<LevelType, AnswerValidator> _validators;

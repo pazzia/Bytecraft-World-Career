@@ -30,6 +30,9 @@ class ContentParser {
     LevelType.fillCode: _parseFillCode,
     LevelType.codeOrdering: _parseCodeOrdering,
     LevelType.bugFinder: _parseBugFinder,
+    LevelType.typeOutput: _parseTypeOutput,
+    LevelType.matchPairs: _parseMatchPairs,
+    LevelType.multiSelect: _parseMultiSelect,
   };
 
   final Map<LevelType, PayloadParser> _payloadParsers;
@@ -119,8 +122,24 @@ class ContentParser {
       livesPenalty: level.optionalInt('livesPenalty') ?? defaultLivesPenalty,
       hint: level.optionalString('hint'),
       explanation: level.optionalString('explanation'),
+      topicId: level.optionalString('topic'),
+      solution: _parseSolution(level),
       payload: payload,
     );
+  }
+
+  static LevelSolution? _parseSolution(JsonReader level) {
+    try {
+      final solution = level.optionalObject('solution');
+      if (solution == null) return null;
+      return LevelSolution(
+        code: solution.requireString('code'),
+        output: solution.optionalString('output') ?? '',
+      );
+    } on JsonFormatException {
+      // A broken solution only hides the solution, never the level.
+      return null;
+    }
   }
 
   static void _ensureUniqueIds(List<CourseModule> modules) {
@@ -143,7 +162,51 @@ class ContentParser {
     if (correct < 0 || correct >= options.length) {
       throw JsonFormatException('${p.path}.correctIndex: out of range');
     }
-    return MultipleChoicePayload(options: options, correctIndex: correct);
+    return MultipleChoicePayload(
+      options: options,
+      correctIndex: correct,
+      optionFeedback: p.optionalStringList('optionFeedback'),
+    );
+  }
+
+  static LevelPayload _parseMultiSelect(JsonReader p, JsonReader level) {
+    final options = p.requireStringList('options');
+    final correct = p.requireIntList('correctIndexes').toSet();
+    if (options.length < 2) {
+      throw JsonFormatException('${p.path}.options: need at least 2 options');
+    }
+    if (correct.isEmpty || correct.any((i) => i < 0 || i >= options.length)) {
+      throw JsonFormatException('${p.path}.correctIndexes: out of range');
+    }
+    return MultiSelectPayload(
+      options: options,
+      correctIndexes: Set.unmodifiable(correct),
+      optionFeedback: p.optionalStringList('optionFeedback'),
+    );
+  }
+
+  static LevelPayload _parseTypeOutput(JsonReader p, JsonReader level) {
+    level.requireString('code');
+    final expected = p.optionalString('expectedOutput');
+    if (expected == null || expected.trim().isEmpty) {
+      throw JsonFormatException('${p.path}.expectedOutput: must not be empty');
+    }
+    return TypeOutputPayload(expectedOutput: expected);
+  }
+
+  static LevelPayload _parseMatchPairs(JsonReader p, JsonReader level) {
+    final pairs = p.requireObjectList('pairs').map((pair) {
+      return MatchPair(pair.requireString('left'), pair.requireString('right'));
+    }).toList();
+    if (pairs.length < 2) {
+      throw JsonFormatException('${p.path}.pairs: need at least 2 pairs');
+    }
+    final rights = pairs.map((pair) => pair.right).toSet();
+    final lefts = pairs.map((pair) => pair.left).toSet();
+    if (rights.length != pairs.length || lefts.length != pairs.length) {
+      throw JsonFormatException('${p.path}.pairs: items must be unique');
+    }
+    return MatchPairsPayload(pairs: pairs);
   }
 
   static LevelPayload _parseFillCode(JsonReader p, JsonReader level) {
@@ -168,6 +231,7 @@ class ContentParser {
       template: template,
       options: options,
       answers: answers,
+      variantResults: p.optionalStringMap('variantResults'),
     );
   }
 

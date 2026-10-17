@@ -19,6 +19,6 @@ class BugFinderValidator implements AnswerValidator {
     if (falsePositives.isEmpty && missed.isEmpty) {
       return ValidationOutcome.correct;
     }
-    return ValidationOutcome.incorrect(falsePositives);
+    return ValidationOutcome.incorrect(falsePositives, missed);
   }
 }

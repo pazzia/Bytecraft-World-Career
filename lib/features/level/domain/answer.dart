@@ -89,3 +89,63 @@ final class LineSelectionAnswer extends Answer {
         lines.contains(line) ? ({...lines}..remove(line)) : {...lines, line},
       );
 }
+
+/// Free text typed by the player (type-output levels).
+final class TextAnswer extends Answer {
+  const TextAnswer(this.text);
+
+  final String text;
+
+  @override
+  bool get isComplete => text.trim().isNotEmpty;
+}
+
+/// Several options picked at once (multi-select levels).
+final class OptionSetAnswer extends Answer {
+  OptionSetAnswer(Set<int> options) : options = Set.unmodifiable(options);
+
+  final Set<int> options;
+
+  @override
+  bool get isComplete => options.isNotEmpty;
+
+  OptionSetAnswer toggle(int option) => OptionSetAnswer(
+        options.contains(option)
+            ? ({...options}..remove(option))
+            : {...options, option},
+      );
+}
+
+/// Pairs made by the player: left item index -> right item index (both in
+/// the canonical pair order of the level).
+final class MatchAnswer extends Answer {
+  MatchAnswer(Map<int, int> links, {required this.pairCount})
+      : links = Map.unmodifiable(links);
+
+  factory MatchAnswer.empty(int pairCount) =>
+      MatchAnswer(const {}, pairCount: pairCount);
+
+  final Map<int, int> links;
+  final int pairCount;
+
+  @override
+  bool get isComplete => links.length == pairCount;
+
+  /// Links [left] to [right]; whatever either of them was linked to before
+  /// is unlinked.
+  MatchAnswer link(int left, int right) {
+    final next = {...links}..removeWhere((key, value) => value == right);
+    next[left] = right;
+    return MatchAnswer(next, pairCount: pairCount);
+  }
+
+  MatchAnswer unlinkLeft(int left) =>
+      MatchAnswer({...links}..remove(left), pairCount: pairCount);
+
+  int? leftFor(int right) {
+    for (final entry in links.entries) {
+      if (entry.value == right) return entry.key;
+    }
+    return null;
+  }
+}

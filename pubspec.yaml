@@ -17,6 +17,8 @@ dependencies:
   shared_preferences: ^2.5.3
   # HTTP for remote content / future backend
   dio: ^5.8.0
+  # In-app Python: Pyodide runs in a WebView (see assets/python_runner)
+  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:
@@ -29,6 +31,8 @@ flutter:
     - assets/content/
     - assets/content/python/
     - assets/content/python/modules/
+    - assets/python_runner/
+    - assets/pyodide/
 
   fonts:
     - family: Onest

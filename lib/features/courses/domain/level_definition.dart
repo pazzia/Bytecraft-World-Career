@@ -18,6 +18,8 @@ class LevelDefinition {
     this.xpOverride,
     this.hint,
     this.explanation,
+    this.topicId,
+    this.solution,
   });
 
   final String id;
@@ -41,10 +43,27 @@ class LevelDefinition {
   final String? explanation;
   final LevelPayload payload;
 
+  /// Journal topic this level practises.
+  final String? topicId;
+
+  /// Complete working code and what it prints. Shown in the detailed
+  /// review once the level is solved (or the player gives up).
+  final LevelSolution? solution;
+
   bool get isSupported => payload is! UnsupportedPayload;
 
   List<String> get codeLines => code == null ? const [] : code!.split('\n');
 
   @override
   String toString() => 'LevelDefinition($id, ${type.id})';
+}
+
+/// A complete working program for a level and its real output.
+class LevelSolution {
+  const LevelSolution({required this.code, required this.output});
+
+  final String code;
+
+  /// stdout of [code], computed by running it when the content was built.
+  final String output;
 }
