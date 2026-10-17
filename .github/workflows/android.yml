@@ -18,6 +18,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      version: ${{ steps.apk.outputs.version }}
+      signed: ${{ steps.sign.outputs.signed }}
+      source: ${{ steps.sign.outputs.source }}
+      fingerprint: ${{ steps.sign.outputs.fingerprint }}
 
     steps:
       - name: Checkout
@@ -39,6 +44,16 @@ jobs:
           sed -i 's/android:label="bytecraft"/android:label="Bytecraft"/' android/app/src/main/AndroidManifest.xml
           grep -q 'android:label="Bytecraft"' android/app/src/main/AndroidManifest.xml
           cp -r tool/android/res/. android/app/src/main/res/
+          # R8 keep rules: plugins called from native code (see the file).
+          cp tool/android/proguard-rules.pro android/app/proguard-rules.pro
+          G=android/app/build.gradle.kts
+          [ -f "$G" ] || G=android/app/build.gradle
+          if grep -q 'build.gradle.kts' <<< "$G"; then
+            sed -i '0,/release {/s//release {\n            proguardFiles("proguard-rules.pro")/' "$G"
+          else
+            sed -i "0,/release {/s//release {\n            proguardFiles 'proguard-rules.pro'/" "$G"
+          fi
+          grep -n 'proguardFiles' "$G"
           # The Python sandbox talks to a loopback HTTP server (see
           # lib/features/playground/data/asset_http_server.dart): it needs
           # INTERNET and plain HTTP to 127.0.0.1 only.
@@ -89,7 +104,10 @@ jobs:
           node tool/pyodide/check_content.mjs assets/content/python 2>&1 | tee pyodide.txt
 
       - name: Install dependencies
-        run: flutter pub get 2>&1 | tee pub.txt
+        run: |
+          flutter pub get 2>&1 | tee pub.txt
+          # Exact plugin versions of this build (there is no committed lock file).
+          grep -A3 -E '^  (shared_preferences[a-z_]*|webview_flutter[a-z_]*|jni|path_provider[a-z_]*):' pubspec.lock | grep -E '^  [a-z]|version:' | paste - - | sed 's/ \+/ /g' >> pub.txt || true
 
       - name: Analyze
         id: analyze
@@ -257,20 +275,125 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
 
+  # The APK must actually start: it is installed in an Android emulator,
+  # launched, and the visible texts and the log are checked. A release is
+  # published only after this passes.
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: bytecraft-apk
+
+      - name: Download control release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download mvp-23 --repo "$GITHUB_REPOSITORY" --pattern '*.apk' --output control.apk || true
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Launch in emulator
+        id: launch
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: CONTROL_APK=control.apk bash tool/android/smoke.sh app-release.apk
+
+      - name: Check the first screen
+        id: check
+        run: |
+          {
+            echo "--- visible texts:"
+            grep -o 'text="[^"]*"' ui.xml | sed 's/text="//; s/"$//' | grep -v '^$' | head -40 || true
+            echo "--- content-desc:"
+            grep -o 'content-desc="[^"]*"' ui.xml | sed 's/content-desc="//; s/"$//' | grep -v '^$' | head -40 || true
+          } >> smoke.txt
+          grep -E "flutter|AndroidRuntime|FATAL|Exception|Error|bytecraft|chromium|Impeller|DartVM|libc" logcat.txt | grep -v "^--------- beginning" | tail -150 > logcat-filtered.txt || true
+          # The Flutter splash (or any app screen) shows the app's own texts.
+          if grep -qE 'Bytecraft|Главная|Начать|Код за пару минут' ui.xml; then
+            echo "started=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "started=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Upload smoke results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke
+          path: |
+            smoke.txt
+            logcat.txt
+            app-log.txt
+            stacks.txt
+            java-stacks.txt
+            screen.png
+            ui.xml
+
+      - name: Report to the pull request
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo "### Smoke: started=${{ steps.check.outputs.started || 'n/a' }}"
+            echo
+            echo '<details><summary>control (mvp-23)</summary>'
+            echo; echo '```'; tail -n 40 control.txt 2>/dev/null; echo '```'; echo '</details>'
+            echo '<details><summary>smoke</summary>'
+            echo; echo '```'; tail -n 80 smoke.txt 2>/dev/null; echo '```'; echo '</details>'
+            echo '<details><summary>app log (by pid)</summary>'
+            echo; echo '```'; tail -n 200 app-log.txt 2>/dev/null; echo '```'; echo '</details>'
+            echo '<details><summary>app-related log lines</summary>'
+            echo; echo '```'; tail -n 120 app-related.txt 2>/dev/null; echo '```'; echo '</details>'
+            echo '<details><summary>native stacks (main, ui, raster, io, platform threads)</summary>'
+            echo; echo '```'
+            awk '/^"/{keep = ($0 ~ /"(bytecraft|ytecraft|1\.ui|1\.raster|1\.io|main|DartWorker|flutter|Chrome|CrRendererMain|Thread-)/)} keep' stacks.txt 2>/dev/null | head -n 250
+            echo '```'; echo '</details>'
+            echo '<details><summary>java main thread</summary>'
+            echo; echo '```'; awk '/^"main"/{f=1} f{print; n++} n>=60{exit}' java-stacks.txt 2>/dev/null; echo '```'; echo '</details>'
+          } > smoke-report.md
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file smoke-report.md
+
+  release:
+    needs: [build, smoke]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: bytecraft-apk
+
       - name: Publish GitHub Release
         # Push to main, or a manual "Run workflow" on main (e.g. after the
         # signing secrets changed).
-        if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
-          SIGNED: ${{ steps.sign.outputs.signed }}
-          SOURCE: ${{ steps.sign.outputs.source }}
-          FINGERPRINT: ${{ steps.sign.outputs.fingerprint }}
-          VERSION: ${{ steps.apk.outputs.version }}
+          SIGNED: ${{ needs.build.outputs.signed }}
+          SOURCE: ${{ needs.build.outputs.source }}
+          FINGERPRINT: ${{ needs.build.outputs.fingerprint }}
+          VERSION: ${{ needs.build.outputs.version }}
         run: |
           TAG="mvp-${GITHUB_RUN_NUMBER}"
           APK_NAME="bytecraft-${VERSION}-build${GITHUB_RUN_NUMBER}.apk"
-          cp build/app/outputs/flutter-apk/app-release.apk "$APK_NAME"
+          cp app-release.apk "$APK_NAME"
           NOTES="Bytecraft ${VERSION}, build ${GITHUB_RUN_NUMBER}, from commit ${GITHUB_SHA}."
           if [ "$SIGNED" = "true" ]; then
             NOTES="$(printf '%s\n\n%s' "$NOTES" "Signing certificate SHA-256: ${FINGERPRINT}")"

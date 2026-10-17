@@ -10,6 +10,7 @@ is no network in the sandbox anyway).
 Loaded by assets/python_runner/worker.js and by tool/pyodide/check_content.mjs.
 """
 import asyncio
+import builtins
 import selectors
 import time
 
@@ -39,6 +40,16 @@ class _SleepSelector(selectors.BaseSelector):
         return self._keys.pop(fd)
 
     def select(self, timeout=None):
+        # Emulated threads (sandbox_threads.py) run while the loop waits:
+        # asyncio.to_thread and run_in_executor work through them.
+        wait_until = getattr(builtins, "_bytecraft_wait_until", None)
+        if wait_until is not None:
+            deadline = None if timeout is None else time.monotonic() + timeout
+            try:
+                wait_until(lambda: bool(self.loop._ready), deadline)
+            except RuntimeError:
+                raise RuntimeError(_deadlock_message(self.loop)) from None
+            return []
         if timeout is None:
             # Nothing is scheduled and no I/O can ever arrive: the program
             # waits for an event nobody will set.
@@ -60,10 +71,6 @@ class _SandboxLoop(asyncio.SelectorEventLoop):
         selector = _SleepSelector()
         super().__init__(selector)
         selector.loop = self
-
-    def run_in_executor(self, executor, func, *args):
-        raise RuntimeError("asyncio: потоков во встроенном Python нет — to_thread и run_in_executor "
-                           "работают только в обычном Python на компьютере")
 
     # No self-pipe (socketpair is not available): wake-ups from other
     # threads are not needed in a single-threaded sandbox.
@@ -115,6 +122,7 @@ def run(main, *, debug=None, loop_factory=None):
         try:
             _cancel_all_tasks(loop)
             loop.run_until_complete(loop.shutdown_asyncgens())
+            loop.run_until_complete(loop.shutdown_default_executor())
         finally:
             asyncio.set_event_loop(None)
             loop.close()

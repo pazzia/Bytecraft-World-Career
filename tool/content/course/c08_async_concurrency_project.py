@@ -1,6 +1,6 @@
 """Модули 34–37: asyncio, потоки и процессы, производительность, программа
 как проект (argparse, logging, структура, PEP 8)."""
-from bclib import choice, fill, match, multi, order, predict, bug, typed, topic, task, native, run
+from bclib import choice, fill, match, multi, order, predict, bug, typed, topic, task, run
 
 
 def compiles(code):
@@ -459,7 +459,7 @@ MODULES.append(dict(
                     t.start()
                 for t in threads:
                     t.join()
-                print(counter)""", "С общим Lock ни одно увеличение не теряется.", {"native_only": True})],
+                print(counter)""", "С общим Lock ни одно увеличение не теряется.")],
               ["Забыть join: главный поток напечатает результат раньше, чем потоки его посчитают.",
                "Создавать Lock внутри функции потока: у каждого вызова свой замок, и он ничего не защищает.",
                "Ждать ускорения вычислений от потоков в обычном CPython: GIL выполняет байт-код по очереди."]),
@@ -474,7 +474,7 @@ MODULES.append(dict(
 
               Как выбрать: много ожиданий в сети — asyncio (тысячи соединений) или потоки (проще с синхронными библиотеками); тяжёлые вычисления на чистом Python — процессы; вычисления в numpy и других C-библиотеках часто отпускают GIL и работают и в потоках.
 
-              Во встроенном интерпретаторе приложения нет потоков и процессов — эти примеры работают в обычном Python на компьютере.
+              Во встроенном Python приложения потоки и процессы эмулируются: они выполняются по очереди в одном настоящем потоке и переключаются там, где ждут (sleep, замок, очередь, join). Логика, порядок и синхронизация — как в обычном Python, но ускорения нет, а у «процессов» общая память.
               """,
               [("""\
                 from concurrent.futures import ProcessPoolExecutor
@@ -482,12 +482,50 @@ MODULES.append(dict(
                 if __name__ == "__main__":
                     with ProcessPoolExecutor(max_workers=2) as pool:
                         print(list(pool.map(pow, [2, 3, 4], [10, 2, 3])))""",
-                "pow — встроенная функция, она сериализуется и выполняется в процессах пула.", {"native_only": True})],
+                "pow — встроенная функция, она сериализуется и выполняется в процессах пула.")],
               ["Передавать в ProcessPoolExecutor lambda — её нельзя сериализовать (PicklingError).",
                "Запускать пул процессов без if __name__ == \"__main__\" — на Windows, macOS и Linux 3.14+ дочерние процессы падают с RuntimeError."]),
     ],
+    tasks=[
+        task("t_conc_queue", "Рабочий поток и очередь",
+             "Первая строка — n, дальше n слов по одному в строке. Напишите функцию worker(q, out): она берёт слова из очереди queue.Queue, пока не получит None, и добавляет в список out строку «СЛОВО длина» (слово в верхнем регистре и число букв). Главный поток запускает worker в отдельном потоке threading.Thread, кладёт в очередь все слова, затем None, ждёт поток через join и печатает out — по элементу на строке.",
+             solution="""\
+                import queue
+                import threading
+
+                def worker(q, out):
+                    while (word := q.get()) is not None:
+                        out.append(f"{word.upper()} {len(word)}")
+
+                q = queue.Queue()
+                out = []
+                t = threading.Thread(target=worker, args=(q, out))
+                t.start()
+                for _ in range(int(input())):
+                    q.put(input())
+                q.put(None)
+                t.join()
+                print("\\n".join(out))""",
+             starter="""\
+                import queue
+                import threading
+
+                def worker(q, out):
+                    pass
+
+                q = queue.Queue()
+                out = []
+                for _ in range(int(input())):
+                    q.put(input())
+                print("\\n".join(out))""",
+             tests=["3\nкот\nпёс\nёжик\n", "1\npython\n", "2\na\nbb\n", "4\nочередь\nпоток\nзамок\nGIL\n"],
+             hint="Цикл while (word := q.get()) is not None читает до сигнала остановки. Без join главный поток напечатает out раньше, чем worker его заполнит.",
+             difficulty=3,
+             requires=dict(defines=["worker"], calls_in={"worker": ["get"]},
+                           calls=["Thread", "Queue", "put", "start", "join"])),
+    ],
     levels=[
-        native(predict("py_conc_001", "Запуск и ожидание", """\
+        predict("py_conc_001", "Запуск и ожидание", """\
                 import threading
 
                 results = []
@@ -506,8 +544,8 @@ MODULES.append(dict(
                 explanation="После join все четыре потока закончили работу: в results четыре квадрата. Живым остаётся только главный поток — active_count() равен 1.",
                 feedback={"[] 1": "join ждёт завершения потоков — к print все результаты уже добавлены.",
                           "[0, 1, 4, 9] 5": "Завершённые потоки не считаются: живым остался только главный.",
-                          "[0, 1, 4, 9] 4": "active_count считает и главный поток, а рабочие уже закончились."})),
-        native(fill("py_conc_002", "Аргументы потока", "Передайте имя в функцию потока",
+                          "[0, 1, 4, 9] 4": "active_count считает и главный поток, а рабочие уже закончились."}),
+        fill("py_conc_002", "Аргументы потока", "Передайте имя в функцию потока",
                     """\
                     import threading
 
@@ -520,8 +558,8 @@ MODULES.append(dict(
                     print("поток завершён:", not t.is_alive())""", ["args", "kwargs", "name", "daemon"], ["args"],
                     topic="conc_threads", hint="Позиционные аргументы для target передают кортежем.",
                     explanation="args — кортеж позиционных аргументов для target. kwargs ждёт словарь (кортеж даст TypeError ещё до вызова greet); name и daemon — настройки самого потока, а greet вызовется без аргумента и упадёт.",
-                    expect="привет, Ада\nпоток завершён: True\n")),
-        native(bug("py_conc_003", "Замок, который не запирает", """\
+                    expect="привет, Ада\nпоток завершён: True\n"),
+        bug("py_conc_003", "Замок, который не запирает", """\
             import threading
             import time
 
@@ -544,8 +582,8 @@ MODULES.append(dict(
             prompt="Два снятия должны оставить 50. Найдите строку с ошибкой", topic="conc_threads",
             hint="Сколько разных замков создаётся в этой программе?",
             explanation="threading.Lock() внутри функции создаёт новый замок при каждом вызове — потоки не мешают друг другу. Оба читают 100, и одно снятие теряется. Нужен один общий lock.",
-            difficulty=3)),
-        native(predict("py_conc_004", "Порядок в pool.map", """\
+            difficulty=3),
+        predict("py_conc_004", "Порядок в pool.map", """\
                 from concurrent.futures import ThreadPoolExecutor
                 import time
 
@@ -559,8 +597,8 @@ MODULES.append(dict(
                 hint="Быстрее всех закончится slow_square(2). Но в каком порядке map отдаёт результаты?",
                 explanation="map возвращает результаты в порядке входных данных, даже если задачи закончились в другом порядке.",
                 feedback={"[4, 1, 0]": "Это порядок завершения. map сохраняет порядок входных данных.",
-                          "[0, 1, 2]": "map возвращает результаты функции — квадраты."})),
-        native(predict("py_conc_005", "По мере готовности", """\
+                          "[0, 1, 2]": "map возвращает результаты функции — квадраты."}),
+        predict("py_conc_005", "По мере готовности", """\
                 from concurrent.futures import ThreadPoolExecutor, as_completed
                 import time
 
@@ -577,7 +615,7 @@ MODULES.append(dict(
                 hint="as_completed отдаёт задачи по мере завершения. А список futures?",
                 explanation="as_completed выдаёт Future в порядке готовности: b, c, a. Список futures остаётся в порядке создания.",
                 feedback={"['a', 'b', 'c']\n['a', 'b', 'c']": "as_completed выдаёт задачи по мере готовности — первой b.",
-                          "['b', 'c', 'a']\n['b', 'c', 'a']": "Список futures не пересортировывается: он в порядке submit."})),
+                          "['b', 'c', 'a']\n['b', 'c', 'a']": "Список futures не пересортировывается: он в порядке submit."}),
         multi("py_conc_006", "Где помогут потоки", "В каких задачах потоки обычного CPython (с GIL) реально ускорят программу?",
               list(PURPOSES), [i for i, ok in enumerate(PURPOSES.values()) if ok],
               check=lambda option: PURPOSES[option], topic="conc_processes",
@@ -595,7 +633,7 @@ MODULES.append(dict(
               prompt="Сопоставьте понятие и смысл", topic="conc_processes",
               hint="Где пул потоков, а где пул процессов — подскажут их имена.",
               explanation="GIL ограничивает потоки CPython, Lock защищает общие данные, Queue передаёт задачи, пулы потоков — для ожиданий, пулы процессов — для вычислений."),
-        native(typed("py_conc_008", "Счёт под замком", """\
+        typed("py_conc_008", "Счёт под замком", """\
               import threading
 
               counter = 0
@@ -614,7 +652,7 @@ MODULES.append(dict(
                   t.join()
               print(counter, len(threads))""",
               topic="conc_threads", hint="Сколько раз выполнится counter += 1 и может ли увеличение потеряться?",
-              explanation="С общим Lock каждое counter += 1 выполняется целиком: 3 × 5000 = 15000.")),
+              explanation="С общим Lock каждое counter += 1 выполняется целиком: 3 × 5000 = 15000."),
         choice("py_conc_009", "Пул процессов", "Почему запуск ProcessPoolExecutor прячут под if __name__ == \"__main__\"?",
                ["Новые процессы импортируют главный модуль, и без проверки каждый попытался бы снова запустить пул",
                 "Без этой проверки процессы делят один GIL",
@@ -626,7 +664,7 @@ MODULES.append(dict(
                feedback={"Без этой проверки процессы делят один GIL": "У каждого процесса свой GIL — проверка здесь ни при чём.",
                          "Так быстрее: проверка включает оптимизацию байт-кода": "Проверка не влияет на скорость — она защищает от повторного запуска.",
                          "ProcessPoolExecutor работает только внутри функций": "Работает и на верхнем уровне; проверка нужна из-за повторного импорта модуля."}),
-        native(predict("py_conc_010", "Босс: очередь задач", """\
+        predict("py_conc_010", "Босс: очередь задач", """\
                 import queue
                 import threading
 
@@ -656,7 +694,7 @@ MODULES.append(dict(
                 explanation="q.join() возвращается, когда все три элемента обработаны (task_done) — results уже полон, порядок FIFO. None выводит рабочего из цикла, t.join() дожидается его конца — поток больше не жив.",
                 feedback={"[]\nFalse": "q.join() ждёт обработки всех элементов — к print они в results.",
                           "[0, 10, 20]\nTrue": "None завершает цикл рабочего, и t.join() ждёт его конца.",
-                          "[20, 10, 0]\nFalse": "Queue — очередь FIFO: элементы выходят в порядке добавления."})),
+                          "[20, 10, 0]\nFalse": "Queue — очередь FIFO: элементы выходят в порядке добавления."}),
     ],
 ))
 

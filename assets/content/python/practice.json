@@ -1521,6 +1521,51 @@
    "module": "async"
   },
   {
+   "id": "t_conc_queue",
+   "title": "Рабочий поток и очередь",
+   "prompt": "Первая строка — n, дальше n слов по одному в строке. Напишите функцию worker(q, out): она берёт слова из очереди queue.Queue, пока не получит None, и добавляет в список out строку «СЛОВО длина» (слово в верхнем регистре и число букв). Главный поток запускает worker в отдельном потоке threading.Thread, кладёт в очередь все слова, затем None, ждёт поток через join и печатает out — по элементу на строке.",
+   "starter": "import queue\nimport threading\n\ndef worker(q, out):\n    pass\n\nq = queue.Queue()\nout = []\nfor _ in range(int(input())):\n    q.put(input())\nprint(\"\\n\".join(out))",
+   "solution": "import queue\nimport threading\n\ndef worker(q, out):\n    while (word := q.get()) is not None:\n        out.append(f\"{word.upper()} {len(word)}\")\n\nq = queue.Queue()\nout = []\nt = threading.Thread(target=worker, args=(q, out))\nt.start()\nfor _ in range(int(input())):\n    q.put(input())\nq.put(None)\nt.join()\nprint(\"\\n\".join(out))",
+   "tests": [
+    {
+     "stdin": "3\nкот\nпёс\nёжик\n",
+     "expected": "КОТ 3\nПЁС 3\nЁЖИК 4\n"
+    },
+    {
+     "stdin": "1\npython\n",
+     "expected": "PYTHON 6\n"
+    },
+    {
+     "stdin": "2\na\nbb\n",
+     "expected": "A 1\nBB 2\n"
+    },
+    {
+     "stdin": "4\nочередь\nпоток\nзамок\nGIL\n",
+     "expected": "ОЧЕРЕДЬ 7\nПОТОК 5\nЗАМОК 5\nGIL 3\n"
+    }
+   ],
+   "difficulty": 3,
+   "requires": {
+    "defines": [
+     "worker"
+    ],
+    "calls_in": {
+     "worker": [
+      "get"
+     ]
+    },
+    "calls": [
+     "Thread",
+     "Queue",
+     "put",
+     "start",
+     "join"
+    ]
+   },
+   "hint": "Цикл while (word := q.get()) is not None читает до сигнала остановки. Без join главный поток напечатает out раньше, чем worker его заполнит.",
+   "module": "concurrency"
+  },
+  {
    "id": "t_perf_stairs",
    "title": "Лестница с кэшем",
    "prompt": "Сколькими способами можно подняться на n ступенек, шагая на 1, 2 или 3 ступеньки за раз? Для 0 ступенек способ один (стоять на месте). Напишите рекурсивную функцию ways(n) именно с декоратором @cache из functools (@functools.cache или from functools import cache). Прочитайте n (до 300) и выведите ответ.",

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/startup/app_startup.dart';
+import '../../../core/config/build_info.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_spacing.dart';
 import '../../../core/theme/app_typography.dart';
@@ -60,6 +61,12 @@ class SplashScreen extends ConsumerWidget {
             Text(
               'Код за пару минут в день',
               style: textTheme.bodyLarge?.copyWith(color: AppColors.nightMuted),
+            ),
+            const SizedBox(height: Spacing.lg),
+            Text(
+              'Версия ${BuildInfo.label}',
+              key: const ValueKey('splash_version'),
+              style: textTheme.bodySmall?.copyWith(color: AppColors.nightMuted),
             ),
           ],
         ),

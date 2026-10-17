@@ -26,8 +26,16 @@ def _bytecraft_run(code, quiet_input=False):
     builtins.input = _bytecraft_quiet_input if quiet_input else _bytecraft_input
     g = {"__name__": "__main__", "__builtins__": builtins}
     status = "ok"
+    compile_program = getattr(builtins, "_bytecraft_compile", None)
+    reset = getattr(builtins, "_bytecraft_threads_reset", None)
+    finish = getattr(builtins, "_bytecraft_threads_finish", None)
     try:
-        exec(compile(code, "main.py", "exec"), g)
+        if reset:
+            reset()
+        program = compile_program(code) if compile_program else compile(code, "main.py", "exec")
+        exec(program, g)
+        if finish:
+            finish()  # like CPython at exit: wait for non-daemon threads
     except SystemExit as error:
         if error.code not in (None, 0):
             print(error.code, file=sys.stderr)
@@ -36,10 +44,20 @@ def _bytecraft_run(code, quiet_input=False):
         status = "interrupted"
     except BaseException as error:
         status = "error"
-        tb = error.__traceback__
-        while tb is not None and tb.tb_frame.f_code.co_filename != "main.py":
-            tb = tb.tb_next
-        traceback.print_exception(type(error), error, tb, file=sys.stderr)
+        # Only the program's own frames: the sandbox machinery (threads,
+        # asyncio) would just be noise for a learner.
+        frames = [f for f in traceback.extract_tb(error.__traceback__) if f.filename == "main.py"]
+        lines = traceback.format_list(frames)
+        if lines:
+            lines.insert(0, "Traceback (most recent call last):\n")
+        lines += traceback.format_exception_only(type(error), error)
+        sys.stderr.write("".join(lines))
+        if finish and not isinstance(error, (KeyboardInterrupt,)) and type(error).__name__ != "DeadlockError":
+            # Like CPython: other threads still run to the end.
+            try:
+                finish()
+            except BaseException:
+                pass
     finally:
         try:
             sys.stdout.flush()
@@ -72,11 +90,15 @@ async function init(interruptBuffer) {
     if (interruptBuffer) pyodide.setInterruptBuffer(interruptBuffer);
     pyodide.runPython(RUNNER_PY);
     // A blocking event loop, so that asyncio.run() works (see the file).
-    try {
-      const asyncioSource = await (await fetch(base + 'python_runner/sandbox_asyncio.py')).text();
-      pyodide.runPython(asyncioSource);
-    } catch (error) {
-      // Everything except asyncio.run() still works.
+    // Blocking asyncio loop and emulated threads (see the files). Without
+    // them everything except asyncio.run() / threads still works.
+    for (const name of ['sandbox_asyncio.py', 'sandbox_threads.py']) {
+      try {
+        const source = await (await fetch(base + 'python_runner/' + name)).text();
+        pyodide.runPython(source, { globals: pyodide.toPy({ __name__: name.replace('.py', '') }) });
+      } catch (error) {
+        // Keep going: the rest of Python works without this part.
+      }
     }
     const version = pyodide.runPython('import sys; sys.version.split()[0]');
     self.postMessage({ type: 'ready', version: version });
