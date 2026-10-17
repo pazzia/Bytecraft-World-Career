@@ -16,7 +16,7 @@
      "Открывает только для чтения",
      "Стирает файл и пишет заново",
      "Дописывает в конец файла",
-     "Создаёт файл, только если его нет"
+     "Создаёт новый файл; если файл уже есть — ошибка"
     ],
     "correctIndex": 2,
     "optionFeedback": [
@@ -69,7 +69,7 @@
    "hint": "Нужен режим дописывания.",
    "explanation": "Режим \"a\" дописывает в конец. \"w\" стёр бы строку a, \"r\" не разрешает запись, \"x\" требует, чтобы файла не было.",
    "payload": {
-    "template": "with open(\"log.txt\", \"w\") as f:\n    f.write(\"a\\n\")\nwith open(\"log.txt\", \"{{0}}\") as f:\n    f.write(\"b\\n\")\nwith open(\"log.txt\") as f:\n    print(f.read(), end=\"\")",
+    "template": "with open(\"log.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"a\\n\")\nwith open(\"log.txt\", \"{{0}}\", encoding=\"utf-8\") as f:\n    f.write(\"b\\n\")\nwith open(\"log.txt\", encoding=\"utf-8\") as f:\n    print(f.read(), end=\"\")",
     "options": [
      "a",
      "w",
@@ -86,7 +86,7 @@
     }
    },
    "solution": {
-    "code": "with open(\"log.txt\", \"w\") as f:\n    f.write(\"a\\n\")\nwith open(\"log.txt\", \"a\") as f:\n    f.write(\"b\\n\")\nwith open(\"log.txt\") as f:\n    print(f.read(), end=\"\")",
+    "code": "with open(\"log.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"a\\n\")\nwith open(\"log.txt\", \"a\", encoding=\"utf-8\") as f:\n    f.write(\"b\\n\")\nwith open(\"log.txt\", encoding=\"utf-8\") as f:\n    print(f.read(), end=\"\")",
     "output": "a\nb\n"
    }
   },
@@ -100,12 +100,12 @@
    "difficulty": 2,
    "hint": "int() не мешает перевод строки в конце.",
    "explanation": "Цикл идёт по трём строкам: 3 + 5 + 8 = 16, строк 3.",
-   "code": "with open(\"data.txt\", \"w\") as f:\n    f.write(\"3\\n5\\n8\\n\")\ntotal = 0\ncount = 0\nwith open(\"data.txt\") as f:\n    for line in f:\n        total += int(line)\n        count += 1\nprint(total, count)",
+   "code": "with open(\"data.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"3\\n5\\n8\\n\")\ntotal = 0\ncount = 0\nwith open(\"data.txt\", encoding=\"utf-8\") as f:\n    for line in f:\n        total += int(line)\n        count += 1\nprint(total, count)",
    "payload": {
     "expectedOutput": "16 3"
    },
    "solution": {
-    "code": "with open(\"data.txt\", \"w\") as f:\n    f.write(\"3\\n5\\n8\\n\")\ntotal = 0\ncount = 0\nwith open(\"data.txt\") as f:\n    for line in f:\n        total += int(line)\n        count += 1\nprint(total, count)",
+    "code": "with open(\"data.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"3\\n5\\n8\\n\")\ntotal = 0\ncount = 0\nwith open(\"data.txt\", encoding=\"utf-8\") as f:\n    for line in f:\n        total += int(line)\n        count += 1\nprint(total, count)",
     "output": "16 3\n"
    }
   },
@@ -179,7 +179,7 @@
    "topic": "files_read",
    "difficulty": 2,
    "hint": "readlines возвращает список, readline — одну строку.",
-   "explanation": "read() и read_text() возвращают весь текст. join склеивает строки, по которым идёт цикл. readlines даёт список, readline — только первую строку.",
+   "explanation": "read() и read_text() возвращают весь текст. join склеивает строки, по которым идёт цикл. readlines даёт список, readline — только первую строку. (В варианте с голым open файл не закрывается явно — в рабочем коде нужен with.)",
    "payload": {
     "options": [
      "open(\"data.txt\").read()",
@@ -229,6 +229,37 @@
    }
   },
   {
+   "id": "py_files_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Запятая внутри значения",
+   "prompt": "Что выведет код?",
+   "topic": "files_csv",
+   "difficulty": 3,
+   "hint": "csv.writer берёт значение с запятой в кавычки. Знает ли о кавычках split?",
+   "explanation": "В файле строка Грейс,\"Нью-Йорк, США\",85. split(\",\") режет и внутри кавычек — 4 части. csv.reader понимает кавычки и возвращает 3 значения.",
+   "code": "import csv\n\nwith open(\"t.csv\", \"w\", newline=\"\", encoding=\"utf-8\") as f:\n    csv.writer(f).writerow([\"Грейс\", \"Нью-Йорк, США\", 85])\n\nwith open(\"t.csv\", newline=\"\", encoding=\"utf-8\") as f:\n    line = f.readline().strip()\n    print(len(line.split(\",\")))\nwith open(\"t.csv\", newline=\"\", encoding=\"utf-8\") as f:\n    print(len(next(csv.reader(f))))",
+   "payload": {
+    "options": [
+     "3\n3",
+     "4\n3",
+     "4\n4",
+     "3\n4"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "split ничего не знает о кавычках и режет по каждой запятой.",
+     "",
+     "csv.reader учитывает кавычки: значений три.",
+     "Наоборот: split даёт 4 части, csv.reader — 3 значения."
+    ]
+   },
+   "solution": {
+    "code": "import csv\n\nwith open(\"t.csv\", \"w\", newline=\"\", encoding=\"utf-8\") as f:\n    csv.writer(f).writerow([\"Грейс\", \"Нью-Йорк, США\", 85])\n\nwith open(\"t.csv\", newline=\"\", encoding=\"utf-8\") as f:\n    line = f.readline().strip()\n    print(len(line.split(\",\")))\nwith open(\"t.csv\", newline=\"\", encoding=\"utf-8\") as f:\n    print(len(next(csv.reader(f))))",
+    "output": "4\n3\n"
+   }
+  },
+  {
    "id": "py_files_009",
    "type": "predict_output",
    "role": "boss",
@@ -238,24 +269,24 @@
    "difficulty": 3,
    "hint": "Что делает with с файлом при выходе из блока?",
    "explanation": "После блока with файл закрыт: f.closed — True, а запись в закрытый файл вызывает ValueError.",
-   "code": "with open(\"t.txt\", \"w\") as f:\n    f.write(\"hi\")\nprint(f.closed)\ntry:\n    f.write(\"again\")\nexcept ValueError as e:\n    print(\"ошибка:\", e)",
+   "code": "with open(\"t.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"hi\")\nprint(f.closed)\ntry:\n    f.write(\"again\")\nexcept ValueError as e:\n    print(\"ошибка:\", e)",
    "payload": {
     "options": [
      "True\nошибка: I/O operation on closed file.",
      "False",
-     "True\nagain",
+     "True",
      "False\nошибка: I/O operation on closed file."
     ],
     "correctIndex": 0,
     "optionFeedback": [
      "",
      "with закрывает файл при выходе из блока.",
-     "В закрытый файл писать нельзя: будет ValueError.",
+     "Запись в закрытый файл не игнорируется молча: ValueError.",
      "Ошибка верная, но f.closed уже True."
     ]
    },
    "solution": {
-    "code": "with open(\"t.txt\", \"w\") as f:\n    f.write(\"hi\")\nprint(f.closed)\ntry:\n    f.write(\"again\")\nexcept ValueError as e:\n    print(\"ошибка:\", e)",
+    "code": "with open(\"t.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"hi\")\nprint(f.closed)\ntry:\n    f.write(\"again\")\nexcept ValueError as e:\n    print(\"ошибка:\", e)",
     "output": "True\nошибка: I/O operation on closed file.\n"
    }
   }

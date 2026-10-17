@@ -1,0 +1,280 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_deco_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Первый декоратор",
+   "prompt": "Что выведет код?",
+   "topic": "deco_basics",
+   "difficulty": 1,
+   "hint": "@shout заменяет greet на wrapper, который вызывает исходную функцию и меняет результат.",
+   "explanation": "После @shout имя greet указывает на wrapper. Он вызывает исходную greet, переводит результат в верхний регистр и добавляет «!».",
+   "code": "def shout(func):\n    def wrapper():\n        return func().upper() + \"!\"\n    return wrapper\n\n@shout\ndef greet():\n    return \"привет\"\n\nprint(greet())",
+   "payload": {
+    "options": [
+     "привет",
+     "привет!",
+     "ПРИВЕТ",
+     "ПРИВЕТ!"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Декоратор заменил функцию обёрткой — результат меняется.",
+     "upper() переводит буквы в верхний регистр.",
+     "Обёртка добавляет ещё и «!».",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "def shout(func):\n    def wrapper():\n        return func().upper() + \"!\"\n    return wrapper\n\n@shout\ndef greet():\n    return \"привет\"\n\nprint(greet())",
+    "output": "ПРИВЕТ!\n"
+   }
+  },
+  {
+   "id": "py_deco_002",
+   "type": "multiple_choice",
+   "role": "lesson",
+   "title": "Синтаксис @",
+   "prompt": "Запись @deco над def f(): ... — это то же самое, что:",
+   "topic": "deco_basics",
+   "difficulty": 1,
+   "hint": "Декоратор получает функцию и возвращает то, что займёт её имя.",
+   "explanation": "@deco — сокращение для f = deco(f): функция передаётся декоратору, а имя f связывается с тем, что он вернул.",
+   "payload": {
+    "options": [
+     "f = deco(f)",
+     "deco = f(deco)",
+     "f(deco)",
+     "deco()"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Наоборот: функцию передают в декоратор, а не декоратор в функцию.",
+     "Результат декоратора должен заменить f — нужно присваивание.",
+     "Декоратор получает декорируемую функцию аргументом."
+    ]
+   }
+  },
+  {
+   "id": "py_deco_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Обёртка на все случаи",
+   "prompt": "Сделайте обёртку, которая подходит для любых аргументов",
+   "topic": "deco_basics",
+   "difficulty": 1,
+   "hint": "Вызов add(2, b=3) передаёт и позиционный, и именованный аргумент.",
+   "explanation": "wrapper должен принять любые аргументы (*args, **kwargs) и передать их дальше в том же виде.",
+   "payload": {
+    "template": "def log(func):\n    def wrapper({{0}}):\n        print(\"вызов\", func.__name__)\n        return func({{1}})\n    return wrapper\n\n@log\ndef add(a, b):\n    return a + b\n\nprint(add(2, b=3))",
+    "options": [
+     "*args, **kwargs",
+     "*args",
+     "**kwargs",
+     "args, kwargs"
+    ],
+    "answers": [
+     "*args, **kwargs",
+     "*args, **kwargs"
+    ],
+    "variantResults": {
+     "*args, **kwargs\u0001*args": "TypeError: add() missing 1 required positional argument: 'b'",
+     "*args, **kwargs\u0001**kwargs": "TypeError: add() missing 1 required positional argument: 'a'",
+     "*args, **kwargs\u0001args, kwargs": "TypeError: can only concatenate tuple (not \"dict\") to tuple",
+     "*args\u0001*args, **kwargs": "TypeError: log.<locals>.wrapper() got an unexpected keyword argument 'b'",
+     "*args\u0001*args": "TypeError: log.<locals>.wrapper() got an unexpected keyword argument 'b'",
+     "*args\u0001**kwargs": "TypeError: log.<locals>.wrapper() got an unexpected keyword argument 'b'",
+     "*args\u0001args, kwargs": "TypeError: log.<locals>.wrapper() got an unexpected keyword argument 'b'",
+     "**kwargs\u0001*args, **kwargs": "TypeError: log.<locals>.wrapper() takes 0 positional arguments but 1 was given",
+     "**kwargs\u0001*args": "TypeError: log.<locals>.wrapper() takes 0 positional arguments but 1 was given",
+     "**kwargs\u0001**kwargs": "TypeError: log.<locals>.wrapper() takes 0 positional arguments but 1 was given",
+     "**kwargs\u0001args, kwargs": "TypeError: log.<locals>.wrapper() takes 0 positional arguments but 1 was given",
+     "args, kwargs\u0001*args, **kwargs": "TypeError: log.<locals>.wrapper() got an unexpected keyword argument 'b'",
+     "args, kwargs\u0001*args": "TypeError: log.<locals>.wrapper() got an unexpected keyword argument 'b'",
+     "args, kwargs\u0001**kwargs": "TypeError: log.<locals>.wrapper() got an unexpected keyword argument 'b'",
+     "args, kwargs\u0001args, kwargs": "TypeError: log.<locals>.wrapper() got an unexpected keyword argument 'b'"
+    }
+   },
+   "solution": {
+    "code": "def log(func):\n    def wrapper(*args, **kwargs):\n        print(\"вызов\", func.__name__)\n        return func(*args, **kwargs)\n    return wrapper\n\n@log\ndef add(a, b):\n    return a + b\n\nprint(add(2, b=3))",
+    "output": "вызов add\n5\n"
+   }
+  },
+  {
+   "id": "py_deco_004",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Порядок декораторов",
+   "prompt": "Напишите, что выведет код",
+   "topic": "deco_basics",
+   "difficulty": 2,
+   "hint": "Декораторы применяются снизу вверх: text = bold(italic(text)).",
+   "explanation": "Сначала italic оборачивает text в <i>…</i>, затем bold оборачивает результат в <b>…</b>.",
+   "code": "def bold(f):\n    def w():\n        return \"<b>\" + f() + \"</b>\"\n    return w\n\ndef italic(f):\n    def w():\n        return \"<i>\" + f() + \"</i>\"\n    return w\n\n@bold\n@italic\ndef text():\n    return \"hi\"\n\nprint(text())",
+   "payload": {
+    "expectedOutput": "<b><i>hi</i></b>"
+   },
+   "solution": {
+    "code": "def bold(f):\n    def w():\n        return \"<b>\" + f() + \"</b>\"\n    return w\n\ndef italic(f):\n    def w():\n        return \"<i>\" + f() + \"</i>\"\n    return w\n\n@bold\n@italic\ndef text():\n    return \"hi\"\n\nprint(text())",
+    "output": "<b><i>hi</i></b>\n"
+   }
+  },
+  {
+   "id": "py_deco_005",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Потерянное имя",
+   "prompt": "Что выведет код?",
+   "topic": "deco_basics",
+   "difficulty": 2,
+   "hint": "@wraps копирует имя оригинала на обёртку.",
+   "explanation": "После декорирования имя area указывает на wrapper, и __name__ у неё «wrapper». @wraps(f) копирует __name__ оригинала, поэтому volume сохраняет своё имя.",
+   "code": "from functools import wraps\n\ndef plain(f):\n    def wrapper(*a):\n        return f(*a)\n    return wrapper\n\ndef nice(f):\n    @wraps(f)\n    def wrapper(*a):\n        return f(*a)\n    return wrapper\n\n@plain\ndef area():\n    pass\n\n@nice\ndef volume():\n    pass\n\nprint(area.__name__, volume.__name__)",
+   "payload": {
+    "options": [
+     "area volume",
+     "wrapper volume",
+     "wrapper wrapper",
+     "area wrapper"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "plain не использует @wraps: у обёртки своё имя.",
+     "",
+     "@wraps(f) копирует имя volume на обёртку.",
+     "Наоборот: имя теряется у функции без @wraps."
+    ]
+   },
+   "solution": {
+    "code": "from functools import wraps\n\ndef plain(f):\n    def wrapper(*a):\n        return f(*a)\n    return wrapper\n\ndef nice(f):\n    @wraps(f)\n    def wrapper(*a):\n        return f(*a)\n    return wrapper\n\n@plain\ndef area():\n    pass\n\n@nice\ndef volume():\n    pass\n\nprint(area.__name__, volume.__name__)",
+    "output": "wrapper volume\n"
+   }
+  },
+  {
+   "id": "py_deco_006",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Пропавший результат",
+   "prompt": "Должно вывести 16 1. Найдите строку с ошибкой",
+   "topic": "deco_basics",
+   "difficulty": 2,
+   "hint": "Что возвращает wrapper?",
+   "explanation": "Обёртка вызывает func, но не возвращает результат — значит, возвращает None. Нужно return func(*args).",
+   "code": "def count_calls(func):\n    def wrapper(*args):\n        wrapper.calls += 1\n        func(*args)\n    wrapper.calls = 0\n    return wrapper\n\n@count_calls\ndef square(x):\n    return x * x\n\nprint(square(4), square.calls)",
+   "payload": {
+    "buggyLines": [
+     3
+    ]
+   },
+   "solution": {
+    "code": "def count_calls(func):\n    def wrapper(*args):\n        wrapper.calls += 1\n        return func(*args)\n    wrapper.calls = 0\n    return wrapper\n\n@count_calls\ndef square(x):\n    return x * x\n\nprint(square(4), square.calls)",
+    "output": "16 1\n"
+   }
+  },
+  {
+   "id": "py_deco_007",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Фабрика декораторов",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "deco_params",
+   "difficulty": 2,
+   "hint": "@repeat(3) возвращает список из трёх результатов.",
+   "explanation": "one вызывается трижды, echo — дважды. repeat(1)(len) применяет декоратор вручную: len('ab') один раз в списке.",
+   "code": "def repeat(n):\n    def deco(f):\n        def w(*a):\n            return [f(*a) for _ in range(n)]\n        return w\n    return deco\n\n@repeat(3)\ndef one():\n    return 1\n\n@repeat(2)\ndef echo(x):\n    return x",
+   "payload": {
+    "pairs": [
+     {
+      "left": "one()",
+      "right": "[1, 1, 1]"
+     },
+     {
+      "left": "echo('a')",
+      "right": "['a', 'a']"
+     },
+     {
+      "left": "len(one())",
+      "right": "3"
+     },
+     {
+      "left": "repeat(1)(len)('ab')",
+      "right": "[2]"
+     }
+    ]
+   },
+   "solution": {
+    "code": "def repeat(n):\n    def deco(f):\n        def w(*a):\n            return [f(*a) for _ in range(n)]\n        return w\n    return deco\n\n@repeat(3)\ndef one():\n    return 1\n\n@repeat(2)\ndef echo(x):\n    return x\nprint(one())\nprint(echo('a'))\nprint(len(one()))\nprint(repeat(1)(len)('ab'))",
+    "output": "[1, 1, 1]\n['a', 'a']\n3\n[2]\n"
+   }
+  },
+  {
+   "id": "py_deco_008",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Стандартные декораторы",
+   "prompt": "Какие из этих декораторов есть в Python и стандартной библиотеке?",
+   "topic": "deco_params",
+   "difficulty": 2,
+   "hint": "Кэш в functools называется lru_cache (и cache).",
+   "explanation": "property и staticmethod — встроенные, lru_cache — из functools, dataclass — из dataclasses. functools.memoize и builtins.decorator не существуют.",
+   "payload": {
+    "options": [
+     "property",
+     "staticmethod",
+     "functools.lru_cache",
+     "dataclasses.dataclass",
+     "functools.memoize",
+     "builtins.decorator"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "",
+     "",
+     "Такого нет: кэш в functools — это lru_cache и cache.",
+     "Специального встроенного decorator нет — декоратором может быть любая функция."
+    ]
+   }
+  },
+  {
+   "id": "py_deco_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: повтор при ошибке",
+   "prompt": "Что выведет код?",
+   "topic": "deco_params",
+   "difficulty": 4,
+   "hint": "flaky падает два раза, а на третий вызов возвращает «успех».",
+   "explanation": "Первые два вызова бросают ValueError — обёртка печатает сообщение и пробует снова. Третий вызов успешен, и return сразу возвращает «успех».",
+   "code": "def retry(times):\n    def deco(func):\n        def wrapper():\n            for attempt in range(1, times + 1):\n                try:\n                    return func()\n                except ValueError:\n                    print(\"попытка\", attempt, \"не удалась\")\n            return \"сдаюсь\"\n        return wrapper\n    return deco\n\ncalls = 0\n\n@retry(3)\ndef flaky():\n    global calls\n    calls += 1\n    if calls < 3:\n        raise ValueError\n    return \"успех\"\n\nprint(flaky())",
+   "payload": {
+    "options": [
+     "попытка 1 не удалась\nпопытка 2 не удалась\nпопытка 3 не удалась\nсдаюсь",
+     "успех",
+     "попытка 1 не удалась\nпопытка 2 не удалась\nуспех",
+     "попытка 1 не удалась\nпопытка 2 не удалась\nуспех\nсдаюсь"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "На третьем вызове calls = 3, и flaky возвращает «успех».",
+     "Первые две попытки падают, и обёртка печатает об этом.",
+     "",
+     "return внутри цикла сразу завершает обёртку — до «сдаюсь» дело не доходит."
+    ]
+   },
+   "solution": {
+    "code": "def retry(times):\n    def deco(func):\n        def wrapper():\n            for attempt in range(1, times + 1):\n                try:\n                    return func()\n                except ValueError:\n                    print(\"попытка\", attempt, \"не удалась\")\n            return \"сдаюсь\"\n        return wrapper\n    return deco\n\ncalls = 0\n\n@retry(3)\ndef flaky():\n    global calls\n    calls += 1\n    if calls < 3:\n        raise ValueError\n    return \"успех\"\n\nprint(flaky())",
+    "output": "попытка 1 не удалась\nпопытка 2 не удалась\nуспех\n"
+   }
+  }
+ ]
+}

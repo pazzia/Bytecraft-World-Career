@@ -15,6 +15,7 @@ import contextlib
 import io
 import itertools
 import os
+import signal
 import sys
 import tempfile
 import textwrap
@@ -38,6 +39,8 @@ class Run:
 
     def summary(self):
         """What the player sees for their version of the program."""
+        if self.error == "TimeLimitExceeded":
+            return f"Программа работает дольше {TIME_LIMIT_SECONDS} секунд и была остановлена"
         if self.error:
             text = f"{self.error}: {self.message}" if self.message else self.error
             return text[:MAX_RESULT_CHARS]
@@ -48,12 +51,28 @@ class Run:
         return text if text else "(ничего не выводит)"
 
 
-def run(code, stdin=""):
-    """Executes code as a fresh __main__ module in a temporary directory."""
+# Same limit as the app gives a program (PracticeChecker.testTimeout).
+TIME_LIMIT_SECONDS = 5
+
+
+class TimeLimitExceeded(BaseException):
+    """Raised inside a program that runs longer than TIME_LIMIT_SECONDS."""
+
+
+def _on_alarm(signum, frame):
+    raise TimeLimitExceeded()
+
+
+def run(code, stdin="", time_limit=TIME_LIMIT_SECONDS):
+    """Executes code as a fresh __main__ module in a temporary directory.
+    A program that runs longer than `time_limit` seconds fails with
+    TimeLimitExceeded (as it would time out in the app)."""
     out = io.StringIO()
     old_stdin = sys.stdin
     old_cwd = os.getcwd()
     tmp = tempfile.mkdtemp(prefix="bytecraft_")
+    old_handler = signal.signal(signal.SIGALRM, _on_alarm)
+    signal.setitimer(signal.ITIMER_REAL, time_limit)
     try:
         sys.stdin = io.StringIO(stdin)
         os.chdir(tmp)
@@ -69,6 +88,8 @@ def run(code, stdin=""):
         message = str(error).split("\n")[0]
         return Run(out.getvalue(), type(error).__name__, message)
     finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, old_handler)
         sys.stdin = old_stdin
         os.chdir(old_cwd)
     return Run(out.getvalue())

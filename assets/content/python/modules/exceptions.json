@@ -5,7 +5,7 @@
    "id": "py_exc_001",
    "type": "predict_output",
    "role": "lesson",
-   "title": "Перехват",
+   "title": "Перехват ошибки",
    "prompt": "Что выведет код?",
    "topic": "exc_try",
    "difficulty": 1,
@@ -112,14 +112,14 @@
    "topic": "exc_try",
    "difficulty": 2,
    "hint": "else — только без ошибки, finally — всегда.",
-   "explanation": "check(2): ошибки нет — else печатает ok 5.0, потом finally. check(0): except печатает «ошибка», потом finally.",
-   "code": "def check(x):\n    try:\n        r = 10 / x\n    except ZeroDivisionError:\n        print(\"ошибка\")\n    else:\n        print(\"ok\", r)\n    finally:\n        print(\"конец\")\n\ncheck(2)\ncheck(0)",
+   "explanation": "share(4): ошибки нет — else печатает «частное 3.0», потом finally. share(0): except печатает «ноль», потом finally.",
+   "code": "def share(x):\n    try:\n        part = 12 / x\n    except ZeroDivisionError:\n        print(\"ноль\")\n    else:\n        print(\"частное\", part)\n    finally:\n        print(\"готово\")\n\nshare(4)\nshare(0)",
    "payload": {
-    "expectedOutput": "ok 5.0\nконец\nошибка\nконец"
+    "expectedOutput": "частное 3.0\nготово\nноль\nготово"
    },
    "solution": {
-    "code": "def check(x):\n    try:\n        r = 10 / x\n    except ZeroDivisionError:\n        print(\"ошибка\")\n    else:\n        print(\"ok\", r)\n    finally:\n        print(\"конец\")\n\ncheck(2)\ncheck(0)",
-    "output": "ok 5.0\nконец\nошибка\nконец\n"
+    "code": "def share(x):\n    try:\n        part = 12 / x\n    except ZeroDivisionError:\n        print(\"ноль\")\n    else:\n        print(\"частное\", part)\n    finally:\n        print(\"готово\")\n\nshare(4)\nshare(0)",
+    "output": "частное 3.0\nготово\nноль\nготово\n"
    }
   },
   {
@@ -127,20 +127,51 @@
    "type": "bug_finder",
    "role": "challenge",
    "title": "Не тот except",
-   "prompt": "Отсутствующий товар должен давать сообщение, а не падение. Найдите строку с ошибкой",
+   "prompt": "Несуществующая позиция меню должна давать сообщение, а не падение. Найдите строку с ошибкой",
    "topic": "exc_types",
    "difficulty": 2,
-   "hint": "Какое исключение вызывает обращение к отсутствующему ключу словаря?",
-   "explanation": "Нет ключа в словаре — KeyError, а не IndexError. except IndexError его не ловит, и программа падает.",
-   "code": "prices = {\"apple\": 3}\ntry:\n    print(prices[\"pear\"])\nexcept IndexError:\n    print(\"нет такого товара\")",
+   "hint": "Какое исключение вызывает индекс за пределами списка?",
+   "explanation": "Индекс за пределами списка — IndexError, а не KeyError (тот — для словарей). except KeyError его не ловит, и программа падает.",
+   "code": "menu = [\"чай\", \"кофе\"]\ntry:\n    print(menu[5])\nexcept KeyError:\n    print(\"нет такой позиции\")",
    "payload": {
     "buggyLines": [
      3
     ]
    },
    "solution": {
-    "code": "prices = {\"apple\": 3}\ntry:\n    print(prices[\"pear\"])\nexcept KeyError:\n    print(\"нет такого товара\")",
-    "output": "нет такого товара\n"
+    "code": "menu = [\"чай\", \"кофе\"]\ntry:\n    print(menu[5])\nexcept IndexError:\n    print(\"нет такой позиции\")",
+    "output": "нет такой позиции\n"
+   }
+  },
+  {
+   "id": "py_exc_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Два типа в одном except",
+   "prompt": "Что выведет код?",
+   "topic": "exc_types",
+   "difficulty": 2,
+   "hint": "int(None) — это не ValueError. Ловит ли его кортеж исключений?",
+   "explanation": "int(\"x\") — ValueError, int(None) — TypeError. Кортеж в except ловит оба типа, а as e даёт сам объект ошибки.",
+   "code": "for raw in [\"5\", \"x\", None]:\n    try:\n        print(int(raw) * 2)\n    except (ValueError, TypeError) as e:\n        print(\"плохо:\", type(e).__name__)",
+   "payload": {
+    "options": [
+     "10\nплохо: ValueError\nплохо: ValueError",
+     "10\nплохо: ValueError",
+     "TypeError",
+     "10\nплохо: ValueError\nплохо: TypeError"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "int(None) — TypeError: None вообще не строка и не число.",
+     "Цикл продолжается: третий элемент None тоже обрабатывается.",
+     "TypeError перехвачен: он есть в кортеже исключений.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "for raw in [\"5\", \"x\", None]:\n    try:\n        print(int(raw) * 2)\n    except (ValueError, TypeError) as e:\n        print(\"плохо:\", type(e).__name__)",
+    "output": "10\nплохо: ValueError\nплохо: TypeError\n"
    }
   },
   {
@@ -229,6 +260,37 @@
    "solution": {
     "code": "try:\n    try:\n        int(\"x\")\n    except ValueError as e:\n        raise RuntimeError(\"плохой ввод\") from e\nexcept RuntimeError as e:\n    print(type(e).__name__, e, type(e.__cause__).__name__)",
     "output": "RuntimeError плохой ввод ValueError\n"
+   }
+  },
+  {
+   "id": "py_exc_011",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Группы исключений",
+   "prompt": "Что выведет код?",
+   "topic": "exc_types",
+   "difficulty": 4,
+   "hint": "except* обрабатывает свою часть группы, а остальное передаёт следующим блокам except*.",
+   "explanation": "ExceptionGroup несёт три ошибки. except* ValueError получает подгруппу из двух ValueError, except* KeyError — из одной KeyError. Сработали оба блока.",
+   "code": "try:\n    raise ExceptionGroup(\"пакет\", [ValueError(\"a\"), KeyError(\"b\"), ValueError(\"c\")])\nexcept* ValueError as group:\n    print(\"value:\", len(group.exceptions))\nexcept* KeyError as group:\n    print(\"key:\", len(group.exceptions))",
+   "payload": {
+    "options": [
+     "value: 1",
+     "value: 2",
+     "value: 2\nkey: 0",
+     "value: 2\nkey: 1"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "except* получает все ValueError группы сразу — их две.",
+     "В отличие от обычного except, блоки except* срабатывают все, у кого есть свои ошибки в группе.",
+     "except* KeyError получает одну ошибку KeyError из группы.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "try:\n    raise ExceptionGroup(\"пакет\", [ValueError(\"a\"), KeyError(\"b\"), ValueError(\"c\")])\nexcept* ValueError as group:\n    print(\"value:\", len(group.exceptions))\nexcept* KeyError as group:\n    print(\"key:\", len(group.exceptions))",
+    "output": "value: 2\nkey: 1\n"
    }
   },
   {

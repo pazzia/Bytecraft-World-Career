@@ -1054,7 +1054,8 @@
     }
    ],
    "pitfalls": [
-    "Голый except: перехватывает всё подряд, включая опечатки в коде, и прячет ошибки.",
+    "Голый except: перехватывает всё подряд — опечатки в коде, даже Ctrl+C (KeyboardInterrupt) и sys.exit() — и прячет ошибки.",
+    "return внутри finally перекрывает return из try и даже глотает исключение — так не пишут.",
     "Слишком большой блок try: непонятно, какая строка на самом деле упала."
    ],
    "module": "exceptions"
@@ -1063,10 +1064,10 @@
    "id": "exc_types",
    "title": "Иерархия исключений",
    "summary": "Исключения — классы. except ловит указанный класс и все его подклассы, поэтому важен порядок блоков except.",
-   "body": "Частые: ValueError (неподходящее значение: int(\"abc\")), TypeError (неподходящий тип: \"5\" + 5), KeyError и IndexError (нет ключа или индекса), ZeroDivisionError, NameError, AttributeError, FileNotFoundError.\n\nKeyError и IndexError — подклассы LookupError, почти все — подклассы Exception. except Exception ловит практически всё, поэтому его ставят последним: Python проверяет блоки сверху вниз и выполняет первый подходящий.\n\nПодход EAFP («проще попросить прощения, чем разрешения»): попробовать действие и обработать исключение, вместо множества предварительных проверок.",
+   "body": "Частые: ValueError (неподходящее значение: int(\"abc\")), TypeError (неподходящий тип: \"5\" + 5), KeyError и IndexError (нет ключа или индекса), ZeroDivisionError, NameError, AttributeError, FileNotFoundError.\n\nKeyError и IndexError — подклассы LookupError, почти все — подклассы Exception. except Exception ловит практически всё (кроме KeyboardInterrupt и SystemExit), поэтому его ставят последним: Python проверяет блоки сверху вниз и выполняет первый подходящий.\n\nНесколько типов в одном блоке — кортежем: except (ValueError, TypeError) as e.\n\nС Python 3.11 несколько независимых ошибок можно передать сразу — ExceptionGroup, а обработать по типам — блоками except*. Так работают параллельные задачи asyncio.\n\nПодход EAFP («проще попросить прощения, чем разрешения»): попробовать действие и обработать исключение, вместо множества предварительных проверок.",
    "examples": [
     {
-     "code": "for code in [\"[1][5]\", \"{}['k']\", \"1/0\"]:\n    try:\n        eval(code)\n    except LookupError as e:\n        print(\"поиск:\", type(e).__name__)\n    except Exception as e:\n        print(\"другое:\", type(e).__name__)",
+     "code": "actions = [lambda: [1][5], lambda: {}[\"k\"], lambda: 1 / 0]\nfor act in actions:\n    try:\n        act()\n    except LookupError as e:\n        print(\"поиск:\", type(e).__name__)\n    except Exception as e:\n        print(\"другое:\", type(e).__name__)",
      "output": "поиск: IndexError\nпоиск: KeyError\nдругое: ZeroDivisionError\n",
      "note": "LookupError ловит и IndexError, и KeyError."
     }
@@ -1080,7 +1081,7 @@
    "id": "exc_raise",
    "title": "raise и свои исключения",
    "summary": "raise создаёт исключение. Своё исключение — класс-наследник Exception. raise ... from e сохраняет причину.",
-   "body": "raise ValueError(\"сообщение\") прерывает функцию и передаёт ошибку вызывающему коду. Так функция сообщает, что не может выполнить работу с такими данными.\n\nСвоё исключение объявляют как class InsufficientFunds(Exception): pass — его можно ловить отдельно от остальных. Подробно о классах — в модуле про ООП.\n\nraise NewError(...) from e связывает новую ошибку с исходной (e становится __cause__) — в трассировке видны обе. Голый raise внутри except пробрасывает текущее исключение дальше.",
+   "body": "raise ValueError(\"сообщение\") прерывает функцию и передаёт ошибку вызывающему коду. Так функция сообщает, что не может выполнить работу с такими данными.\n\nСвоё исключение объявляют как class InsufficientFunds(Exception): pass — его можно ловить отдельно от остальных. Подробно о классах — в модуле про ООП.\n\nЕсли внутри except возникает новая ошибка, Python сам запоминает исходную в __context__ и покажет обе («During handling of the above exception…»). raise NewError(...) from e делает связь явной: e становится __cause__ («direct cause»). from None скрывает исходную ошибку. Голый raise внутри except пробрасывает текущее исключение дальше.",
    "examples": [
     {
      "code": "class InsufficientFunds(Exception):\n    pass\n\ndef withdraw(balance, amount):\n    if amount > balance:\n        raise InsufficientFunds(f\"не хватает {amount - balance}\")\n    return balance - amount\n\ntry:\n    withdraw(50, 80)\nexcept InsufficientFunds as e:\n    print(\"Ошибка:\", e)",
@@ -1118,7 +1119,7 @@
    "body": "Каждая прочитанная строка заканчивается символом \\n (кроме, возможно, последней). Для обработки его обычно убирают: line.rstrip(\"\\n\") или line.strip().\n\nfor line in f читает файл лениво, по строке за раз — так обрабатывают даже очень большие файлы.\n\nint(\" 42\\n\") работает: int игнорирует пробелы и переводы строк по краям.",
    "examples": [
     {
-     "code": "with open(\"data.txt\", \"w\") as f:\n    f.write(\"3\\n5\\n8\\n\")\nwith open(\"data.txt\") as f:\n    lines = f.readlines()\nprint(lines)\nprint([int(line) for line in lines])",
+     "code": "with open(\"data.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"3\\n5\\n8\\n\")\nwith open(\"data.txt\", encoding=\"utf-8\") as f:\n    lines = f.readlines()\nprint(lines)\nprint([int(line) for line in lines])",
      "output": "['3\\n', '5\\n', '8\\n']\n[3, 5, 8]\n"
     }
    ],
@@ -1134,8 +1135,8 @@
    "body": "Path(\"reports\") / \"2024\" / \"summary.csv\" склеивает путь оператором /. У пути есть name (имя файла), stem (без расширения), suffix (расширение), parent (папка).\n\npath.write_text(text, encoding=\"utf-8\") и path.read_text(encoding=\"utf-8\") открывают и закрывают файл сами. path.exists() — существует ли путь, path.mkdir(parents=True, exist_ok=True) — создать папки, Path(\".\").glob(\"*.txt\") — найти файлы по шаблону.",
    "examples": [
     {
-     "code": "from pathlib import Path\n\np = Path(\"reports\") / \"2024\" / \"summary.final.csv\"\nprint(p.name, p.stem, p.suffix, p.parent, sep=\" | \")",
-     "output": "summary.final.csv | summary.final | .csv | reports/2024\n"
+     "code": "from pathlib import Path\n\np = Path(\"docs\") / \"2023\" / \"plan.draft.md\"\nprint(p.name, p.stem, p.suffix, p.parent, sep=\" | \")",
+     "output": "plan.draft.md | plan.draft | .md | docs/2023\n"
     },
     {
      "code": "from pathlib import Path\n\np = Path(\"hello.txt\")\np.write_text(\"Привет!\", encoding=\"utf-8\")\nprint(p.exists(), p.read_text(encoding=\"utf-8\"))",
@@ -1148,10 +1149,27 @@
    "module": "files"
   },
   {
+   "id": "files_csv",
+   "title": "CSV",
+   "summary": "Модуль csv читает и пишет таблицы: writer.writerow(список), DictReader — строки как словари. Он сам разбирает кавычки и запятые внутри значений.",
+   "body": "CSV — текст, где значения разделены запятыми. Если значение само содержит запятую, его берут в кавычки: Ада,\"Лондон, UK\". Поэтому split(\",\") для CSV ненадёжен.\n\ncsv.writer(f).writerow([...]) записывает строку, csv.reader(f) возвращает списки, csv.DictReader(f) — словари по заголовкам первой строки. Файл для csv открывают с newline=\"\", чтобы не появлялись пустые строки.",
+   "examples": [
+    {
+     "code": "import csv\n\nwith open(\"p.csv\", \"w\", newline=\"\", encoding=\"utf-8\") as f:\n    writer = csv.writer(f)\n    writer.writerow([\"name\", \"city\"])\n    writer.writerow([\"Ада\", \"Лондон, UK\"])\n\nwith open(\"p.csv\", newline=\"\", encoding=\"utf-8\") as f:\n    print(f.read().splitlines()[1])\nwith open(\"p.csv\", newline=\"\", encoding=\"utf-8\") as f:\n    for row in csv.DictReader(f):\n        print(row[\"city\"])",
+     "output": "Ада,\"Лондон, UK\"\nЛондон, UK\n",
+     "note": "Запятая внутри значения не ломает разбор."
+    }
+   ],
+   "pitfalls": [
+    "Разбирать CSV через split(\",\"): значение с запятой развалится на части."
+   ],
+   "module": "files"
+  },
+  {
    "id": "std_import",
    "title": "Импорт модулей",
    "summary": "import модуль — доступ через модуль.имя; from модуль import имя — имя напрямую; as — псевдоним.",
-   "body": "import math → math.sqrt(16). from math import sqrt → sqrt(16). import numpy as np — короткий псевдоним.\n\nfrom модуль import * захламляет пространство имён и прячет, откуда взялось имя, — в рабочем коде так не делают.\n\nМодуль выполняется один раз при первом импорте. Свой файл можно импортировать так же, как стандартный модуль, поэтому не называйте файлы как стандартные модули (random.py, json.py): import подхватит ваш файл.",
+   "body": "import math → math.sqrt(16). from math import sqrt → sqrt(16). import datetime as dt — короткий псевдоним.\n\nfrom модуль import * захламляет пространство имён и прячет, откуда взялось имя, — в рабочем коде так не делают.\n\nМодуль выполняется один раз при первом импорте. Свой файл можно импортировать так же, как стандартный модуль, поэтому не называйте файлы как стандартные модули (random.py, json.py): import подхватит ваш файл.",
    "examples": [
     {
      "code": "import math\nfrom statistics import mean as average\n\nprint(math.sqrt(16), math.pi > 3, average([1, 2, 3, 4]))",
@@ -1167,7 +1185,7 @@
    "id": "std_collections",
    "title": "collections",
    "summary": "Counter — подсчёт, defaultdict — значение по умолчанию, deque — быстрая очередь с двух концов, namedtuple — кортеж с именами полей.",
-   "body": "Counter(\"abracadabra\") считает элементы; most_common(n) — n самых частых (при равенстве — в порядке первого появления).\n\ndefaultdict(list) создаёт пустой список для нового ключа при первом обращении: groups[key].append(x) без проверок.\n\ndeque — двусторонняя очередь: append/appendleft и pop/popleft за O(1). deque(maxlen=3) хранит только последние 3 элемента.\n\nnamedtuple(\"Point\", \"x y\") создаёт неизменяемый тип с полями p.x и p.y и понятным выводом.",
+   "body": "Counter(\"abracadabra\") считает элементы; most_common(n) — n самых частых (при равенстве — в порядке первого появления).\n\ndefaultdict(list) создаёт пустой список для нового ключа при первом обращении: groups[key].append(x) без проверок.\n\ndeque — двусторонняя очередь: append/appendleft и pop/popleft за O(1). deque(maxlen=3) хранит не больше 3 элементов: при append лишний выталкивается слева, при appendleft — справа.\n\nOrderedDict — словарь с дополнительными операциями над порядком: move_to_end(k) переносит ключ в конец. ChainMap(user, defaults) ищет ключ сначала в первом словаре, потом во втором — удобно для настроек.\n\nnamedtuple(\"Point\", \"x y\") создаёт неизменяемый тип с полями p.x и p.y и понятным выводом.",
    "examples": [
     {
      "code": "from collections import Counter, defaultdict, deque\n\nprint(Counter(\"abracadabra\").most_common(2))\ngroups = defaultdict(list)\nfor word in [\"apple\", \"avocado\", \"banana\"]:\n    groups[word[0]].append(word)\nprint(dict(groups))\nlast = deque(maxlen=2)\nfor x in [1, 2, 3]:\n    last.append(x)\nprint(list(last))",
@@ -1199,15 +1217,21 @@
    "id": "data_json",
    "title": "JSON",
    "summary": "json.dumps превращает данные Python в строку JSON, json.loads — обратно. dump/load работают с файлами.",
-   "body": "Соответствие: dict ↔ объект {}, list ↔ массив [], str ↔ строка в двойных кавычках, True/False ↔ true/false, None ↔ null.\n\nВ JSON строки только в двойных кавычках: '{\"a\": 1}' — правильно, \"{'a': 1}\" — json.JSONDecodeError.\n\nПо умолчанию dumps экранирует не-ASCII символы (\\u0410…). ensure_ascii=False оставляет русский текст как есть, indent=2 делает вывод многострочным и читаемым.",
+   "body": "Соответствие: dict ↔ объект {}, list ↔ массив [], str ↔ строка в двойных кавычках, True/False ↔ true/false, None ↔ null.\n\nВ JSON строки только в двойных кавычках: '{\"a\": 1}' — правильно, \"{'a': 1}\" — json.JSONDecodeError.\n\nПо умолчанию dumps экранирует не-ASCII символы (\\u0410…). ensure_ascii=False оставляет русский текст как есть, indent=2 делает вывод многострочным и читаемым.\n\nКлючи объектов JSON — всегда строки: число-ключ после dumps/loads станет строкой. Кортеж превращается в список.",
    "examples": [
     {
      "code": "import json\n\ndata = {\"name\": \"Ада\", \"langs\": [\"Python\"], \"admin\": False, \"boss\": None}\ntext = json.dumps(data, ensure_ascii=False)\nprint(text)\nprint(json.loads(text)[\"langs\"][0])",
      "output": "{\"name\": \"Ада\", \"langs\": [\"Python\"], \"admin\": false, \"boss\": null}\nPython\n"
+    },
+    {
+     "code": "import json\n\nwith open(\"cfg.json\", \"w\", encoding=\"utf-8\") as f:\n    json.dump({\"size\": 3, \"tags\": (\"a\", \"b\")}, f)\nwith open(\"cfg.json\", encoding=\"utf-8\") as f:\n    print(json.load(f))",
+     "output": "{'size': 3, 'tags': ['a', 'b']}\n",
+     "note": "dump/load работают с файлами; кортеж стал списком."
     }
    ],
    "pitfalls": [
     "Путать dumps/loads (строки) и dump/load (файлы).",
+    "Ждать, что числовые ключи переживут JSON: {1: 'a'} вернётся как {'1': 'a'}.",
     "Одинарные кавычки внутри JSON-строки: это не JSON."
    ],
    "module": "textdata"
@@ -1216,7 +1240,7 @@
    "id": "data_re",
    "title": "Регулярные выражения",
    "summary": "Модуль re ищет текст по шаблону: search — первое совпадение, findall — все, sub — замена, fullmatch — вся строка целиком.",
-   "body": "Основы шаблонов: \\d — цифра, \\w — буква, цифра или _, \\s — пробельный символ, . — любой символ кроме перевода строки, + — один или больше, * — ноль или больше, ? — ноль или один, {3} — ровно три, [a-z] — символ из набора, ^ и $ — начало и конец строки.\n\nСкобки ( ) создают группу: m.group(1) — её текст. findall с группами возвращает только группы.\n\n+ и * жадные: захватывают как можно больше. +? и *? — ленивые, захватывают как можно меньше.\n\nШаблоны пишут в сырых строках r\"...\" — тогда \\d не нужно экранировать ещё раз.",
+   "body": "Основы шаблонов: \\d — цифра, \\w — буква, цифра или _, \\s — пробельный символ, . — любой символ кроме перевода строки, + — один или больше, * — ноль или больше, ? — ноль или один, {3} — ровно три, [a-z] — символ из набора, ^ и $ — начало и конец строки.\n\nСкобки ( ) создают группу: m.group(1) — её текст. findall с группами возвращает только группы.\n\n+ и * жадные: захватывают как можно больше. +? и *? — ленивые, захватывают как можно меньше.\n\nШаблоны пишут в сырых строках r\"...\" — тогда \\d не нужно экранировать ещё раз; без r Python 3.12 предупреждает о неизвестной escape-последовательности (SyntaxWarning).\n\n\\w в Python 3 включает и кириллицу. re.compile(шаблон, флаги) заранее готовит шаблон; флаги: re.I — без учёта регистра, re.M — ^ и $ для каждой строки. (?P<имя>...) — именованная группа: m[\"имя\"].",
    "examples": [
     {
      "code": "import re\n\ntext = \"Order 15: 3 apples, 12 pears\"\nprint(re.findall(r\"\\d+\", text))\nprint(re.sub(r\"\\d+\", \"#\", text))\nm = re.search(r\"(\\w+)@(\\w+)\\.com\", \"mail: ada@lovelace.com\")\nprint(m.group(1), m.group(2))",
@@ -1233,7 +1257,7 @@
    "id": "data_datetime",
    "title": "Даты и время",
    "summary": "datetime.date и datetime.datetime хранят даты, timedelta — промежутки. Вычитание дат даёт timedelta.",
-   "body": "date(2024, 2, 28) + timedelta(days=2) учитывает длину месяцев и високосные годы: получится 2024-03-01.\n\nstrftime форматирует: d.strftime(\"%d.%m.%Y\") → «01.03.2024». datetime.strptime(\"01.03.2024\", \"%d.%m.%Y\") разбирает строку в дату.\n\n(date2 - date1).days — количество дней между датами.",
+   "body": "date(2024, 2, 28) + timedelta(days=2) учитывает длину месяцев и високосные годы: получится 2024-03-01.\n\nstrftime форматирует: d.strftime(\"%d.%m.%Y\") → «01.03.2024». datetime.strptime(\"01.03.2024\", \"%d.%m.%Y\") разбирает строку в datetime (.date() — только дата).\n\nВремя с часовым поясом: datetime(..., tzinfo=timezone.utc); astimezone переводит в другой пояс. Сравнивать время с поясом и без — TypeError.\n\n(date2 - date1).days — количество дней между датами.",
    "examples": [
     {
      "code": "from datetime import date, timedelta\n\nd = date(2024, 2, 28) + timedelta(days=2)\nprint(d, d.strftime(\"%d.%m.%Y\"))\nprint((date(2025, 1, 1) - date(2024, 1, 1)).days)",
@@ -1260,7 +1284,7 @@
    ],
    "pitfalls": [
     "Забыть self в списке параметров метода: TypeError takes 0 positional arguments but 1 was given.",
-    "Писать name вместо self.name внутри метода: NameError."
+    "Писать name вместо self.name внутри метода: NameError — или, что хуже, метод молча возьмёт глобальную переменную с тем же именем."
    ],
    "module": "classes"
   },
@@ -1276,7 +1300,8 @@
     }
    ],
    "pitfalls": [
-    "members = [] в теле класса вместо self.members = [] в __init__: список общий для всех объектов."
+    "members = [] в теле класса вместо self.members = [] в __init__: список общий для всех объектов.",
+    "self.count += 1 для атрибута класса не меняет класс: это чтение атрибута класса и создание атрибута объекта. Счётчик класса меняют через ИмяКласса.count."
    ],
    "module": "classes"
   },
@@ -1284,7 +1309,7 @@
    "id": "inh_basics",
    "title": "Наследование и super()",
    "summary": "class B(A) наследует методы A. Метод с тем же именем в B переопределяет метод A; super() вызывает версию родителя.",
-   "body": "Подкласс получает все методы и атрибуты класса-родителя и может добавить свои или заменить существующие.\n\nЕсли в подклассе есть свой __init__, родительский __init__ сам не вызывается. Его вызывают явно: super().__init__(...), иначе атрибуты, которые настраивает родитель, не появятся.\n\nАтрибуты класса тоже наследуются: если у подкласса нет своего, Python берёт атрибут родителя.",
+   "body": "Подкласс получает все методы и атрибуты класса-родителя и может добавить свои или заменить существующие.\n\nНаследование выражает отношение «является» (студент — человек). Если объект просто использует другой («у машины есть двигатель»), лучше композиция: хранить объект в атрибуте. Подкласс должен работать везде, где работает родитель (принцип подстановки Лисков): квадрат, у которого нельзя отдельно менять ширину, — плохой подкласс прямоугольника.\n\nЕсли в подклассе есть свой __init__, родительский __init__ сам не вызывается. Его вызывают явно: super().__init__(...), иначе атрибуты, которые настраивает родитель, не появятся.\n\nАтрибуты класса тоже наследуются: если у подкласса нет своего, Python берёт атрибут родителя.",
    "examples": [
     {
      "code": "class Person:\n    def __init__(self, name):\n        self.name = name\n\nclass Student(Person):\n    def __init__(self, name, group):\n        super().__init__(name)\n        self.group = group\n\ns = Student(\"Ада\", \"П-1\")\nprint(s.name, s.group)",
@@ -1316,12 +1341,12 @@
    "id": "inh_mro",
    "title": "Множественное наследование, MRO, ABC",
    "summary": "При нескольких родителях Python ищет методы в порядке MRO. Абстрактный класс (ABC) нельзя создать, пока не реализованы его абстрактные методы.",
-   "body": "class D(B, C): порядок поиска методов — D, B, C, затем общий предок. Посмотреть его можно в D.__mro__. super() вызывает следующий класс именно в этом порядке, а не обязательно прямого родителя.\n\nfrom abc import ABC, abstractmethod: метод с @abstractmethod обязан быть реализован в подклассе. Попытка создать класс, где он не реализован, даёт TypeError. Так задают интерфейс.",
+   "body": "class D(B, C): порядок поиска методов — D, B, C, затем общий предок. Посмотреть его можно в D.__mro__. super() вызывает следующий класс в MRO того объекта, для которого вызван метод, — а не обязательно прямого родителя.\n\nfrom abc import ABC, abstractmethod: метод, помеченный строкой @abstractmethod (это декоратор — пометка над функцией; подробно о них в отдельном модуле), обязан быть реализован в подклассе. Объявить подкласс без него можно, но создать объект такого класса нельзя: TypeError. Так задают интерфейс. Тело абстрактного метода часто пишут как ... (многоточие) — «здесь ничего нет».\n\nABC требует явного наследования. Protocol из модуля typing описывает интерфейс «по форме» — без наследования (об этом — в модуле про аннотации типов).",
    "examples": [
     {
-     "code": "class A:\n    def who(self):\n        return \"A\"\n\nclass B(A):\n    def who(self):\n        return \"B\" + super().who()\n\nclass C(A):\n    def who(self):\n        return \"C\" + super().who()\n\nclass D(B, C):\n    def who(self):\n        return \"D\" + super().who()\n\nprint(D().who(), [k.__name__ for k in D.__mro__])",
-     "output": "DBCA ['D', 'B', 'C', 'A', 'object']\n",
-     "note": "super() в B вызывает C, а не A."
+     "code": "class A:\n    def who(self):\n        return \"A\"\n\nclass B(A):\n    def who(self):\n        return \"B\" + super().who()\n\nclass C(A):\n    def who(self):\n        return \"C\" + super().who()\n\nclass D(B, C):\n    def who(self):\n        return \"D\" + super().who()\n\nprint(D().who(), B().who(), [k.__name__ for k in D.__mro__])",
+     "output": "DBCA BA ['D', 'B', 'C', 'A', 'object']\n",
+     "note": "Для объекта D super() в B вызывает C (следующий в D.__mro__); для объекта B — сразу A."
     },
     {
      "code": "from abc import ABC, abstractmethod\n\nclass Shape(ABC):\n    @abstractmethod\n    def area(self): ...\n\nclass Square(Shape):\n    def __init__(self, a):\n        self.a = a\n    def area(self):\n        return self.a ** 2\n\nprint(Square(3).area())\ntry:\n    Shape()\nexcept TypeError:\n    print(\"абстрактный класс создать нельзя\")",
@@ -1340,8 +1365,8 @@
    "body": "print(obj) и str(obj) используют __str__. Если его нет — __repr__. Если нет и его, выводится что-то вроде <__main__.Point object at 0x…>.\n\nВнутри контейнеров (print([p])) и в интерактивной консоли всегда используется __repr__. Хорошая практика: __repr__ похож на код, создающий объект: Point(1, 2).\n\nf\"{obj!r}\" вставляет repr вместо str.",
    "examples": [
     {
-     "code": "class Point:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n    def __str__(self):\n        return f\"({self.x}, {self.y})\"\n    def __repr__(self):\n        return f\"Point({self.x}, {self.y})\"\n\np = Point(1, 2)\nprint(p, [p], f\"{p!r}\")",
-     "output": "(1, 2) [Point(1, 2)] Point(1, 2)\n"
+     "code": "class Money:\n    def __init__(self, amount):\n        self.amount = amount\n    def __str__(self):\n        return f\"{self.amount} ₽\"\n    def __repr__(self):\n        return f\"Money({self.amount})\"\n\nm = Money(5)\nprint(m, [m], f\"{m!r}\")",
+     "output": "5 ₽ [Money(5)] Money(5)\n"
     }
    ],
    "pitfalls": [
@@ -1353,11 +1378,11 @@
    "id": "dunder_ops",
    "title": "Сравнение и операторы",
    "summary": "== вызывает __eq__, < — __lt__, + — __add__, * — __mul__. Равные объекты обязаны иметь равные хеши.",
-   "body": "Без __eq__ объекты равны, только если это один и тот же объект. Определив __eq__, вы задаёте равенство по содержимому.\n\nЕсли объявлен __eq__, Python убирает __hash__ — объект нельзя положить в множество или сделать ключом словаря, пока не определён __hash__. Правило: a == b ⇒ hash(a) == hash(b). Обычно hash считают от тех же полей, что сравниваются.\n\nsorted и min/max используют только <: достаточно __lt__. functools.total_ordering достраивает остальные сравнения по __eq__ и __lt__.\n\n__add__(self, other) возвращает новый объект и не меняет исходные.",
+   "body": "Без __eq__ объекты равны, только если это один и тот же объект. Определив __eq__, вы задаёте равенство по содержимому.\n\nЕсли объявлен __eq__, Python убирает __hash__ — объект нельзя положить в множество или сделать ключом словаря, пока не определён __hash__. Правило: a == b ⇒ hash(a) == hash(b). Обычно hash считают от тех же полей, что сравниваются.\n\nsorted и min сравнивают через <, max — через >; если __gt__ нет, Python пробует отражённое сравнение other.__lt__(self), поэтому для всех троих хватает __lt__. functools.total_ordering достраивает остальные сравнения по __eq__ и __lt__.\n\nЕсли сравнение с объектом другого типа не имеет смысла, метод возвращает специальное значение NotImplemented — тогда Python попробует операцию другого объекта или вернёт False для ==. Иначе Vec(1, 2) == 5 упадёт на 5.x.\n\n__add__(self, other) возвращает новый объект и не меняет исходные.",
    "examples": [
     {
-     "code": "class Vec:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n    def __add__(self, other):\n        return Vec(self.x + other.x, self.y + other.y)\n    def __eq__(self, other):\n        return (self.x, self.y) == (other.x, other.y)\n    def __hash__(self):\n        return hash((self.x, self.y))\n    def __repr__(self):\n        return f\"Vec({self.x}, {self.y})\"\n\nprint(Vec(1, 2) + Vec(3, 4), Vec(1, 1) == Vec(1, 1), len({Vec(1, 1), Vec(1, 1)}))",
-     "output": "Vec(4, 6) True 1\n"
+     "code": "class Vec:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n    def __add__(self, other):\n        return Vec(self.x + other.x, self.y + other.y)\n    def __eq__(self, other):\n        if not isinstance(other, Vec):\n            return NotImplemented\n        return (self.x, self.y) == (other.x, other.y)\n    def __hash__(self):\n        return hash((self.x, self.y))\n    def __repr__(self):\n        return f\"Vec({self.x}, {self.y})\"\n\nprint(Vec(1, 2) + Vec(3, 4), Vec(1, 1) == Vec(1, 1), len({Vec(1, 1), Vec(1, 1)}), Vec(1, 1) == 5)",
+     "output": "Vec(4, 6) True 1 False\n"
     }
    ],
    "pitfalls": [
@@ -1373,8 +1398,9 @@
    "body": "Объект с __len__ и __getitem__ ведёт себя как последовательность: работают len, индексы, срезы (если __getitem__ их поддерживает), for, in и reversed.\n\n__call__ делает объект вызываемым как функция — удобно для объектов с состоянием.\n\nИстинность: если есть __bool__, используется он; иначе __len__ (0 — ложь); иначе объект всегда истинен.",
    "examples": [
     {
-     "code": "class Deck:\n    def __init__(self):\n        self.cards = [\"A\", \"K\", \"Q\"]\n    def __len__(self):\n        return len(self.cards)\n    def __getitem__(self, i):\n        return self.cards[i]\n\nd = Deck()\nprint(len(d), d[0], \"K\" in d, list(reversed(d)))",
-     "output": "3 A True ['Q', 'K', 'A']\n"
+     "code": "class Playlist:\n    def __init__(self):\n        self.songs = [\"intro\", \"verse\", \"outro\"]\n    def __len__(self):\n        return len(self.songs)\n    def __getitem__(self, i):\n        return self.songs[i]\n\np = Playlist()\nprint(len(p), p[0], \"verse\" in p, p[1:], list(reversed(p)))",
+     "output": "3 intro True ['verse', 'outro'] ['outro', 'verse', 'intro']\n",
+     "note": "Срез тоже работает: __getitem__ передаёт его списку."
     }
    ],
    "pitfalls": [
@@ -1386,7 +1412,7 @@
    "id": "prop_property",
    "title": "@property",
    "summary": "@property превращает метод в атрибут только для чтения; @имя.setter добавляет проверку при записи.",
-   "body": "@property над методом area позволяет писать r.area без скобок: значение вычисляется при каждом обращении и всегда актуально.\n\nСеттер (@c.setter) вызывается при присваивании t.c = 25 — в нём проверяют значение и сохраняют его во «внутренний» атрибут с подчёркиванием (self._c). Без сеттера присваивание даёт AttributeError.\n\nВнутри свойства обращайтесь к _c, а не к c: иначе свойство вызовет само себя бесконечно (RecursionError).\n\nСтрока с @ над функцией — декоратор. Как они устроены, разберём в отдельном модуле.",
+   "body": "@property над методом area позволяет писать r.area без скобок: значение вычисляется при каждом обращении и всегда актуально.\n\nСеттер (@c.setter) вызывается при присваивании t.c = 25 — в нём проверяют значение и сохраняют его во «внутренний» атрибут с подчёркиванием (self._c). Без сеттера присваивание даёт AttributeError. Функция-сеттер обязана называться так же, как свойство (def c), иначе получится отдельное свойство, а c останется только для чтения.\n\nfunctools.cached_property вычисляет значение один раз при первом обращении и запоминает его в объекте — для дорогих вычислений.\n\nВнутри свойства обращайтесь к _c, а не к c: иначе свойство вызовет само себя бесконечно (RecursionError).\n\nСтрока с @ над функцией — декоратор. Как они устроены, разберём в отдельном модуле.",
    "examples": [
     {
      "code": "class Temp:\n    def __init__(self, c):\n        self.c = c\n\n    @property\n    def c(self):\n        return self._c\n\n    @c.setter\n    def c(self, value):\n        if value < -273.15:\n            raise ValueError(\"ниже абсолютного нуля\")\n        self._c = value\n\n    @property\n    def f(self):\n        return self.c * 9 / 5 + 32\n\nt = Temp(25)\nprint(t.c, t.f)\ntry:\n    t.c = -300\nexcept ValueError as e:\n    print(e)",
@@ -1404,11 +1430,11 @@
    "id": "prop_classmethod",
    "title": "@classmethod и @staticmethod",
    "summary": "@classmethod получает класс (cls) — для альтернативных конструкторов. @staticmethod не получает ни класс, ни объект.",
-   "body": "Метод класса вызывается как Date.parse(\"05.03.2024\") и создаёт объект через cls(...). Благодаря cls подклассы получат объект своего типа.\n\nСтатический метод — обычная функция, помещённая в класс по смыслу: вызывается и через класс, и через объект, первый параметр не передаётся.\n\nОбычный метод через класс без объекта вызвать нельзя: M.inst(2) — TypeError, не хватает self.",
+   "body": "Метод класса вызывается как Date.parse(\"05.03.2024\") и создаёт объект через cls(...). Благодаря cls подклассы получат объект своего типа.\n\nСтатический метод — обычная функция, помещённая в класс по смыслу: вызывается и через класс, и через объект, первый параметр не передаётся.\n\nОбычный метод через класс без объекта вызвать нельзя: в M.inst(2) двойка попадает в self, а для x значения не остаётся — TypeError. Через класс обычный метод вызывают, только передав объект явно: M.inst(m, 2).",
    "examples": [
     {
-     "code": "class Date:\n    def __init__(self, y, m, d):\n        self.y, self.m, self.d = y, m, d\n\n    @classmethod\n    def parse(cls, text):\n        d, m, y = map(int, text.split(\".\"))\n        return cls(y, m, d)\n\n    @staticmethod\n    def is_leap(y):\n        return y % 4 == 0 and (y % 100 != 0 or y % 400 == 0)\n\n    def __str__(self):\n        return f\"{self.y}-{self.m:02}-{self.d:02}\"\n\nprint(Date.parse(\"05.03.2024\"), Date.is_leap(2024), Date.is_leap(1900))",
-     "output": "2024-03-05 True False\n"
+     "code": "class Temperature:\n    def __init__(self, celsius):\n        self.celsius = celsius\n\n    @classmethod\n    def from_fahrenheit(cls, f):\n        return cls(round((f - 32) * 5 / 9, 1))\n\n    @staticmethod\n    def is_freezing(celsius):\n        return celsius <= 0\n\nt = Temperature.from_fahrenheit(212)\nprint(t.celsius, Temperature.is_freezing(-5), t.is_freezing(t.celsius))",
+     "output": "100.0 True False\n"
     }
    ],
    "pitfalls": [
@@ -1427,8 +1453,8 @@
      "output": "False 42\n"
     },
     {
-     "code": "class P:\n    __slots__ = (\"x\", \"y\")\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n\np = P(1, 2)\ntry:\n    p.z = 3\nexcept AttributeError as e:\n    print(\"нельзя:\", e)",
-     "output": "нельзя: 'P' object has no attribute 'z'\n"
+     "code": "class Pixel:\n    __slots__ = (\"r\", \"g\", \"b\")\n    def __init__(self, r, g, b):\n        self.r, self.g, self.b = r, g, b\n\np = Pixel(255, 0, 0)\ntry:\n    p.alpha = 1\nexcept AttributeError:\n    print(\"атрибута alpha нет в __slots__\")",
+     "output": "атрибута alpha нет в __slots__\n"
     }
    ],
    "pitfalls": [
@@ -1440,15 +1466,15 @@
    "id": "dc_basics",
    "title": "@dataclass",
    "summary": "@dataclass по аннотациям полей сам пишет __init__, __repr__ и __eq__.",
-   "body": "Поля объявляются с типом: x: int, y: int = 0. Поля без значения по умолчанию должны идти раньше полей со значением.\n\nИзменяемые значения по умолчанию запрещены (items: list = [] — ValueError): используйте field(default_factory=list), тогда каждый объект получит свой список.\n\n@dataclass(order=True) добавляет сравнения <, > по полям в порядке объявления — объекты можно сортировать. frozen=True делает объекты неизменяемыми (присваивание — FrozenInstanceError) и хешируемыми.\n\n__post_init__(self) вызывается после автоматического __init__ — место для проверок.",
+   "body": "Поля объявляются с типом: x: int, y: int = 0. Поля без значения по умолчанию должны идти раньше полей со значением.\n\nИзменяемые значения по умолчанию запрещены (items: list = [] — ValueError): используйте field(default_factory=list), тогда каждый объект получит свой список.\n\n@dataclass(order=True) добавляет сравнения <, > по полям в порядке объявления — объекты можно сортировать. frozen=True делает объекты неизменяемыми (присваивание — FrozenInstanceError) и хешируемыми. Обычный @dataclass нехешируем: с eq=True (по умолчанию) он ставит __hash__ = None, и объекты нельзя класть в set.\n\n__post_init__(self) вызывается после автоматического __init__ — место для проверок. dataclasses.replace(obj, поле=значение) создаёт копию с изменёнными полями, asdict(obj) — словарь. slots=True экономит память, kw_only=True требует передавать поля только по имени.",
    "examples": [
     {
-     "code": "from dataclasses import dataclass, field\n\n@dataclass\nclass Cart:\n    owner: str\n    items: list = field(default_factory=list)\n\na = Cart(\"Ада\")\na.items.append(\"чай\")\nprint(a, a == Cart(\"Ада\", [\"чай\"]))",
-     "output": "Cart(owner='Ада', items=['чай']) True\n"
+     "code": "from dataclasses import dataclass, field\n\n@dataclass\nclass Team:\n    name: str\n    members: list = field(default_factory=list)\n\na = Team(\"A\")\na.members.append(\"Ада\")\nprint(a, a == Team(\"A\", [\"Ада\"]))",
+     "output": "Team(name='A', members=['Ада']) True\n"
     },
     {
-     "code": "from dataclasses import dataclass\n\n@dataclass(order=True, frozen=True)\nclass Version:\n    major: int\n    minor: int\n\nprint(sorted([Version(1, 10), Version(1, 2)]), Version(1, 2) in {Version(1, 2)})",
-     "output": "[Version(major=1, minor=2), Version(major=1, minor=10)] True\n"
+     "code": "from dataclasses import dataclass, replace\n\n@dataclass(order=True, frozen=True)\nclass Score:\n    points: int\n    name: str\n\nbest = max([Score(7, \"Ада\"), Score(9, \"Боб\")])\nprint(best, replace(best, points=10), best in {best})",
+     "output": "Score(points=9, name='Боб') Score(points=10, name='Боб') True\n"
     }
    ],
    "pitfalls": [
@@ -1472,6 +1498,179 @@
     "Сравнивать элемент со значением: Status.NEW == 1 — False."
    ],
    "module": "dataclasses"
+  },
+  {
+   "id": "gen_iter",
+   "title": "Протокол итерации",
+   "summary": "Итерируемый объект отдаёт итератор через iter(); итератор выдаёт значения через next(), а в конце вызывает StopIteration.",
+   "body": "for x in items на самом деле делает так: it = iter(items), затем много раз x = next(it), пока не возникнет StopIteration — тогда цикл тихо заканчивается.\n\nИтерируемые объекты (список, строка, range, словарь) можно пройти сколько угодно раз: каждый for получает новый итератор. Итератор (результат iter(), map, filter, zip, генератор) — одноразовый: он помнит позицию и после конца пуст.\n\nПроверить: у итератора есть метод __next__, а iter(it) возвращает его самого.",
+   "examples": [
+    {
+     "code": "it = iter([10, 20, 30])\nprint(next(it), next(it))\nprint(list(it))\nprint(list(it))",
+     "output": "10 20\n[30]\n[]\n",
+     "note": "Итератор помнит позицию и после конца пуст."
+    },
+    {
+     "code": "it = iter(\"ab\")\nprint(next(it), next(it), next(it, \"конец\"))",
+     "output": "a b конец\n",
+     "note": "Второй аргумент next — значение вместо StopIteration."
+    }
+   ],
+   "pitfalls": [
+    "Ждать, что второй проход по итератору (map, zip, генератору) снова выдаст значения.",
+    "Путать range (итерируемый, многоразовый) и итератор (одноразовый)."
+   ],
+   "module": "generators"
+  },
+  {
+   "id": "gen_yield",
+   "title": "Функции-генераторы и yield",
+   "summary": "Функция с yield возвращает генератор: тело выполняется по шагам, на каждом yield отдаёт значение и замирает до следующего next().",
+   "body": "Вызов функции-генератора не выполняет её тело — он только создаёт объект-генератор. Код запускается при первом next() и идёт до ближайшего yield. Локальные переменные сохраняются между шагами.\n\nКогда функция доходит до конца (или до return), генератор заканчивается: next() вызывает StopIteration, а for завершает цикл.\n\nyield from другой_генератор отдаёт все его значения по очереди — так генераторы складывают в цепочки.\n\nГенераторное выражение (x * x for x in data) — короткая запись простого генератора.",
+   "examples": [
+    {
+     "code": "def countdown(n):\n    while n > 0:\n        yield n\n        n -= 1\n\nprint(list(countdown(3)))\ng = countdown(2)\nprint(next(g), next(g), next(g, \"стоп\"))",
+     "output": "[3, 2, 1]\n2 1 стоп\n"
+    },
+    {
+     "code": "def inner():\n    yield 1\n    yield 2\n\ndef outer():\n    yield 0\n    yield from inner()\n    yield 3\n\nprint(list(outer()))",
+     "output": "[0, 1, 2, 3]\n"
+    }
+   ],
+   "pitfalls": [
+    "Писать return вместо yield внутри цикла: функция вернёт одно значение и закончится.",
+    "Ждать, что вызов генераторной функции сразу выполнит её тело."
+   ],
+   "module": "generators"
+  },
+  {
+   "id": "gen_lazy",
+   "title": "Ленивые вычисления и конвейеры",
+   "summary": "Генераторы считают значения по требованию: можно обрабатывать бесконечные потоки и огромные файлы, не держа всё в памяти.",
+   "body": "Бесконечный генератор (while True: yield n) безопасен, если брать из него ограниченное число значений: itertools.islice(gen, 5), next() или цикл с break.\n\nКонвейер из генераторов (прочитать → отфильтровать → преобразовать) обрабатывает данные по одному элементу: каждый элемент проходит всю цепочку, прежде чем начнётся следующий.\n\nlist(...) или sum(...) по генератору «прокручивает» его до конца — для бесконечного генератора это зависание.",
+   "examples": [
+    {
+     "code": "from itertools import islice\n\ndef naturals():\n    n = 1\n    while True:\n        yield n\n        n += 1\n\nprint(list(islice(naturals(), 5)))\nevens = (n for n in naturals() if n % 2 == 0)\nprint(next(evens), next(evens))",
+     "output": "[1, 2, 3, 4, 5]\n2 4\n"
+    }
+   ],
+   "pitfalls": [
+    "Вызвать list() у бесконечного генератора — программа никогда не закончится."
+   ],
+   "module": "generators"
+  },
+  {
+   "id": "deco_basics",
+   "title": "Как работает декоратор",
+   "summary": "Декоратор — функция, которая принимает функцию и возвращает новую (обычно обёртку). @deco над def f — то же, что f = deco(f).",
+   "body": "Функции в Python — обычные значения: их можно передать в другую функцию и вернуть из неё. Декоратор пользуется этим: получает функцию, создаёт внутри обёртку wrapper, которая что-то делает до и после вызова оригинала, и возвращает wrapper.\n\nЧтобы обёртка подходила к любой функции, она принимает *args, **kwargs и передаёт их дальше: func(*args, **kwargs). И обязательно возвращает результат — иначе декорированная функция будет возвращать None.\n\n@functools.wraps(func) над wrapper копирует имя, docstring и другие атрибуты оригинала — без этого f.__name__ станет «wrapper».\n\nНесколько декораторов применяются снизу вверх: @a @b def f — это f = a(b(f)).",
+   "examples": [
+    {
+     "code": "from functools import wraps\n\ndef log(func):\n    @wraps(func)\n    def wrapper(*args, **kwargs):\n        print(\"вызов\", func.__name__, args)\n        return func(*args, **kwargs)\n    return wrapper\n\n@log\ndef add(a, b):\n    return a + b\n\nprint(add(2, 3), add.__name__)",
+     "output": "вызов add (2, 3)\n5 add\n"
+    }
+   ],
+   "pitfalls": [
+    "Забыть return в обёртке — функция станет возвращать None.",
+    "Обёртка без *args, **kwargs ломается на функциях с аргументами.",
+    "Без @wraps у всех декорированных функций одинаковое имя wrapper."
+   ],
+   "module": "decorators"
+  },
+  {
+   "id": "deco_params",
+   "title": "Декораторы с параметрами и состояние",
+   "summary": "@repeat(3) — это вызов фабрики, которая возвращает декоратор. Обёртка может хранить состояние: счётчик вызовов, кэш.",
+   "body": "Декоратор с параметром — три уровня функций: repeat(n) возвращает deco(func), deco возвращает wrapper. @repeat(3) сначала вызывает repeat(3), а результат применяет к функции.\n\nОбёртке можно добавить атрибуты (wrapper.calls = 0) или хранить данные в замыкании (словарь-кэш). Так устроены functools.lru_cache, повтор при ошибке (retry), замер времени, проверка прав доступа в веб-фреймворках.\n\nСтандартные декораторы: @property, @staticmethod, @classmethod, @functools.lru_cache, @functools.cache, @dataclasses.dataclass.",
+   "examples": [
+    {
+     "code": "def repeat(n):\n    def deco(func):\n        def wrapper(*args):\n            return [func(*args) for _ in range(n)]\n        return wrapper\n    return deco\n\n@repeat(3)\ndef hello(name):\n    return f\"привет, {name}\"\n\nprint(hello(\"Ада\"))",
+     "output": "['привет, Ада', 'привет, Ада', 'привет, Ада']\n"
+    }
+   ],
+   "pitfalls": [
+    "Писать @repeat без скобок, если декоратор ждёт параметр: repeat получит функцию вместо числа."
+   ],
+   "module": "decorators"
+  },
+  {
+   "id": "ctx_protocol",
+   "title": "Протокол with",
+   "summary": "with obj as x: вызывает obj.__enter__() (его результат попадает в x), а при выходе — obj.__exit__(тип, ошибка, трассировка), даже если внутри было исключение.",
+   "body": "Контекстный менеджер гарантирует «закрытие» ресурса: файла, соединения, блокировки. __exit__ вызывается при любом выходе из блока — нормальном, по return или по исключению.\n\nЕсли внутри блока было исключение, __exit__ получает его тип, объект и трассировку; если нет — три None. Если __exit__ вернёт True, исключение подавляется и программа продолжается после with. Обычно возвращают None — тогда исключение летит дальше.\n\nНесколько менеджеров: with a() as x, b() as y: — выход идёт в обратном порядке.",
+   "examples": [
+    {
+     "code": "class Tag:\n    def __init__(self, name):\n        self.name = name\n    def __enter__(self):\n        print(f\"<{self.name}>\")\n        return self\n    def __exit__(self, exc_type, exc, tb):\n        print(f\"</{self.name}>\")\n\nwith Tag(\"div\"), Tag(\"p\"):\n    print(\"текст\")",
+     "output": "<div>\n<p>\nтекст\n</p>\n</div>\n",
+     "note": "Закрываются в обратном порядке."
+    }
+   ],
+   "pitfalls": [
+    "Возвращать True из __exit__ всегда — так молча проглатываются любые ошибки.",
+    "Делать уборку после with-блока вручную, а не в __exit__: при исключении она не выполнится."
+   ],
+   "module": "contexts"
+  },
+  {
+   "id": "ctx_contextlib",
+   "title": "contextlib",
+   "summary": "@contextmanager делает менеджер из генератора: код до yield — вход, после — выход. suppress, redirect_stdout и ExitStack закрывают типовые задачи.",
+   "body": "@contextmanager над функцией с одним yield: всё до yield выполняется при входе (значение yield попадает в as), всё после — при выходе. Чтобы выход выполнился и при исключении, yield оборачивают в try/finally.\n\nsuppress(KeyError) игнорирует указанные исключения внутри блока. redirect_stdout(buffer) временно направляет print в другой поток. ExitStack позволяет войти в заранее неизвестное число менеджеров и выйти из всех в обратном порядке.",
+   "examples": [
+    {
+     "code": "from contextlib import contextmanager, suppress\n\n@contextmanager\ndef section(title):\n    print(\"начало\", title)\n    try:\n        yield title.upper()\n    finally:\n        print(\"конец\", title)\n\nwith section(\"отчёт\") as name:\n    print(\"внутри\", name)\n\nwith suppress(KeyError):\n    {}[\"нет\"]\nprint(\"ошибка подавлена\")",
+     "output": "начало отчёт\nвнутри ОТЧЁТ\nконец отчёт\nошибка подавлена\n"
+    }
+   ],
+   "pitfalls": [
+    "Писать уборку после yield без try/finally: при исключении внутри with она не выполнится."
+   ],
+   "module": "contexts"
+  },
+  {
+   "id": "typing_basics",
+   "title": "Аннотации и проверка типов",
+   "summary": "def f(x: int) -> str — подсказка для людей и инструментов (mypy, IDE). Python при выполнении их не проверяет.",
+   "body": "Аннотации пишутся после двоеточия у параметров и после -> у результата: def add(a: int, b: int) -> int. У переменных: count: int = 0.\n\nВстроенные коллекции параметризуются прямо: list[int], dict[str, float], tuple[int, ...] (любой длины), set[str]. «Значение или None» — int | None (раньше писали Optional[int]).\n\nPython не проверяет типы при выполнении: add(\"4\", \"2\") вернёт «42». Ошибки находят статические анализаторы — mypy, pyright — до запуска программы. Аннотации доступны как f.__annotations__ или typing.get_type_hints(f).",
+   "examples": [
+    {
+     "code": "def add(a: int, b: int) -> int:\n    return a + b\n\nprint(add(2, 3), add(\"4\", \"2\"))\nprint(add.__annotations__)",
+     "output": "5 42\n{'a': <class 'int'>, 'b': <class 'int'>, 'return': <class 'int'>}\n",
+     "note": "Аннотации не мешают передать строки."
+    },
+    {
+     "code": "def find(names: list[str], target: str) -> int | None:\n    return names.index(target) if target in names else None\n\nprint(find([\"a\", \"b\"], \"b\"), find([\"a\"], \"z\"))",
+     "output": "1 None\n"
+    }
+   ],
+   "pitfalls": [
+    "Ждать, что аннотация защитит от неверного типа во время выполнения.",
+    "Писать List[int] без from typing import List — в Python 3.9+ просто list[int]."
+   ],
+   "module": "typing"
+  },
+  {
+   "id": "typing_advanced",
+   "title": "Protocol, дженерики, TypedDict",
+   "summary": "Protocol описывает «утиный» интерфейс, def first[T](x: list[T]) -> T — обобщённую функцию, TypedDict — словарь с известными ключами.",
+   "body": "Protocol: класс-протокол перечисляет методы. Любой класс с такими методами подходит, даже не наследуя протокол (структурная типизация). @runtime_checkable разрешает isinstance с протоколом.\n\nДженерики (Python 3.12): def first[T](items: list[T]) -> T и class Box[T]: — параметр типа T связывает вход и выход: first([1, 2]) — это int, first([\"a\"]) — str. type UserId = int — псевдоним типа.\n\nTypedDict задаёт ключи и типы значений словаря для анализатора. Во время выполнения это обычный dict — никакой проверки нет. Literal[\"r\", \"w\"] — только перечисленные значения, Callable[[int], str] — функция int → str.",
+   "examples": [
+    {
+     "code": "from typing import Protocol, runtime_checkable\n\n@runtime_checkable\nclass Speaker(Protocol):\n    def speak(self) -> str: ...\n\nclass Dog:\n    def speak(self) -> str:\n        return \"гав\"\n\ndef talk(s: Speaker) -> str:\n    return s.speak()\n\nprint(talk(Dog()), isinstance(Dog(), Speaker), isinstance(42, Speaker))",
+     "output": "гав True False\n",
+     "note": "Dog не наследует Speaker, но подходит по форме."
+    },
+    {
+     "code": "def first[T](items: list[T]) -> T:\n    return items[0]\n\nprint(first([3, 1]), first([\"a\", \"b\"]), first.__type_params__)",
+     "output": "3 a (T,)\n",
+     "note": "Синтаксис дженериков Python 3.12."
+    }
+   ],
+   "pitfalls": [
+    "isinstance с Protocol без @runtime_checkable — TypeError.",
+    "Думать, что TypedDict проверяет значения при создании: это обычный dict."
+   ],
+   "module": "typing"
   }
  ]
 }

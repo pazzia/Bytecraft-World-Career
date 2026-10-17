@@ -144,26 +144,26 @@
    "topic": "prop_private",
    "difficulty": 3,
    "hint": "Два подчёркивания в начале имени внутри класса меняют его название.",
-   "explanation": "self.__code внутри класса Safe сохраняется под именем _Safe__code. Атрибута __code у объекта нет, а по искажённому имени он доступен.",
-   "code": "class Safe:\n    def __init__(self):\n        self.__code = 42\n\ns = Safe()\nprint(hasattr(s, \"__code\"), s._Safe__code)",
+   "explanation": "self.__pin внутри класса Vault сохраняется под именем _Vault__pin. Атрибута __pin у объекта нет, а по искажённому имени он есть — значит, это не настоящая защита.",
+   "code": "class Vault:\n    def __init__(self):\n        self.__pin = 1234\n\nv = Vault()\nprint(hasattr(v, \"__pin\"), hasattr(v, \"_Vault__pin\"))",
    "payload": {
     "options": [
-     "True 42",
-     "False 42",
-     "False AttributeError",
-     "AttributeError"
+     "False True",
+     "True False",
+     "True True",
+     "False False"
     ],
-    "correctIndex": 1,
+    "correctIndex": 0,
     "optionFeedback": [
-     "Атрибута с именем «__code» нет: имя искажено.",
      "",
-     "",
-     "s._Safe__code существует: это и есть искажённое имя."
+     "Наоборот: имя искажено в _Vault__pin.",
+     "Атрибута с именем «__pin» нет: имя искажено.",
+     "Под искажённым именем _Vault__pin атрибут существует."
     ]
    },
    "solution": {
-    "code": "class Safe:\n    def __init__(self):\n        self.__code = 42\n\ns = Safe()\nprint(hasattr(s, \"__code\"), s._Safe__code)",
-    "output": "False 42\n"
+    "code": "class Vault:\n    def __init__(self):\n        self.__pin = 1234\n\nv = Vault()\nprint(hasattr(v, \"__pin\"), hasattr(v, \"_Vault__pin\"))",
+    "output": "False True\n"
    }
   },
   {
@@ -201,6 +201,37 @@
    }
   },
   {
+   "id": "py_prop_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Сеттер не того имени",
+   "prompt": "Что выведет код?",
+   "topic": "prop_property",
+   "difficulty": 3,
+   "hint": "Сеттер привязан к свойству с тем именем, под которым объявлена функция.",
+   "explanation": "@c.setter над def set_c создаёт новое свойство set_c, а у c сеттера так и нет. t.c = 25 даёт AttributeError, значение остаётся 0.",
+   "code": "class Temp:\n    def __init__(self):\n        self._c = 0\n    @property\n    def c(self):\n        return self._c\n    @c.setter\n    def set_c(self, value):\n        self._c = value\n\nt = Temp()\ntry:\n    t.c = 25\nexcept AttributeError:\n    print(\"нет сеттера\")\nprint(t.c)",
+   "payload": {
+    "options": [
+     "25",
+     "нет сеттера\n25",
+     "AttributeError",
+     "нет сеттера\n0"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Сеттер объявлен под именем set_c, поэтому c остаётся только для чтения.",
+     "Присваивание не выполнилось — значение осталось 0.",
+     "Ошибка перехвачена except и программа продолжается.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "class Temp:\n    def __init__(self):\n        self._c = 0\n    @property\n    def c(self):\n        return self._c\n    @c.setter\n    def set_c(self, value):\n        self._c = value\n\nt = Temp()\ntry:\n    t.c = 25\nexcept AttributeError:\n    print(\"нет сеттера\")\nprint(t.c)",
+    "output": "нет сеттера\n0\n"
+   }
+  },
+  {
    "id": "py_prop_008",
    "type": "multiple_choice",
    "role": "practice",
@@ -233,7 +264,7 @@
    "role": "boss",
    "title": "Босс: счётчик билетов",
    "prompt": "Соберите класс так, чтобы программа вывела 2 2",
-   "topic": "prop_classmethod",
+   "topic": "oop_class_attrs",
    "difficulty": 3,
    "hint": "Счётчик общий для класса, номер — у каждого билета свой.",
    "explanation": "issued — атрибут класса: каждый новый билет увеличивает его и запоминает текущее значение как свой number. Второй билет получает номер 2.",

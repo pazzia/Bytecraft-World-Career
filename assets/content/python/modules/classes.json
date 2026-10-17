@@ -20,7 +20,7 @@
     ],
     "correctIndex": 1,
     "optionFeedback": [
-     "Класс передаётся в cls у методов класса. self — это объект.",
+     "self — это конкретный объект, а не класс.",
      "",
      "self — обычный параметр метода, первый по счёту.",
      "Класс создаёт class. self — даже не ключевое слово, а соглашение об имени."
@@ -35,27 +35,27 @@
    "prompt": "Что выведет код?",
    "topic": "oop_class",
    "difficulty": 1,
-   "hint": "В self.name сохранено имя, переданное при создании.",
-   "explanation": "Dog(\"Рекс\") вызывает __init__ и сохраняет «Рекс» в self.name. bark подставляет его в строку.",
-   "code": "class Dog:\n    def __init__(self, name):\n        self.name = name\n\n    def bark(self):\n        return f\"{self.name}: Гав!\"\n\nd = Dog(\"Рекс\")\nprint(d.bark())",
+   "hint": "В self.name и self.sound сохранены значения, переданные при создании (или по умолчанию).",
+   "explanation": "Cat(\"Мурка\") вызывает __init__: name = «Мурка», sound по умолчанию «Мяу». say подставляет оба атрибута в строку.",
+   "code": "class Cat:\n    def __init__(self, name, sound=\"Мяу\"):\n        self.name = name\n        self.sound = sound\n\n    def say(self):\n        return f\"{self.name}: {self.sound}\"\n\nc = Cat(\"Мурка\")\nprint(c.say())",
    "payload": {
     "options": [
-     "Рекс: Гав!",
-     "Dog: Гав!",
-     "name: Гав!",
+     "Мурка: Мяу",
+     "Cat: Мяу",
+     "name: sound",
      "TypeError"
     ],
     "correctIndex": 0,
     "optionFeedback": [
      "",
      "self.name — имя объекта, а не класса.",
-     "f-строка подставляет значение self.name, а не его название.",
-     "d.bark() передаёт d как self автоматически, аргументы совпадают."
+     "f-строка подставляет значения атрибутов, а не их названия.",
+     "c.say() передаёт c как self автоматически, аргументы совпадают."
     ]
    },
    "solution": {
-    "code": "class Dog:\n    def __init__(self, name):\n        self.name = name\n\n    def bark(self):\n        return f\"{self.name}: Гав!\"\n\nd = Dog(\"Рекс\")\nprint(d.bark())",
-    "output": "Рекс: Гав!\n"
+    "code": "class Cat:\n    def __init__(self, name, sound=\"Мяу\"):\n        self.name = name\n        self.sound = sound\n\n    def say(self):\n        return f\"{self.name}: {self.sound}\"\n\nc = Cat(\"Мурка\")\nprint(c.say())",
+    "output": "Мурка: Мяу\n"
    }
   },
   {
@@ -73,7 +73,7 @@
     "options": [
      "self",
      "this",
-     "",
+     "obj",
      "cls"
     ],
     "answers": [
@@ -81,7 +81,7 @@
     ],
     "variantResults": {
      "this": "NameError: name 'self' is not defined",
-     "": "TypeError: Counter.__init__() takes 0 positional arguments but 1 was given",
+     "obj": "NameError: name 'self' is not defined",
      "cls": "NameError: name 'self' is not defined"
     }
    },
@@ -231,6 +231,37 @@
      "class A: pass — и A() отлично работает.",
      ""
     ]
+   }
+  },
+  {
+   "id": "py_cls_010",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Счётчик через self",
+   "prompt": "Что выведет код?",
+   "topic": "oop_class_attrs",
+   "difficulty": 3,
+   "hint": "self.issued += 1 — это self.issued = self.issued + 1. Куда записывается результат?",
+   "explanation": "Справа self.issued читает атрибут класса (0), а присваивание создаёт атрибут объекта со значением 1. У каждого объекта своя 1, а Ticket.issued остаётся 0.",
+   "code": "class Ticket:\n    issued = 0\n    def __init__(self):\n        self.issued += 1\n\na, b = Ticket(), Ticket()\nprint(a.issued, b.issued, Ticket.issued)",
+   "payload": {
+    "options": [
+     "1 2 2",
+     "2 2 2",
+     "1 1 1",
+     "1 1 0"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Атрибут класса не меняется: присваивание через self создаёт атрибут объекта.",
+     "Каждый объект получает своё значение 1, класс остаётся с 0.",
+     "Ticket.issued не изменился — по-прежнему 0.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "class Ticket:\n    issued = 0\n    def __init__(self):\n        self.issued += 1\n\na, b = Ticket(), Ticket()\nprint(a.issued, b.issued, Ticket.issued)",
+    "output": "1 1 0\n"
    }
   },
   {

@@ -69,6 +69,18 @@ class LevelReviewSheet extends ConsumerWidget {
             level.title,
             style: textTheme.titleSmall?.copyWith(color: game.textMuted),
           ),
+          if (level.topicId != null) ...[
+            const SizedBox(height: Spacing.lg),
+            // On top: saving the topic is the main action of the review.
+            AppButton(
+              key: const ValueKey('journal_toggle'),
+              label: saved ? 'В журнале · убрать' : 'Сохранить тему в журнал',
+              icon: saved ? Icons.bookmark_rounded : Icons.bookmark_add_rounded,
+              variant:
+                  saved ? AppButtonVariant.secondary : AppButtonVariant.primary,
+              onPressed: () => controller.toggleTopicInJournal(save: !saved),
+            ),
+          ],
           if (note != null && !solved) ...[
             const SizedBox(height: Spacing.xl),
             Text('Что не так', style: textTheme.titleMedium),
@@ -116,17 +128,6 @@ class LevelReviewSheet extends ConsumerWidget {
             Text('Тема', style: textTheme.titleMedium),
             const SizedBox(height: Spacing.sm),
             TopicContent(topic: topic),
-          ],
-          if (level.topicId != null) ...[
-            const SizedBox(height: Spacing.xxl),
-            AppButton(
-              key: const ValueKey('journal_toggle'),
-              label: saved ? 'В журнале · убрать' : 'Сохранить тему в журнал',
-              icon: saved ? Icons.bookmark_rounded : Icons.bookmark_add_rounded,
-              variant:
-                  saved ? AppButtonVariant.secondary : AppButtonVariant.primary,
-              onPressed: () => controller.toggleTopicInJournal(save: !saved),
-            ),
           ],
         ],
       ),

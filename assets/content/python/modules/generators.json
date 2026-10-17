@@ -1,0 +1,275 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_gen_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Ручной next",
+   "prompt": "Что выведет код?",
+   "topic": "gen_iter",
+   "difficulty": 1,
+   "hint": "Итератор помнит, сколько уже выдал, и проходится один раз.",
+   "explanation": "next забрал 5. Первый list получает остаток [6, 7] и исчерпывает итератор, второй list получает пустой список.",
+   "code": "it = iter([5, 6, 7])\nprint(next(it))\nprint(list(it), list(it))",
+   "payload": {
+    "options": [
+     "5\n[5, 6, 7] [5, 6, 7]",
+     "5\n[6, 7] []",
+     "5\n[6, 7] [6, 7]",
+     "5\n[5, 6, 7] []"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Итератор не начинает сначала: 5 уже выдано.",
+     "",
+     "Итератор одноразовый: после первого list он пуст.",
+     "next уже забрал 5 — оно не вернётся."
+    ]
+   },
+   "solution": {
+    "code": "it = iter([5, 6, 7])\nprint(next(it))\nprint(list(it), list(it))",
+    "output": "5\n[6, 7] []\n"
+   }
+  },
+  {
+   "id": "py_gen_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Когда выполняется тело",
+   "prompt": "Что выведет код?",
+   "topic": "gen_yield",
+   "difficulty": 1,
+   "hint": "Вызов gen() не выполняет тело. Каждый next доходит до ближайшего yield.",
+   "explanation": "gen() только создаёт генератор. Первый next выполняет код до первого yield (печатает «старт» и отдаёт 1), второй — до второго yield.",
+   "code": "def gen():\n    print(\"старт\")\n    yield 1\n    print(\"дальше\")\n    yield 2\n\ng = gen()\nprint(\"создан\")\nprint(next(g))\nprint(next(g))",
+   "payload": {
+    "options": [
+     "старт\nсоздан\n1\nдальше\n2",
+     "создан\nстарт\n1\nдальше\n2",
+     "создан\nстарт\nдальше\n1\n2",
+     "создан\n1\n2"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Вызов gen() не запускает тело — «старт» печатается только при первом next.",
+     "",
+     "Генератор останавливается на каждом yield: «дальше» печатается только при втором next.",
+     "print внутри генератора тоже выполняются — по мере продвижения."
+    ]
+   },
+   "solution": {
+    "code": "def gen():\n    print(\"старт\")\n    yield 1\n    print(\"дальше\")\n    yield 2\n\ng = gen()\nprint(\"создан\")\nprint(next(g))\nprint(next(g))",
+    "output": "создан\nстарт\n1\nдальше\n2\n"
+   }
+  },
+  {
+   "id": "py_gen_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Обратный отсчёт",
+   "prompt": "Сделайте countdown генератором",
+   "topic": "gen_yield",
+   "difficulty": 1,
+   "hint": "Нужно отдать значение и продолжить с того же места.",
+   "explanation": "yield отдаёт значение и замораживает функцию до следующего шага. return вернул бы одно число и закончил функцию.",
+   "payload": {
+    "template": "def countdown(n):\n    while n > 0:\n        {{0}} n\n        n -= 1\n\nprint(list(countdown(3)))",
+    "options": [
+     "yield",
+     "return",
+     "print",
+     "await"
+    ],
+    "answers": [
+     "yield"
+    ],
+    "variantResults": {
+     "return": "TypeError: 'int' object is not iterable",
+     "print": "SyntaxError: Missing parentheses in call to 'print'. Did you mean print(...)?",
+     "await": "SyntaxError: 'await' outside async function"
+    }
+   },
+   "solution": {
+    "code": "def countdown(n):\n    while n > 0:\n        yield n\n        n -= 1\n\nprint(list(countdown(3)))",
+    "output": "[3, 2, 1]\n"
+   }
+  },
+  {
+   "id": "py_gen_004",
+   "type": "type_output",
+   "role": "practice",
+   "title": "yield from",
+   "prompt": "Напишите, что выведет код",
+   "topic": "gen_yield",
+   "difficulty": 2,
+   "hint": "yield from отдаёт все значения вложенного генератора по очереди.",
+   "explanation": "outer выдаёт 0, затем всё из inner (1 и 2), затем 3.",
+   "code": "def inner():\n    yield 1\n    yield 2\n\ndef outer():\n    yield 0\n    yield from inner()\n    yield 3\n\nprint(list(outer()))",
+   "payload": {
+    "expectedOutput": "[0, 1, 2, 3]"
+   },
+   "solution": {
+    "code": "def inner():\n    yield 1\n    yield 2\n\ndef outer():\n    yield 0\n    yield from inner()\n    yield 3\n\nprint(list(outer()))",
+    "output": "[0, 1, 2, 3]\n"
+   }
+  },
+  {
+   "id": "py_gen_005",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Генератор квадратов",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "gen_yield",
+   "difficulty": 2,
+   "hint": "squares(4) выдаёт 0, 1, 4, 9. Каждый вызов squares создаёт новый генератор.",
+   "explanation": "Каждое выражение создаёт свой генератор, поэтому они не мешают друг другу: список, сумма 14, первое значение 0, максимум 4 для n = 3, пустой список для n = 0.",
+   "code": "def squares(n):\n    for i in range(n):\n        yield i * i",
+   "payload": {
+    "pairs": [
+     {
+      "left": "list(squares(4))",
+      "right": "[0, 1, 4, 9]"
+     },
+     {
+      "left": "sum(squares(4))",
+      "right": "14"
+     },
+     {
+      "left": "next(squares(4))",
+      "right": "0"
+     },
+     {
+      "left": "max(squares(3))",
+      "right": "4"
+     },
+     {
+      "left": "list(squares(0))",
+      "right": "[]"
+     }
+    ]
+   },
+   "solution": {
+    "code": "def squares(n):\n    for i in range(n):\n        yield i * i\nprint(list(squares(4)))\nprint(sum(squares(4)))\nprint(next(squares(4)))\nprint(max(squares(3)))\nprint(list(squares(0)))",
+    "output": "[0, 1, 4, 9]\n14\n0\n4\n[]\n"
+   }
+  },
+  {
+   "id": "py_gen_006",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Только первая строка",
+   "prompt": "Должно вывести a, b и c на отдельных строках. Найдите строку с ошибкой",
+   "topic": "gen_yield",
+   "difficulty": 3,
+   "hint": "Что делает return внутри цикла?",
+   "explanation": "return завершает функцию на первой же строке и возвращает строку «a». for идёт по её символам и печатает только a. yield отдаёт строки по одной.",
+   "code": "def clean(text):\n    for line in text.split(\"\\n\"):\n        return line.strip()\n\nfor line in clean(\" a \\n b \\n c \"):\n    print(line)",
+   "payload": {
+    "buggyLines": [
+     2
+    ]
+   },
+   "solution": {
+    "code": "def clean(text):\n    for line in text.split(\"\\n\"):\n        yield line.strip()\n\nfor line in clean(\" a \\n b \\n c \"):\n    print(line)",
+    "output": "a\nb\nc\n"
+   }
+  },
+  {
+   "id": "py_gen_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Кто итератор",
+   "prompt": "Какие объекты — итераторы (одноразовые, с методом __next__)?",
+   "topic": "gen_iter",
+   "difficulty": 2,
+   "hint": "Списки, строки и range можно пройти много раз — они итерируемые, но не итераторы.",
+   "explanation": "iter(...), генераторное выражение и map — итераторы. Список, range и строка — итерируемые объекты: каждый for получает от них новый итератор.",
+   "payload": {
+    "options": [
+     "iter([1, 2])",
+     "[1, 2]",
+     "(x for x in [1, 2])",
+     "range(3)",
+     "map(str, [1, 2])",
+     "\"abc\""
+    ],
+    "correctIndexes": [
+     0,
+     2,
+     4
+    ],
+    "optionFeedback": [
+     "",
+     "Список итерируемый, но не итератор: next([1, 2]) — TypeError.",
+     "",
+     "range итерируемый и многоразовый, у него нет __next__.",
+     "",
+     "Строка итерируемая, но не итератор."
+    ]
+   }
+  },
+  {
+   "id": "py_gen_008",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Бесконечность под контролем",
+   "prompt": "Что выведет код?",
+   "topic": "gen_lazy",
+   "difficulty": 3,
+   "hint": "islice берёт из генератора только нужное число значений.",
+   "explanation": "islice забирает первые 4 значения, и бесконечный генератор останавливается. Во второй строке складываются 1 + 4 + 9 = 14.",
+   "code": "from itertools import islice\n\ndef naturals():\n    n = 1\n    while True:\n        yield n\n        n += 1\n\nprint(list(islice(naturals(), 4)))\nprint(sum(islice((x * x for x in naturals()), 3)))",
+   "payload": {
+    "options": [
+     "[1, 2, 3, 4]\n9",
+     "[1, 2, 3, 4]\n14",
+     "[0, 1, 2, 3]\n5",
+     "Программа зависнет"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Складываются квадраты 1, 4 и 9.",
+     "",
+     "naturals начинается с 1.",
+     "islice берёт ровно столько значений, сколько нужно, — бесконечный цикл не прокручивается до конца."
+    ]
+   },
+   "solution": {
+    "code": "from itertools import islice\n\ndef naturals():\n    n = 1\n    while True:\n        yield n\n        n += 1\n\nprint(list(islice(naturals(), 4)))\nprint(sum(islice((x * x for x in naturals()), 3)))",
+    "output": "[1, 2, 3, 4]\n14\n"
+   }
+  },
+  {
+   "id": "py_gen_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: ленивый конвейер",
+   "prompt": "Что выведет код?",
+   "topic": "gen_lazy",
+   "difficulty": 4,
+   "hint": "Каждое значение проходит весь конвейер, прежде чем берётся следующее.",
+   "explanation": "Генераторы не готовят всё заранее: double просит у source одно значение, удваивает и отдаёт циклу. Поэтому «взял» и «получил» чередуются.",
+   "code": "def source():\n    for x in [1, 2, 3]:\n        print(\"взял\", x)\n        yield x\n\ndef double(items):\n    for x in items:\n        yield x * 2\n\nfor y in double(source()):\n    print(\"получил\", y)",
+   "payload": {
+    "options": [
+     "взял 1\nполучил 2\nвзял 2\nполучил 4\nвзял 3\nполучил 6",
+     "взял 1\nвзял 2\nвзял 3\nполучил 2\nполучил 4\nполучил 6",
+     "получил 2\nвзял 1\nполучил 4\nвзял 2\nполучил 6\nвзял 3",
+     "получил 2\nполучил 4\nполучил 6"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Так работали бы списки. Генераторы обрабатывают по одному значению.",
+     "Значение сначала нужно взять из source — только потом его можно удвоить и получить.",
+     "print внутри source тоже выполняется — при каждом взятии значения."
+    ]
+   },
+   "solution": {
+    "code": "def source():\n    for x in [1, 2, 3]:\n        print(\"взял\", x)\n        yield x\n\ndef double(items):\n    for x in items:\n        yield x * 2\n\nfor y in double(source()):\n    print(\"получил\", y)",
+    "output": "взял 1\nполучил 2\nвзял 2\nполучил 4\nвзял 3\nполучил 6\n"
+   }
+  }
+ ]
+}

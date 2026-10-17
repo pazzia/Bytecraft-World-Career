@@ -28,7 +28,17 @@ void main() {
     dumpTexts(tester, 'review');
     expect(find.text('Что не так'), findsOneWidget);
     expect(find.text('Присваивание'), findsWidgets);
-    await tester.ensureVisible(find.byKey(const ValueKey('journal_toggle')));
+    // The sheet's list builds lazily: scroll down to the button.
+    await tester.scrollUntilVisible(
+      find.byKey(const ValueKey('journal_toggle')),
+      300,
+      scrollable: find
+          .descendant(
+            of: find.byType(DraggableScrollableSheet),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('journal_toggle')));
     await tester.pumpAndSettle();

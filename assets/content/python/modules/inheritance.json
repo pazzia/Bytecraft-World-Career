@@ -41,27 +41,27 @@
    "topic": "inh_basics",
    "difficulty": 1,
    "hint": "Функция, которая даёт доступ к методам родителя с уже привязанным self.",
-   "explanation": "super().__init__(name) вызывает Person.__init__ для текущего объекта. Person.__init__(name) не передаёт self, а self.__init__ вызвал бы Student.__init__ снова.",
+   "explanation": "super().__init__(name) вызывает Animal.__init__ для текущего объекта. Animal.__init__(name) не передаёт self, а self.__init__ снова вызвал бы Dog.__init__ и упал бы с TypeError: не хватает breed.",
    "payload": {
-    "template": "class Person:\n    def __init__(self, name):\n        self.name = name\n\nclass Student(Person):\n    def __init__(self, name, group):\n        {{0}}.__init__(name)\n        self.group = group\n\ns = Student(\"Ада\", \"П-1\")\nprint(s.name, s.group)",
+    "template": "class Animal:\n    def __init__(self, name):\n        self.name = name\n\nclass Dog(Animal):\n    def __init__(self, name, breed):\n        {{0}}.__init__(name)\n        self.breed = breed\n\nd = Dog(\"Рекс\", \"овчарка\")\nprint(d.name, d.breed)",
     "options": [
      "super()",
      "self",
-     "Person",
-     "Student"
+     "Animal",
+     "Dog"
     ],
     "answers": [
      "super()"
     ],
     "variantResults": {
-     "self": "TypeError: Student.__init__() missing 1 required positional argument: 'group'",
-     "Person": "TypeError: Person.__init__() missing 1 required positional argument: 'name'",
-     "Student": "TypeError: Student.__init__() missing 2 required positional arguments: 'name' and 'group'"
+     "self": "TypeError: Dog.__init__() missing 1 required positional argument: 'breed'",
+     "Animal": "TypeError: Animal.__init__() missing 1 required positional argument: 'name'",
+     "Dog": "TypeError: Dog.__init__() missing 2 required positional arguments: 'name' and 'breed'"
     }
    },
    "solution": {
-    "code": "class Person:\n    def __init__(self, name):\n        self.name = name\n\nclass Student(Person):\n    def __init__(self, name, group):\n        super().__init__(name)\n        self.group = group\n\ns = Student(\"Ада\", \"П-1\")\nprint(s.name, s.group)",
-    "output": "Ада П-1\n"
+    "code": "class Animal:\n    def __init__(self, name):\n        self.name = name\n\nclass Dog(Animal):\n    def __init__(self, name, breed):\n        super().__init__(name)\n        self.breed = breed\n\nd = Dog(\"Рекс\", \"овчарка\")\nprint(d.name, d.breed)",
+    "output": "Рекс овчарка\n"
    }
   },
   {
@@ -88,11 +88,12 @@
    "type": "multi_select",
    "role": "practice",
    "title": "Родство",
-   "prompt": "class A: ..., class B(A): ..., class C: .... Какие выражения истинны?",
+   "prompt": "Какие выражения истинны?",
    "topic": "inh_poly",
    "difficulty": 2,
    "hint": "Объект подкласса — это и объект родителя, но не наоборот.",
    "explanation": "B — подкласс A, поэтому объект B — это и A. Объект A не является B. Все классы — наследники object. C с A не связан.",
+   "code": "class A:\n    pass\n\nclass B(A):\n    pass\n\nclass C:\n    pass",
    "payload": {
     "options": [
      "isinstance(B(), A)",
@@ -202,32 +203,63 @@
    "prompt": "Сопоставьте выражения и результаты",
    "topic": "inh_poly",
    "difficulty": 2,
-   "hint": "play не проверяет тип, только вызывает sound.",
-   "explanation": "play работает с любым объектом, у которого есть sound. Robot не наследует Duck, но метод у него есть.",
-   "code": "class Duck:\n    def sound(self):\n        return \"кря\"\nclass Robot:\n    def sound(self):\n        return \"бип\"\ndef play(x):\n    return x.sound()",
+   "hint": "Функция ring не проверяет тип, только вызывает метод ring.",
+   "explanation": "ring работает с любым объектом, у которого есть метод ring. Phone не наследует Bell, но метод у него есть.",
+   "code": "class Bell:\n    def ring(self):\n        return \"дзинь\"\nclass Phone:\n    def ring(self):\n        return \"трр\"\ndef ring(x):\n    return x.ring()",
    "payload": {
     "pairs": [
      {
-      "left": "play(Duck())",
-      "right": "кря"
+      "left": "ring(Bell())",
+      "right": "дзинь"
      },
      {
-      "left": "play(Robot())",
-      "right": "бип"
+      "left": "ring(Phone())",
+      "right": "трр"
      },
      {
-      "left": "isinstance(Robot(), Duck)",
+      "left": "isinstance(Phone(), Bell)",
       "right": "False"
      },
      {
-      "left": "hasattr(Robot(), 'sound')",
+      "left": "hasattr(Phone(), 'ring')",
       "right": "True"
      }
     ]
    },
    "solution": {
-    "code": "class Duck:\n    def sound(self):\n        return \"кря\"\nclass Robot:\n    def sound(self):\n        return \"бип\"\ndef play(x):\n    return x.sound()\nprint(play(Duck()))\nprint(play(Robot()))\nprint(isinstance(Robot(), Duck))\nprint(hasattr(Robot(), 'sound'))",
-    "output": "кря\nбип\nFalse\nTrue\n"
+    "code": "class Bell:\n    def ring(self):\n        return \"дзинь\"\nclass Phone:\n    def ring(self):\n        return \"трр\"\ndef ring(x):\n    return x.ring()\nprint(ring(Bell()))\nprint(ring(Phone()))\nprint(isinstance(Phone(), Bell))\nprint(hasattr(Phone(), 'ring'))",
+    "output": "дзинь\nтрр\nFalse\nTrue\n"
+   }
+  },
+  {
+   "id": "py_inh_010",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Квадрат — не прямоугольник",
+   "prompt": "Что выведет код?",
+   "topic": "inh_basics",
+   "difficulty": 4,
+   "hint": "Square меняет обе стороны сразу. Что ждёт функция stretch от прямоугольника?",
+   "explanation": "stretch рассчитывает, что меняется только ширина: 10 · 5 = 50. Square при set_w меняет и высоту: 10 · 10 = 100. Код, рассчитанный на Rect, ведёт себя неожиданно — это нарушение принципа подстановки Лисков.",
+   "code": "class Rect:\n    def __init__(self, w, h):\n        self.w, self.h = w, h\n    def set_w(self, w):\n        self.w = w\n    def area(self):\n        return self.w * self.h\n\nclass Square(Rect):\n    def __init__(self, a):\n        super().__init__(a, a)\n    def set_w(self, w):\n        self.w = self.h = w\n\ndef stretch(r):\n    r.set_w(10)\n    return r.area()\n\nprint(stretch(Rect(2, 5)), stretch(Square(5)))",
+   "payload": {
+    "options": [
+     "50 50",
+     "20 25",
+     "50 10",
+     "50 100"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Square.set_w меняет и высоту: площадь 10 · 10.",
+     "stretch сначала меняет ширину на 10, потом считает площадь.",
+     "Площадь квадрата со стороной 10 — 100.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "class Rect:\n    def __init__(self, w, h):\n        self.w, self.h = w, h\n    def set_w(self, w):\n        self.w = w\n    def area(self):\n        return self.w * self.h\n\nclass Square(Rect):\n    def __init__(self, a):\n        super().__init__(a, a)\n    def set_w(self, w):\n        self.w = self.h = w\n\ndef stretch(r):\n    r.set_w(10)\n    return r.area()\n\nprint(stretch(Rect(2, 5)), stretch(Square(5)))",
+    "output": "50 100\n"
    }
   },
   {
@@ -238,27 +270,27 @@
    "prompt": "Что выведет код?",
    "topic": "inh_mro",
    "difficulty": 4,
-   "hint": "Порядок поиска для D: D, B, C, A. super() идёт по этому порядку.",
-   "explanation": "MRO класса D — D, B, C, A. super() в B ведёт к C (следующему в MRO), а не к A. A вызывается один раз.",
-   "code": "class A:\n    def who(self):\n        return \"A\"\n\nclass B(A):\n    def who(self):\n        return \"B\" + super().who()\n\nclass C(A):\n    def who(self):\n        return \"C\" + super().who()\n\nclass D(B, C):\n    def who(self):\n        return \"D\" + super().who()\n\nprint(D().who())",
+   "hint": "Порядок поиска для D(C, B): D, C, B, A. super() идёт по этому порядку.",
+   "explanation": "MRO класса D — D, C, B, A (родители в порядке объявления). super() в C ведёт к B — следующему в MRO, — а не к A. A вызывается один раз.",
+   "code": "class A:\n    def who(self):\n        return \"A\"\n\nclass B(A):\n    def who(self):\n        return \"B\" + super().who()\n\nclass C(A):\n    def who(self):\n        return \"C\" + super().who()\n\nclass D(C, B):\n    def who(self):\n        return \"D\" + super().who()\n\nprint(D().who())",
    "payload": {
     "options": [
-     "DBA",
+     "DBCA",
      "DCBA",
-     "DBACA",
-     "DBCA"
+     "DCA",
+     "DCBAA"
     ],
-    "correctIndex": 3,
+    "correctIndex": 1,
     "optionFeedback": [
-     "super() в B вызывает следующий класс в MRO объекта D — это C.",
-     "B стоит в списке родителей первым: порядок D, B, C, A.",
-     "A входит в MRO один раз.",
-     ""
+     "Родители перечислены как (C, B): C стоит первым.",
+     "",
+     "super() в C вызывает следующий класс в MRO объекта D — это B, а не A.",
+     "A входит в MRO один раз."
     ]
    },
    "solution": {
-    "code": "class A:\n    def who(self):\n        return \"A\"\n\nclass B(A):\n    def who(self):\n        return \"B\" + super().who()\n\nclass C(A):\n    def who(self):\n        return \"C\" + super().who()\n\nclass D(B, C):\n    def who(self):\n        return \"D\" + super().who()\n\nprint(D().who())",
-    "output": "DBCA\n"
+    "code": "class A:\n    def who(self):\n        return \"A\"\n\nclass B(A):\n    def who(self):\n        return \"B\" + super().who()\n\nclass C(A):\n    def who(self):\n        return \"C\" + super().who()\n\nclass D(C, B):\n    def who(self):\n        return \"D\" + super().who()\n\nprint(D().who())",
+    "output": "DCBA\n"
    }
   }
  ]

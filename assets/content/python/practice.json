@@ -1,6 +1,6 @@
 {
  "schemaVersion": 1,
- "checker": "\"\"\"Checks that a solution of a coding exercise is written the way the task\nasks (recursion, no loops, a class, nonlocal...), not only that it prints\nthe right thing.\n\nOne source of truth for two places:\n* the content generator imports check() to verify reference solutions;\n* the app runs this file's source in the bundled Python (Pyodide) with\n  {\"code\": ..., \"requires\": ...} as JSON on stdin and reads a JSON list of\n  problems from stdout (empty list = all good).\n\nRequirement keys (all optional):\n  defines:   names of functions/classes that must be defined\n  recursive: functions that must call themselves\n  uses:      constructs that must appear (see USES)\n  forbids:   constructs that must not appear (see USES)\n  no_calls:  built-in functions that must not be called\n\"\"\"\nimport ast\nimport json\nimport sys\n\nLOOPS = (ast.For, ast.While, ast.AsyncFor)\nCOMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)\n\n\ndef _has_star_args(tree):\n    return any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.args.vararg\n               for n in ast.walk(tree))\n\n\ndef _has_star_kwargs(tree):\n    return any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.args.kwarg\n               for n in ast.walk(tree))\n\n\ndef _has_decorator(tree):\n    return any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and n.decorator_list\n               for n in ast.walk(tree))\n\n\ndef _any(*types):\n    return lambda tree: any(isinstance(n, types) for n in ast.walk(tree))\n\n\n# construct -> (test(tree), how it is called in messages)\nUSES = {\n    \"for\": (_any(ast.For, ast.AsyncFor), \"цикл for\"),\n    \"while\": (_any(ast.While), \"цикл while\"),\n    \"loop\": (_any(*LOOPS), \"циклы\"),\n    \"comprehension\": (_any(*COMPREHENSIONS), \"включения (comprehensions)\"),\n    \"lambda\": (_any(ast.Lambda), \"lambda\"),\n    \"def\": (_any(ast.FunctionDef, ast.AsyncFunctionDef), \"def (свою функцию)\"),\n    \"class\": (_any(ast.ClassDef), \"class (свой класс)\"),\n    \"nonlocal\": (_any(ast.Nonlocal), \"nonlocal\"),\n    \"global\": (_any(ast.Global), \"global\"),\n    \"yield\": (_any(ast.Yield, ast.YieldFrom), \"yield (генератор)\"),\n    \"with\": (_any(ast.With, ast.AsyncWith), \"with\"),\n    \"try\": (_any(ast.Try, ast.TryStar), \"try/except\"),\n    \"raise\": (_any(ast.Raise), \"raise\"),\n    \"star_args\": (_has_star_args, \"*args\"),\n    \"star_kwargs\": (_has_star_kwargs, \"**kwargs\"),\n    \"decorator\": (_has_decorator, \"декоратор (@...)\"),\n    \"async\": (_any(ast.AsyncFunctionDef, ast.Await), \"async/await\"),\n    \"match\": (_any(ast.Match), \"match/case\"),\n    \"import\": (_any(ast.Import, ast.ImportFrom), \"import\"),\n}\n\n\ndef _defined(tree):\n    return {n.name for n in ast.walk(tree)\n            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))}\n\n\ndef _calls_itself(tree, name):\n    for node in ast.walk(tree):\n        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name:\n            for inner in ast.walk(node):\n                if (isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name)\n                        and inner.func.id == name):\n                    return True\n    return False\n\n\ndef _called_names(tree):\n    return {n.func.id for n in ast.walk(tree)\n            if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}\n\n\ndef check(code, requires):\n    \"\"\"Returns a list of problems (in Russian), empty when all is fine.\"\"\"\n    try:\n        tree = ast.parse(code)\n    except SyntaxError as error:\n        return [f\"Синтаксическая ошибка в строке {error.lineno}: {error.msg}\"]\n    problems = []\n    defined = _defined(tree)\n    for name in requires.get(\"defines\", []):\n        if name not in defined:\n            problems.append(f\"Объявите {name} — задача требует именно это имя.\")\n    for name in requires.get(\"recursive\", []):\n        if name in defined and not _calls_itself(tree, name):\n            problems.append(f\"Функция {name} должна быть рекурсивной: вызывать саму себя.\")\n    for key in requires.get(\"uses\", []):\n        test, title = USES[key]\n        if not test(tree):\n            problems.append(f\"В решении нужно использовать: {title}.\")\n    for key in requires.get(\"forbids\", []):\n        test, title = USES[key]\n        if test(tree):\n            problems.append(f\"В этой задаче нельзя использовать: {title}.\")\n    called = _called_names(tree)\n    for name in requires.get(\"no_calls\", []):\n        if name in called:\n            problems.append(f\"В этой задаче нельзя вызывать {name}().\")\n    return problems\n\n\ndef validate_spec(requires):\n    \"\"\"For the generator: unknown keys or constructs are content bugs.\"\"\"\n    allowed = {\"defines\", \"recursive\", \"uses\", \"forbids\", \"no_calls\"}\n    assert set(requires) <= allowed, (\"unknown requirement\", set(requires) - allowed)\n    for key in requires.get(\"uses\", []) + requires.get(\"forbids\", []):\n        assert key in USES, (\"unknown construct\", key)\n\n\nif __name__ == \"__main__\":\n    request = json.loads(sys.stdin.read())\n    print(json.dumps(check(request[\"code\"], request.get(\"requires\", {})), ensure_ascii=False))\n",
+ "checker": "\"\"\"Checks that a solution of a coding exercise is written the way the task\nasks (recursion, no loops, a class, nonlocal...), not only that it prints\nthe right thing.\n\nOne source of truth for two places:\n* the content generator imports check() to verify reference solutions;\n* the app runs this file's source in the bundled Python (Pyodide) with\n  {\"code\": ..., \"requires\": ...} as JSON on stdin and reads a JSON list of\n  problems from stdout (empty list = all good).\n\nRequirement keys (all optional):\n  defines:    names of functions/classes that must be defined\n  classes:    names that must be classes (not functions)\n  methods:    {class: [method, ...]} — methods defined in the class body\n  inherits:   {class: base} — the class must list base among its bases\n  recursive:  functions that must call themselves\n  uses:       constructs that must appear (see USES)\n  forbids:    constructs that must not appear (see USES)\n  calls:      functions/methods that must be called (open, sorted, ...)\n  no_calls:   functions/methods that must not be called\n  no_imports: modules that must not be imported (fractions, ...)\n\"\"\"\nimport ast\nimport json\nimport sys\n\nLOOPS = (ast.For, ast.While, ast.AsyncFor)\nCOMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)\n\n\ndef _has_star_args(tree):\n    return any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.args.vararg\n               for n in ast.walk(tree))\n\n\ndef _has_star_kwargs(tree):\n    return any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.args.kwarg\n               for n in ast.walk(tree))\n\n\ndef _has_decorator(tree):\n    return any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and n.decorator_list\n               for n in ast.walk(tree))\n\n\ndef _has_annotations(tree):\n    for node in ast.walk(tree):\n        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):\n            args = node.args.posonlyargs + node.args.args + node.args.kwonlyargs\n            if node.returns is not None or any(a.annotation is not None for a in args):\n                return True\n        if isinstance(node, ast.AnnAssign):\n            return True\n    return False\n\n\ndef _decorator_names(tree):\n    names = set()\n    for node in ast.walk(tree):\n        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):\n            for deco in node.decorator_list:\n                target = deco.func if isinstance(deco, ast.Call) else deco\n                if isinstance(target, ast.Name):\n                    names.add(target.id)\n                elif isinstance(target, ast.Attribute):\n                    names.add(target.attr)\n    return names\n\n\ndef _any(*types):\n    return lambda tree: any(isinstance(n, types) for n in ast.walk(tree))\n\n\n# construct -> (test(tree), how it is called in messages)\nUSES = {\n    \"for\": (_any(ast.For, ast.AsyncFor), \"цикл for\"),\n    \"while\": (_any(ast.While), \"цикл while\"),\n    \"loop\": (_any(*LOOPS), \"циклы\"),\n    \"comprehension\": (_any(*COMPREHENSIONS), \"включения (comprehensions)\"),\n    \"lambda\": (_any(ast.Lambda), \"lambda\"),\n    \"def\": (_any(ast.FunctionDef, ast.AsyncFunctionDef), \"def (свою функцию)\"),\n    \"class\": (_any(ast.ClassDef), \"class (свой класс)\"),\n    \"nonlocal\": (_any(ast.Nonlocal), \"nonlocal\"),\n    \"global\": (_any(ast.Global), \"global\"),\n    \"yield\": (_any(ast.Yield, ast.YieldFrom), \"yield (генератор)\"),\n    \"with\": (_any(ast.With, ast.AsyncWith), \"with\"),\n    \"try\": (_any(ast.Try, ast.TryStar), \"try/except\"),\n    \"raise\": (_any(ast.Raise), \"raise\"),\n    \"star_args\": (_has_star_args, \"*args\"),\n    \"star_kwargs\": (_has_star_kwargs, \"**kwargs\"),\n    \"decorator\": (_has_decorator, \"декоратор (@...)\"),\n    \"async\": (_any(ast.AsyncFunctionDef, ast.Await), \"async/await\"),\n    \"match\": (_any(ast.Match), \"match/case\"),\n    \"import\": (_any(ast.Import, ast.ImportFrom), \"import\"),\n    \"annotations\": (_has_annotations, \"аннотации типов\"),\n    \"property\": (lambda tree: \"property\" in _decorator_names(tree), \"@property\"),\n    \"dataclass\": (lambda tree: \"dataclass\" in _decorator_names(tree), \"@dataclass\"),\n    \"contextmanager\": (lambda tree: \"contextmanager\" in _decorator_names(tree), \"@contextmanager\"),\n}\n\n\ndef _defined(tree):\n    return {n.name for n in ast.walk(tree)\n            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))}\n\n\ndef _calls_itself(tree, name):\n    for node in ast.walk(tree):\n        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name:\n            for inner in ast.walk(node):\n                if (isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name)\n                        and inner.func.id == name):\n                    return True\n    return False\n\n\ndef _called_names(tree):\n    \"\"\"Names of called functions and methods: f(...) and obj.f(...).\"\"\"\n    names = set()\n    for node in ast.walk(tree):\n        if isinstance(node, ast.Call):\n            if isinstance(node.func, ast.Name):\n                names.add(node.func.id)\n            elif isinstance(node.func, ast.Attribute):\n                names.add(node.func.attr)\n    return names\n\n\ndef _classes(tree):\n    return {n.name: n for n in ast.walk(tree) if isinstance(n, ast.ClassDef)}\n\n\ndef _base_names(cls):\n    names = set()\n    for base in cls.bases:\n        if isinstance(base, ast.Name):\n            names.add(base.id)\n        elif isinstance(base, ast.Attribute):\n            names.add(base.attr)\n    return names\n\n\ndef _imported_modules(tree):\n    modules = set()\n    for node in ast.walk(tree):\n        if isinstance(node, ast.Import):\n            modules.update(alias.name.split(\".\")[0] for alias in node.names)\n        elif isinstance(node, ast.ImportFrom) and node.module:\n            modules.add(node.module.split(\".\")[0])\n    return modules\n\n\ndef check(code, requires):\n    \"\"\"Returns a list of problems (in Russian), empty when all is fine.\"\"\"\n    try:\n        tree = ast.parse(code)\n    except SyntaxError as error:\n        return [f\"Синтаксическая ошибка в строке {error.lineno}: {error.msg}\"]\n    problems = []\n    defined = _defined(tree)\n    for name in requires.get(\"defines\", []):\n        if name not in defined:\n            problems.append(f\"Объявите {name} — задача требует именно это имя.\")\n    classes = _classes(tree)\n    for name in requires.get(\"classes\", []):\n        if name not in classes:\n            problems.append(f\"{name} должен быть классом: объявите class {name}.\")\n    for cls_name, methods in requires.get(\"methods\", {}).items():\n        cls = classes.get(cls_name)\n        if cls is None:\n            continue\n        own = {n.name for n in cls.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}\n        for method in methods:\n            if method not in own:\n                problems.append(f\"В классе {cls_name} нужен метод {method}.\")\n    for cls_name, base in requires.get(\"inherits\", {}).items():\n        cls = classes.get(cls_name)\n        if cls is not None and base not in _base_names(cls):\n            problems.append(f\"Класс {cls_name} должен наследовать {base}.\")\n    for name in requires.get(\"recursive\", []):\n        if name in defined and not _calls_itself(tree, name):\n            problems.append(f\"Функция {name} должна быть рекурсивной: вызывать саму себя.\")\n    for key in requires.get(\"uses\", []):\n        test, title = USES[key]\n        if not test(tree):\n            problems.append(f\"В решении нужно использовать: {title}.\")\n    for key in requires.get(\"forbids\", []):\n        test, title = USES[key]\n        if test(tree):\n            problems.append(f\"В этой задаче нельзя использовать: {title}.\")\n    called = _called_names(tree)\n    for name in requires.get(\"calls\", []):\n        if name not in called:\n            problems.append(f\"В решении нужно вызвать {name}().\")\n    for name in requires.get(\"no_calls\", []):\n        if name in called:\n            problems.append(f\"В этой задаче нельзя вызывать {name}().\")\n    imported = _imported_modules(tree)\n    for name in requires.get(\"no_imports\", []):\n        if name in imported:\n            problems.append(f\"В этой задаче нельзя импортировать {name}: напишите решение сами.\")\n    return problems\n\n\ndef validate_spec(requires):\n    \"\"\"For the generator: unknown keys or constructs are content bugs.\"\"\"\n    allowed = {\"defines\", \"classes\", \"methods\", \"inherits\", \"recursive\", \"uses\", \"forbids\",\n               \"calls\", \"no_calls\", \"no_imports\"}\n    assert set(requires) <= allowed, (\"unknown requirement\", set(requires) - allowed)\n    for key in requires.get(\"uses\", []) + requires.get(\"forbids\", []):\n        assert key in USES, (\"unknown construct\", key)\n\n\nif __name__ == \"__main__\":\n    request = json.loads(sys.stdin.read())\n    print(json.dumps(check(request[\"code\"], request.get(\"requires\", {})), ensure_ascii=False))\n",
  "tasks": [
   {
    "id": "t_io_sum",
@@ -772,9 +772,9 @@
   {
    "id": "t_exc_safe_div",
    "title": "Безопасное деление",
-   "prompt": "В первой строке — число n, далее n строк вида «a b». Для каждой строки выведите a / b, округлив до 2 знаков, а при ошибке — «деление на ноль» или «не число».",
+   "prompt": "В первой строке — число n, далее n строк вида «a b». Для каждой строки выведите a / b ровно с двумя знаками после точки (например, 3.00), а при ошибке — «деление на ноль» или «не число».",
    "starter": "n = int(input())\nfor _ in range(n):\n    a, b = input().split()\n    print(round(float(a) / float(b), 2))",
-   "solution": "n = int(input())\nfor _ in range(n):\n    a, b = input().split()\n    try:\n        print(round(float(a) / float(b), 2))\n    except ZeroDivisionError:\n        print(\"деление на ноль\")\n    except ValueError:\n        print(\"не число\")",
+   "solution": "n = int(input())\nfor _ in range(n):\n    a, b = input().split()\n    try:\n        print(f\"{float(a) / float(b):.2f}\")\n    except ZeroDivisionError:\n        print(\"деление на ноль\")\n    except ValueError:\n        print(\"не число\")",
    "tests": [
     {
      "stdin": "2\n1 4\n10 3\n",
@@ -782,7 +782,7 @@
     },
     {
      "stdin": "3\n5 0\nx 2\n9 3\n",
-     "expected": "деление на ноль\nне число\n3.0\n"
+     "expected": "деление на ноль\nне число\n3.00\n"
     },
     {
      "stdin": "1\n7 abc\n",
@@ -790,7 +790,7 @@
     },
     {
      "stdin": "2\n-9 2\n0 0\n",
-     "expected": "-4.5\nделение на ноль\n"
+     "expected": "-4.50\nделение на ноль\n"
     }
    ],
    "difficulty": 2,
@@ -805,7 +805,7 @@
   {
    "id": "t_files_reverse",
    "title": "Обратный порядок",
-   "prompt": "Прочитайте число n и n строк. Запишите строки в файл lines.txt (каждую на своей строке), затем прочитайте файл и выведите строки в обратном порядке.",
+   "prompt": "Прочитайте число n и n строк. Запишите строки в файл lines.txt (каждую на своей строке), затем прочитайте файл и выведите его строки в обратном порядке. Решение должно работать через файл: открыть его и записать.",
    "starter": "n = int(input())\nwith open(\"lines.txt\", \"w\", encoding=\"utf-8\") as f:\n    for _ in range(n):\n        f.write(input() + \"\\n\")\nwith open(\"lines.txt\", encoding=\"utf-8\") as f:\n    print(f.read())",
    "solution": "n = int(input())\nwith open(\"lines.txt\", \"w\", encoding=\"utf-8\") as f:\n    for _ in range(n):\n        f.write(input() + \"\\n\")\nwith open(\"lines.txt\", encoding=\"utf-8\") as f:\n    lines = [line.rstrip(\"\\n\") for line in f]\nfor line in reversed(lines):\n    print(line)",
    "tests": [
@@ -830,6 +830,10 @@
    "requires": {
     "uses": [
      "with"
+    ],
+    "calls": [
+     "open",
+     "write"
     ]
    },
    "hint": "Прочитанные строки содержат \\n в конце — уберите его через rstrip.",
@@ -866,7 +870,7 @@
   {
    "id": "t_data_sum_numbers",
    "title": "Сумма чисел в тексте",
-   "prompt": "Прочитайте строку текста. Найдите в ней все целые числа (в том числе отрицательные, со знаком минус перед цифрами) и выведите их сумму.",
+   "prompt": "Прочитайте строку текста. Найдите в ней все целые числа (в том числе отрицательные, со знаком минус перед цифрами) и выведите их сумму. Минус, стоящий сразу перед цифрами, относится к числу: «5-3» — это 5 и -3; точка разделяет числа: «1.5» — это 1 и 5.",
    "starter": "text = input()\nprint(0)",
    "solution": "import re\n\nprint(sum(int(x) for x in re.findall(r\"-?\\d+\", input())))",
    "tests": [
@@ -922,8 +926,19 @@
    ],
    "difficulty": 1,
    "requires": {
-    "defines": [
+    "classes": [
      "Rectangle"
+    ],
+    "methods": {
+     "Rectangle": [
+      "__init__",
+      "area",
+      "perimeter"
+     ]
+    },
+    "calls": [
+     "area",
+     "perimeter"
     ]
    },
    "hint": "Сохраните w и h в self.",
@@ -932,13 +947,13 @@
   {
    "id": "t_inh_shapes",
    "title": "Фигуры",
-   "prompt": "Создайте базовый класс Shape с методом area() и подклассы Square(a) и Circle(r) (π = 3.14159). Прочитайте n и n строк вида «square 3» или «circle 2» и выведите площадь каждой фигуры, округлив до 2 знаков.",
+   "prompt": "Создайте базовый класс Shape с методом area() и подклассы Square(a) и Circle(r) (π = 3.14159). Прочитайте n и n строк вида «square 3» или «circle 2» и выведите площадь каждой фигуры ровно с двумя знаками после точки (например, 9.00).",
    "starter": "class Shape:\n    def area(self):\n        return 0\n\nfor _ in range(int(input())):\n    kind, size = input().split()\n    print(Shape().area())",
-   "solution": "class Shape:\n    def area(self):\n        raise NotImplementedError\n\nclass Square(Shape):\n    def __init__(self, a):\n        self.a = a\n    def area(self):\n        return self.a ** 2\n\nclass Circle(Shape):\n    def __init__(self, r):\n        self.r = r\n    def area(self):\n        return 3.14159 * self.r ** 2\n\nkinds = {\"square\": Square, \"circle\": Circle}\nfor _ in range(int(input())):\n    kind, size = input().split()\n    print(round(kinds[kind](float(size)).area(), 2))",
+   "solution": "class Shape:\n    def area(self):\n        raise NotImplementedError\n\nclass Square(Shape):\n    def __init__(self, a):\n        self.a = a\n    def area(self):\n        return self.a ** 2\n\nclass Circle(Shape):\n    def __init__(self, r):\n        self.r = r\n    def area(self):\n        return 3.14159 * self.r ** 2\n\nkinds = {\"square\": Square, \"circle\": Circle}\nfor _ in range(int(input())):\n    kind, size = input().split()\n    print(f\"{kinds[kind](float(size)).area():.2f}\")",
    "tests": [
     {
      "stdin": "2\nsquare 3\ncircle 1\n",
-     "expected": "9.0\n3.14\n"
+     "expected": "9.00\n3.14\n"
     },
     {
      "stdin": "1\ncircle 2\n",
@@ -946,20 +961,32 @@
     },
     {
      "stdin": "3\nsquare 1.5\nsquare 2\ncircle 0.5\n",
-     "expected": "2.25\n4.0\n0.79\n"
+     "expected": "2.25\n4.00\n0.79\n"
     },
     {
      "stdin": "1\nsquare 10\n",
-     "expected": "100.0\n"
+     "expected": "100.00\n"
     }
    ],
    "difficulty": 2,
    "requires": {
-    "defines": [
+    "classes": [
      "Shape",
      "Square",
      "Circle"
-    ]
+    ],
+    "inherits": {
+     "Square": "Shape",
+     "Circle": "Shape"
+    },
+    "methods": {
+     "Square": [
+      "area"
+     ],
+     "Circle": [
+      "area"
+     ]
+    }
    },
    "hint": "Словарь «название → класс» избавит от цепочки if.",
    "module": "inheritance"
@@ -990,10 +1017,18 @@
    ],
    "difficulty": 3,
    "requires": {
-    "defines": [
-     "Fraction",
-     "__add__",
-     "__str__"
+    "classes": [
+     "Fraction"
+    ],
+    "methods": {
+     "Fraction": [
+      "__init__",
+      "__add__",
+      "__str__"
+     ]
+    },
+    "no_imports": [
+     "fractions"
     ]
    },
    "hint": "Сокращайте в __init__ через math.gcd.",
@@ -1025,11 +1060,11 @@
    ],
    "difficulty": 3,
    "requires": {
-    "defines": [
+    "classes": [
      "Thermometer"
     ],
     "uses": [
-     "decorator",
+     "property",
      "raise"
     ]
    },
@@ -1039,7 +1074,7 @@
   {
    "id": "t_dc_inventory",
    "title": "Склад",
-   "prompt": "Объявите dataclass Item(name: str, qty: int, price: float). Прочитайте n и n строк «название количество цена». Выведите общую стоимость склада (с двумя знаками после запятой) и название позиции с наибольшей стоимостью (qty * price).",
+   "prompt": "Объявите dataclass Item(name: str, qty: int, price: float). Прочитайте n и n строк «название количество цена». Выведите общую стоимость склада (ровно с двумя знаками после точки) и название позиции с наибольшей стоимостью (qty * price); при равенстве — первую по порядку ввода.",
    "starter": "from dataclasses import dataclass\n\n@dataclass\nclass Item:\n    name: str\n    qty: int\n    price: float\n\nfor _ in range(int(input())):\n    print(input())",
    "solution": "from dataclasses import dataclass\n\n@dataclass\nclass Item:\n    name: str\n    qty: int\n    price: float\n\n    @property\n    def total(self):\n        return self.qty * self.price\n\nitems = []\nfor _ in range(int(input())):\n    name, qty, price = input().split()\n    items.append(Item(name, int(qty), float(price)))\nprint(f\"{sum(i.total for i in items):.2f}\")\nprint(max(items, key=lambda i: i.total).name)",
    "tests": [
@@ -1062,15 +1097,201 @@
    ],
    "difficulty": 2,
    "requires": {
-    "defines": [
+    "classes": [
      "Item"
+    ],
+    "uses": [
+     "dataclass"
+    ]
+   },
+   "hint": "Стоимость позиции удобно сделать свойством.",
+   "module": "dataclasses"
+  },
+  {
+   "id": "t_gen_chunks",
+   "title": "Пачки",
+   "prompt": "Напишите генератор chunks(items, size), который выдаёт подряд идущие куски списка длиной size (последний может быть короче). В первой строке — size, во второй — слова через пробел. Выведите каждую пачку на отдельной строке, слова через пробел.",
+   "starter": "def chunks(items, size):\n    return [items]\n\nsize = int(input())\nfor part in chunks(input().split(), size):\n    print(\" \".join(part))",
+   "solution": "def chunks(items, size):\n    for start in range(0, len(items), size):\n        yield items[start:start + size]\n\nsize = int(input())\nfor part in chunks(input().split(), size):\n    print(\" \".join(part))",
+   "tests": [
+    {
+     "stdin": "2\na b c d e\n",
+     "expected": "a b\nc d\ne\n"
+    },
+    {
+     "stdin": "3\nx y z\n",
+     "expected": "x y z\n"
+    },
+    {
+     "stdin": "1\nодин два\n",
+     "expected": "один\nдва\n"
+    },
+    {
+     "stdin": "4\na b c d e f g h i\n",
+     "expected": "a b c d\ne f g h\ni\n"
+    }
+   ],
+   "difficulty": 2,
+   "requires": {
+    "defines": [
+     "chunks"
+    ],
+    "uses": [
+     "yield"
+    ]
+   },
+   "hint": "range(0, len(items), size) даёт начало каждой пачки; срез — саму пачку.",
+   "module": "generators"
+  },
+  {
+   "id": "t_gen_fib",
+   "title": "Бесконечный Фибоначчи",
+   "prompt": "Напишите бесконечный генератор fib(), выдающий числа Фибоначчи 0, 1, 1, 2, 3, 5… Прочитайте n и выведите первые n чисел через пробел.",
+   "starter": "def fib():\n    yield 0\n\nn = int(input())\nprint(0)",
+   "solution": "from itertools import islice\n\ndef fib():\n    a, b = 0, 1\n    while True:\n        yield a\n        a, b = b, a + b\n\nn = int(input())\nprint(\" \".join(str(x) for x in islice(fib(), n)))",
+   "tests": [
+    {
+     "stdin": "5\n",
+     "expected": "0 1 1 2 3\n"
+    },
+    {
+     "stdin": "1\n",
+     "expected": "0\n"
+    },
+    {
+     "stdin": "10\n",
+     "expected": "0 1 1 2 3 5 8 13 21 34\n"
+    },
+    {
+     "stdin": "15\n",
+     "expected": "0 1 1 2 3 5 8 13 21 34 55 89 144 233 377\n"
+    }
+   ],
+   "difficulty": 2,
+   "requires": {
+    "defines": [
+     "fib"
+    ],
+    "uses": [
+     "yield"
+    ]
+   },
+   "hint": "Храните пару a, b и сдвигайте её: a, b = b, a + b. Первые n значений даст itertools.islice.",
+   "module": "generators"
+  },
+  {
+   "id": "t_deco_memo",
+   "title": "Свой кэш",
+   "prompt": "Напишите декоратор memoize, который запоминает результаты функции по её аргументам. Примените его к рекурсивной функции fib(n) (fib(0) = 0, fib(1) = 1). Прочитайте n (до 300) и выведите fib(n). Без кэша большие n не успеют посчитаться.",
+   "starter": "def memoize(func):\n    return func\n\n@memoize\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\nprint(fib(int(input())))",
+   "solution": "def memoize(func):\n    cache = {}\n    def wrapper(n):\n        if n not in cache:\n            cache[n] = func(n)\n        return cache[n]\n    return wrapper\n\n@memoize\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\nprint(fib(int(input())))",
+   "tests": [
+    {
+     "stdin": "10\n",
+     "expected": "55\n"
+    },
+    {
+     "stdin": "1\n",
+     "expected": "1\n"
+    },
+    {
+     "stdin": "50\n",
+     "expected": "12586269025\n"
+    },
+    {
+     "stdin": "300\n",
+     "expected": "222232244629420445529739893461909967206666939096499764990979600\n"
+    }
+   ],
+   "difficulty": 3,
+   "requires": {
+    "defines": [
+     "memoize",
+     "fib"
+    ],
+    "recursive": [
+     "fib"
     ],
     "uses": [
      "decorator"
     ]
    },
-   "hint": "Стоимость позиции удобно сделать свойством.",
-   "module": "dataclasses"
+   "hint": "Словарь cache внутри memoize живёт в замыкании обёртки.",
+   "module": "decorators"
+  },
+  {
+   "id": "t_ctx_tags",
+   "title": "Вложенные теги",
+   "prompt": "Напишите контекстный менеджер tag(name) через @contextmanager: при входе он печатает <name>, при выходе — </name>. Прочитайте имена тегов через пробел, вложите их друг в друга в этом порядке и внутри выведите «текст».",
+   "starter": "def tag(name):\n    print(f\"<{name}>\")\n\nfor name in input().split():\n    tag(name)\nprint(\"текст\")",
+   "solution": "from contextlib import contextmanager, ExitStack\n\n@contextmanager\ndef tag(name):\n    print(f\"<{name}>\")\n    try:\n        yield\n    finally:\n        print(f\"</{name}>\")\n\nwith ExitStack() as stack:\n    for name in input().split():\n        stack.enter_context(tag(name))\n    print(\"текст\")",
+   "tests": [
+    {
+     "stdin": "html body p\n",
+     "expected": "<html>\n<body>\n<p>\nтекст\n</p>\n</body>\n</html>\n"
+    },
+    {
+     "stdin": "b\n",
+     "expected": "<b>\nтекст\n</b>\n"
+    },
+    {
+     "stdin": "a b\n",
+     "expected": "<a>\n<b>\nтекст\n</b>\n</a>\n"
+    },
+    {
+     "stdin": "div section article span\n",
+     "expected": "<div>\n<section>\n<article>\n<span>\nтекст\n</span>\n</article>\n</section>\n</div>\n"
+    }
+   ],
+   "difficulty": 3,
+   "requires": {
+    "defines": [
+     "tag"
+    ],
+    "uses": [
+     "with",
+     "yield",
+     "decorator"
+    ]
+   },
+   "hint": "ExitStack.enter_context входит в менеджер и закроет его в конце, в обратном порядке. Рекурсия тоже подойдёт.",
+   "module": "contexts"
+  },
+  {
+   "id": "t_typing_parse",
+   "title": "Разбор настроек",
+   "prompt": "Напишите функцию parse(text: str) -> dict[str, int] с аннотациями типов: она принимает строку вида «a=1,b=20» и возвращает словарь. Прочитайте строку и выведите пары «ключ значение» по одной на строке в порядке sorted() ключей.",
+   "starter": "def parse(text):\n    return {}\n\nfor key, value in sorted(parse(input()).items()):\n    print(key, value)",
+   "solution": "def parse(text: str) -> dict[str, int]:\n    result: dict[str, int] = {}\n    for part in text.split(\",\"):\n        key, value = part.split(\"=\")\n        result[key.strip()] = int(value)\n    return result\n\nfor key, value in sorted(parse(input()).items()):\n    print(key, value)",
+   "tests": [
+    {
+     "stdin": "a=1,b=20\n",
+     "expected": "a 1\nb 20\n"
+    },
+    {
+     "stdin": "x=5\n",
+     "expected": "x 5\n"
+    },
+    {
+     "stdin": "z=1, a=2, m=3\n",
+     "expected": "a 2\nm 3\nz 1\n"
+    },
+    {
+     "stdin": "width=800,height=600\n",
+     "expected": "height 600\nwidth 800\n"
+    }
+   ],
+   "difficulty": 2,
+   "requires": {
+    "defines": [
+     "parse"
+    ],
+    "uses": [
+     "annotations"
+    ]
+   },
+   "hint": "split(\",\") даёт пары, split(\"=\") — ключ и значение.",
+   "module": "typing"
   }
  ]
 }

@@ -113,66 +113,97 @@
    "topic": "data_re",
    "difficulty": 2,
    "hint": "Каждая пара скобок — отдельная группа, нумерация с 1.",
-   "explanation": "Первая группа захватывает имя до @, вторая — домен до .com.",
-   "code": "import re\nm = re.search(r\"(\\w+)@(\\w+)\\.com\", \"mail: ada@lovelace.com\")\nprint(m.group(1))\nprint(m.group(2))",
+   "explanation": "Первая группа захватывает имя до @, вторая — домен до .org.",
+   "code": "import re\nm = re.search(r\"(\\w+)@(\\w+)\\.org\", \"кому: grace@hopper.org\")\nprint(m.group(1))\nprint(m.group(2))",
    "payload": {
-    "expectedOutput": "ada\nlovelace"
+    "expectedOutput": "grace\nhopper"
    },
    "solution": {
-    "code": "import re\nm = re.search(r\"(\\w+)@(\\w+)\\.com\", \"mail: ada@lovelace.com\")\nprint(m.group(1))\nprint(m.group(2))",
-    "output": "ada\nlovelace\n"
+    "code": "import re\nm = re.search(r\"(\\w+)@(\\w+)\\.org\", \"кому: grace@hopper.org\")\nprint(m.group(1))\nprint(m.group(2))",
+    "output": "grace\nhopper\n"
    }
   },
   {
    "id": "py_data_005",
    "type": "predict_output",
    "role": "lesson",
-   "title": "Високосный февраль",
+   "title": "Обычный февраль",
    "prompt": "Что выведет код?",
    "topic": "data_datetime",
    "difficulty": 1,
-   "hint": "2024 — високосный год.",
-   "explanation": "После 28 февраля 2024 идёт 29-е (високосный год), затем 1 марта.",
-   "code": "from datetime import date, timedelta\nd = date(2024, 2, 28) + timedelta(days=2)\nprint(d)",
+   "hint": "2023 — не високосный год.",
+   "explanation": "После 27 февраля 2023 идёт 28-е, а 29 февраля в 2023 году нет — следующий день 1 марта.",
+   "code": "from datetime import date, timedelta\nd = date(2023, 2, 27) + timedelta(days=2)\nprint(d)",
    "payload": {
     "options": [
-     "2024-02-30",
-     "2024-03-02",
-     "2024-02-29",
-     "2024-03-01"
+     "2023-02-29",
+     "2023-03-02",
+     "2023-02-28",
+     "2023-03-01"
     ],
     "correctIndex": 3,
     "optionFeedback": [
-     "30 февраля не бывает: date учитывает длину месяца.",
-     "В 2024 году в феврале 29 дней.",
+     "В 2023 году в феврале 28 дней: такой даты нет.",
+     "Это +3 дня, а прибавили 2.",
      "Это +1 день, а прибавили 2.",
      ""
     ]
    },
    "solution": {
-    "code": "from datetime import date, timedelta\nd = date(2024, 2, 28) + timedelta(days=2)\nprint(d)",
-    "output": "2024-03-01\n"
+    "code": "from datetime import date, timedelta\nd = date(2023, 2, 27) + timedelta(days=2)\nprint(d)",
+    "output": "2023-03-01\n"
    }
   },
   {
    "id": "py_data_006",
    "type": "bug_finder",
    "role": "challenge",
-   "title": "Не JSON",
+   "title": "Строка или файл",
    "prompt": "Найдите строку с ошибкой",
    "topic": "data_json",
    "difficulty": 2,
-   "hint": "Какие кавычки допустимы в JSON?",
-   "explanation": "В JSON строки и ключи только в двойных кавычках. С одинарными json.loads выбрасывает JSONDecodeError.",
-   "code": "import json\nraw = \"{'name': 'Ada'}\"\ndata = json.loads(raw)\nprint(data[\"name\"])",
+   "hint": "Какая функция json разбирает строку, а какая — файл?",
+   "explanation": "json.load ждёт файл и вызывает у аргумента .read() — у строки такого метода нет: AttributeError. Для строки нужен json.loads.",
+   "code": "import json\nraw = '{\"name\": \"Ada\"}'\ndata = json.load(raw)\nprint(data[\"name\"])",
    "payload": {
     "buggyLines": [
-     1
+     2
     ]
    },
    "solution": {
     "code": "import json\nraw = '{\"name\": \"Ada\"}'\ndata = json.loads(raw)\nprint(data[\"name\"])",
     "output": "Ada\n"
+   }
+  },
+  {
+   "id": "py_data_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Ключи JSON",
+   "prompt": "Что выведет код?",
+   "topic": "data_json",
+   "difficulty": 3,
+   "hint": "В JSON ключи объектов — только строки, а кортежей нет вообще.",
+   "explanation": "dumps превратил ключ 1 в строку «1», а кортеж — в массив. После loads ключ остался строкой, поэтому 1 in data — False.",
+   "code": "import json\ndata = json.loads(json.dumps({1: \"a\", \"pair\": (1, 2)}))\nprint(data, 1 in data)",
+   "payload": {
+    "options": [
+     "{1: 'a', 'pair': (1, 2)} True",
+     "{'1': 'a', 'pair': [1, 2]} True",
+     "{1: 'a', 'pair': [1, 2]} True",
+     "{'1': 'a', 'pair': [1, 2]} False"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "JSON не хранит числовые ключи и кортежи.",
+     "Ключ стал строкой «1», а 1 — число: in даёт False.",
+     "Ключ после JSON — строка «1».",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "import json\ndata = json.loads(json.dumps({1: \"a\", \"pair\": (1, 2)}))\nprint(data, 1 in data)",
+    "output": "{'1': 'a', 'pair': [1, 2]} False\n"
    }
   },
   {

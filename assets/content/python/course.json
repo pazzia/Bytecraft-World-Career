@@ -147,7 +147,7 @@
    "description": "try, except, raise",
    "icon": "🛟",
    "file": "modules/exceptions.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 830
   },
   {
    "id": "files",
@@ -155,7 +155,7 @@
    "description": "open, with, pathlib",
    "icon": "📄",
    "file": "modules/files.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "stdlib",
@@ -171,7 +171,7 @@
    "description": "json, регулярные выражения, даты",
    "icon": "🗂️",
    "file": "modules/textdata.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "classes",
@@ -179,7 +179,7 @@
    "description": "class, __init__, self",
    "icon": "🏗️",
    "file": "modules/classes.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "inheritance",
@@ -187,7 +187,7 @@
    "description": "super, полиморфизм, ABC",
    "icon": "🌳",
    "file": "modules/inheritance.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "dunder",
@@ -195,7 +195,7 @@
    "description": "__str__, __eq__, __add__, __len__",
    "icon": "✨",
    "file": "modules/dunder.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "properties",
@@ -203,7 +203,7 @@
    "description": "@property, @classmethod, @staticmethod",
    "icon": "🔐",
    "file": "modules/properties.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "dataclasses",
@@ -211,6 +211,38 @@
    "description": "Классы данных и перечисления",
    "icon": "🗃️",
    "file": "modules/dataclasses.json",
+   "timedRunSeconds": 830
+  },
+  {
+   "id": "generators",
+   "title": "Итераторы и генераторы",
+   "description": "iter, next, yield, ленивые вычисления",
+   "icon": "🌀",
+   "file": "modules/generators.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "decorators",
+   "title": "Декораторы",
+   "description": "Функции, которые меняют функции",
+   "icon": "🎀",
+   "file": "modules/decorators.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "contexts",
+   "title": "Контекстные менеджеры",
+   "description": "with, __enter__, __exit__, contextlib",
+   "icon": "🚪",
+   "file": "modules/contexts.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "typing",
+   "title": "Аннотации типов",
+   "description": "Подсказки типов, Protocol, дженерики",
+   "icon": "🏷️",
+   "file": "modules/typing.json",
    "timedRunSeconds": 690
   }
  ]

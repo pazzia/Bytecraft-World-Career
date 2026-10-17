@@ -171,11 +171,12 @@
    "type": "multi_select",
    "role": "practice",
    "title": "Неизменяемый",
-   "prompt": "@dataclass(frozen=True) class P: x: int; p = P(1). Какие операции вызовут ошибку?",
+   "prompt": "Какие операции с p вызовут ошибку?",
    "topic": "dc_basics",
    "difficulty": 2,
    "hint": "frozen запрещает менять объект, но не создавать новые.",
    "explanation": "Присваивание и удаление атрибута у frozen-объекта дают FrozenInstanceError. Сравнение и хеш работают, а replace создаёт новый объект.",
+   "code": "from dataclasses import dataclass, replace\n\n@dataclass(frozen=True)\nclass P:\n    x: int\n\np = P(1)",
    "payload": {
     "options": [
      "p.x = 5",
@@ -195,6 +196,75 @@
      "",
      "replace не меняет p, а создаёт новый объект."
     ]
+   }
+  },
+  {
+   "id": "py_dc_010",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "В множество",
+   "prompt": "Объекты каких dataclass-классов можно положить в set?",
+   "topic": "dc_basics",
+   "difficulty": 2,
+   "hint": "Обычный dataclass определяет __eq__ — и поэтому убирает __hash__.",
+   "explanation": "С eq=True (по умолчанию) dataclass ставит __hash__ = None. frozen=True делает объект неизменяемым и добавляет хеш по полям, eq=False оставляет хеш по идентичности.",
+   "payload": {
+    "options": [
+     "@dataclass",
+     "@dataclass(frozen=True)",
+     "@dataclass(eq=False)",
+     "@dataclass(order=True)"
+    ],
+    "correctIndexes": [
+     1,
+     2
+    ],
+    "optionFeedback": [
+     "Обычный dataclass нехешируем: TypeError unhashable type.",
+     "",
+     "",
+     "order добавляет сравнения, но хеша по-прежнему нет."
+    ]
+   }
+  },
+  {
+   "id": "py_dc_011",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Виды перечислений",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "dc_enum",
+   "difficulty": 3,
+   "hint": "StrEnum и IntEnum ведут себя как строка и число, обычный Enum — нет. Flag можно объединять через |.",
+   "explanation": "StrEnum и IntEnum — подклассы str и int: с ними работают операции строк и чисел. Элемент обычного Enum не равен своему значению. Flag объединяет флаги: R | W имеет значение 3, и W входит в эту комбинацию.",
+   "code": "from enum import Enum, IntEnum, StrEnum, Flag\n\nclass Lang(StrEnum):\n    PY = \"py\"\nclass Level(IntEnum):\n    LOW = 1\nclass Color(Enum):\n    RED = 1\nclass Perm(Flag):\n    R = 1\n    W = 2",
+   "payload": {
+    "pairs": [
+     {
+      "left": "Lang.PY + \"thon\"",
+      "right": "python"
+     },
+     {
+      "left": "Level.LOW + 1",
+      "right": "2"
+     },
+     {
+      "left": "Color.RED == 1",
+      "right": "False"
+     },
+     {
+      "left": "(Perm.R | Perm.W).value",
+      "right": "3"
+     },
+     {
+      "left": "Perm.W in (Perm.R | Perm.W)",
+      "right": "True"
+     }
+    ]
+   },
+   "solution": {
+    "code": "from enum import Enum, IntEnum, StrEnum, Flag\n\nclass Lang(StrEnum):\n    PY = \"py\"\nclass Level(IntEnum):\n    LOW = 1\nclass Color(Enum):\n    RED = 1\nclass Perm(Flag):\n    R = 1\n    W = 2\nprint(Lang.PY + \"thon\")\nprint(Level.LOW + 1)\nprint(Color.RED == 1)\nprint((Perm.R | Perm.W).value)\nprint(Perm.W in (Perm.R | Perm.W))",
+    "output": "python\n2\nFalse\n3\nTrue\n"
    }
   },
   {

@@ -99,7 +99,7 @@
    "id": "py_dun_004",
    "type": "type_output",
    "role": "practice",
-   "title": "Вектора",
+   "title": "Векторы",
    "prompt": "Напишите, что выведет код",
    "topic": "dunder_ops",
    "difficulty": 2,
@@ -235,6 +235,37 @@
    "solution": {
     "code": "class Card:\n    order = \"6789TJQKA\"\n    def __init__(self, rank):\n        self.rank = rank\n    def __lt__(self, other):\n        return self.order.index(self.rank) < self.order.index(other.rank)\n    def __repr__(self):\n        return self.rank\n\nprint(sorted([Card(\"K\"), Card(\"7\"), Card(\"A\"), Card(\"T\")]))",
     "output": "[7, T, K, A]\n"
+   }
+  },
+  {
+   "id": "py_dun_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Сравнение с чужими",
+   "prompt": "Что выведет код?",
+   "topic": "dunder_ops",
+   "difficulty": 3,
+   "hint": "NotImplemented говорит Python: «я не умею сравнивать с этим типом».",
+   "explanation": "С другим Vec сравнение работает по полям. С кортежем и элементами списка __eq__ возвращает NotImplemented, Python пробует сравнение второго объекта, и в итоге == даёт False.",
+   "code": "class Vec:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n    def __eq__(self, other):\n        if not isinstance(other, Vec):\n            return NotImplemented\n        return (self.x, self.y) == (other.x, other.y)\n\nprint(Vec(1, 2) == Vec(1, 2), Vec(1, 2) == (1, 2), Vec(0, 0) in [0, \"a\"])",
+   "payload": {
+    "options": [
+     "True True False",
+     "True False False",
+     "True False True",
+     "AttributeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Кортеж — не Vec: __eq__ возвращает NotImplemented, и результат False.",
+     "",
+     "in сравнивает Vec(0, 0) с 0 и \"a\" через ==, а с ними __eq__ возвращает NotImplemented — значит, False.",
+     "Так было бы без проверки isinstance: у кортежа и числа нет атрибута x."
+    ]
+   },
+   "solution": {
+    "code": "class Vec:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n    def __eq__(self, other):\n        if not isinstance(other, Vec):\n            return NotImplemented\n        return (self.x, self.y) == (other.x, other.y)\n\nprint(Vec(1, 2) == Vec(1, 2), Vec(1, 2) == (1, 2), Vec(0, 0) in [0, \"a\"])",
+    "output": "True False False\n"
    }
   },
   {
