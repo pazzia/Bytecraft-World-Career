@@ -13,6 +13,7 @@ import '../../../shared/widgets/segmented_switch.dart';
 import '../../learning_map/presentation/learning_map_providers.dart';
 import '../../settings/presentation/settings_controller.dart';
 import '../domain/career_dashboard.dart';
+import 'career_evidence_section.dart';
 import 'career_providers.dart';
 
 class CareerScreen extends ConsumerWidget {
@@ -59,6 +60,9 @@ class CareerScreen extends ConsumerWidget {
               const SizedBox(height: Spacing.md),
             ],
             const SizedBox(height: Spacing.lg),
+            const _SectionHeader(title: 'Доказательства и вакансии'),
+            CareerEvidenceSection(vm: vm),
+            const SizedBox(height: Spacing.xl),
             const _SectionHeader(title: 'Лучшие следующие шаги'),
             for (final action in vm.actions) ...[
               _ActionCard(
@@ -178,6 +182,9 @@ class _SkillCard extends StatelessWidget {
     final theme = Theme.of(context);
     final game = context.gameColors;
     final ready = skill.readyForAssessment;
+    final proof = skill.portfolioBonus > 0
+        ? ' • GitHub +${skill.portfolioBonus}'
+        : '';
     return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,8 +206,8 @@ class _SkillCard extends StatelessWidget {
           const SizedBox(height: Spacing.sm),
           Text(
             ready
-                ? 'Готов к тренировочной аттестации'
-                : 'Цель ${skill.target} • осталось ${skill.gap} пунктов',
+                ? 'Готов к тренировочной аттестации$proof'
+                : 'Цель ${skill.target} • осталось ${skill.gap} пунктов$proof',
             style: theme.textTheme.bodySmall?.copyWith(color: game.textMuted),
           ),
         ],
@@ -361,7 +368,7 @@ class _CvCard extends StatelessWidget {
             ),
             const SizedBox(height: Spacing.sm),
             Text(
-              'Сейчас это внутренняя оценка доказательности навыков: пройденные уровни, качество и готовность по направлениям. Следующий шаг — проекты, импорт GitHub и генерация CV под конкретную вакансию.',
+              'Оценка учитывает прогресс курса, качество прохождения, соответствие карьерной цели и доказательства из публичного GitHub-портфолио.',
               style: Theme.of(context)
                   .textTheme
                   .bodySmall
