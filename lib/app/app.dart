@@ -9,7 +9,7 @@ import 'router/app_router.dart';
 class BytecraftApp extends ConsumerWidget {
   const BytecraftApp({super.key});
 
-  static const String title = 'Bytecraft';
+  static const String title = 'Bytecraft Career';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
