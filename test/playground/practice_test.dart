@@ -117,7 +117,7 @@ void main() {
 
   test('huge test data is shortened for display', () {
     expect(shortenForDisplay('short'), 'short');
-    final long = List.filled(1000, 'x').join() + 'END';
+    final long = '${List.filled(1000, 'x').join()}END';
     final shown = shortenForDisplay(long, limit: 20);
     expect(shown, startsWith('xxxxxxxxxx … (ещё 983 симв.) … '));
     expect(shown, endsWith('xxxxxxxEND'));
