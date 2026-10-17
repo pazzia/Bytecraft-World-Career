@@ -15,6 +15,8 @@ import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/code_block.dart';
 import '../../../shared/widgets/keycap.dart';
 import '../../../shared/widgets/stat_badges.dart';
+import '../../career/domain/career_dashboard.dart';
+import '../../career/presentation/career_providers.dart';
 import '../../daily_challenge/domain/daily_challenge.dart';
 import '../../journal/presentation/journal_providers.dart';
 import '../../learning_map/domain/learning_map_model.dart';
@@ -29,6 +31,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final home = ref.watch(homeViewModelProvider);
+    final career = ref.watch(careerDashboardProvider).value;
     final dueReviews = ref.watch(dueReviewCountProvider).value ?? 0;
     final timedEnabled =
         ref.watch(featureFlagsProvider).isEnabled(FeatureFlag.timedRuns);
@@ -51,6 +54,13 @@ class HomeScreen extends ConsumerWidget {
                 _Hud(vm: vm),
                 const SizedBox(height: Spacing.xl),
                 _NextLevelBoard(vm: vm),
+                if (career != null) ...[
+                  const SizedBox(height: Spacing.xl),
+                  _CareerTile(
+                    vm: career,
+                    onTap: () => context.push(Routes.career),
+                  ),
+                ],
                 const SizedBox(height: Spacing.xl),
                 if (dueReviews > 0) ...[
                   _ReviewTile(
@@ -219,6 +229,54 @@ class _NextLevelBoard extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CareerTile extends StatelessWidget {
+  const _CareerTile({required this.vm, required this.onTap});
+
+  final CareerDashboard vm;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final game = context.gameColors;
+    final next = vm.actions.isEmpty ? null : vm.actions.first;
+    return AppCard(
+      onTap: onTap,
+      semanticLabel: 'Карьерная готовность ${vm.readiness} процентов',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.work_outline_rounded, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: Spacing.sm),
+              Expanded(child: Text('Карьерная цель', style: textTheme.titleMedium)),
+              Text(
+                '${vm.readiness}%',
+                style: textTheme.titleLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Spacing.xs),
+          Text(vm.targetTitle, style: textTheme.bodyLarge),
+          const SizedBox(height: Spacing.md),
+          AppProgressBar(value: vm.readiness / 100, height: 8),
+          if (next != null) ...[
+            const SizedBox(height: Spacing.md),
+            Text(
+              '${next.title} • до +${next.estimatedGain}% готовности',
+              style: textTheme.bodySmall?.copyWith(color: game.textMuted),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
