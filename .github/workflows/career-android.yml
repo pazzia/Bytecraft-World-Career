@@ -1,0 +1,214 @@
+name: Bytecraft Career Android
+
+on:
+  push:
+    branches: [ career-loop-mvp ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bytecraft-career-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate isolated Android shell
+        run: |
+          set -euo pipefail
+          flutter create --platforms=android --org com.pazzia --project-name bytecraftcareer .
+          rm -f test/widget_test.dart
+
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's/android:label="bytecraftcareer"/android:label="Bytecraft Career"/' "$M"
+          grep -q 'android:label="Bytecraft Career"' "$M"
+
+          cp -r tool/android/res/. android/app/src/main/res/
+          cp tool/android/proguard-rules.pro android/app/proguard-rules.pro
+
+          G=android/app/build.gradle.kts
+          [ -f "$G" ] || G=android/app/build.gradle
+          if [[ "$G" == *.kts ]]; then
+            sed -i '0,/release {/s//release {\n            proguardFiles("proguard-rules.pro")/' "$G"
+          else
+            sed -i "0,/release {/s//release {\n            proguardFiles 'proguard-rules.pro'/" "$G"
+          fi
+
+          sed -i '0,/<application/s//<uses-permission android:name="android.permission.INTERNET"\/>\n    <application android:networkSecurityConfig="@xml\/network_security_config"/' "$M"
+          grep -q 'android.permission.INTERNET' "$M"
+          grep -q 'networkSecurityConfig' "$M"
+
+          grep -R 'applicationId.*com.pazzia.bytecraftcareer' android/app/build.gradle* || true
+          grep -R 'namespace.*com.pazzia.bytecraftcareer' android/app/build.gradle* || true
+
+      - name: Brand Career launcher icon
+        run: |
+          python -m pip install --quiet pillow
+          python tool/android/brand_career_icon.py
+
+      - name: Check course content
+        run: |
+          set -euo pipefail
+          python tool/content/generate_python_course.py "$RUNNER_TEMP/content"
+          diff -r "$RUNNER_TEMP/content" assets/content/python
+
+      - name: Bundle Pyodide
+        run: |
+          set -euo pipefail
+          cd tool/pyodide
+          npm install --no-audit --no-fund
+          SRC=node_modules/pyodide
+          for f in pyodide.js pyodide.asm.js pyodide.asm.wasm python_stdlib.zip pyodide-lock.json; do
+            cp "$SRC/$f" ../../assets/pyodide/
+          done
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Tests
+        run: flutter test --reporter expanded
+
+      - name: Build Career release APK
+        id: apk
+        run: |
+          set -euo pipefail
+          VERSION="$(grep -m1 '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          flutter build apk --release \
+            --build-name="$VERSION" \
+            --build-number=${{ github.run_number }} \
+            --dart-define=APP_VERSION="$VERSION" \
+            --dart-define=BUILD_NUMBER=${{ github.run_number }} \
+            --dart-define=APP_EDITION=career
+
+      - name: Restore Career signing key
+        id: key-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.bytecraft-career-signing
+          key: bytecraft-career-signing-v1
+
+      - name: Sign Career APK
+        id: sign
+        run: |
+          set -euo pipefail
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          KEY_DIR="$HOME/.bytecraft-career-signing"
+          mkdir -p "$KEY_DIR"
+
+          if [ ! -f "$KEY_DIR/release.jks" ]; then
+            openssl rand -hex 24 > "$KEY_DIR/password"
+            PASSWORD="$(cat "$KEY_DIR/password")"
+            keytool -genkeypair \
+              -keystore "$KEY_DIR/release.jks" \
+              -storetype PKCS12 \
+              -alias bytecraftcareer \
+              -keyalg RSA \
+              -keysize 4096 \
+              -validity 10000 \
+              -storepass "$PASSWORD" \
+              -dname "CN=Bytecraft Career, O=pazzia" >/dev/null 2>&1
+            echo 'created=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'created=false' >> "$GITHUB_OUTPUT"
+          fi
+
+          PASSWORD="$(cat "$KEY_DIR/password")"
+          BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          export PASSWORD
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks "$KEY_DIR/release.jks" \
+            --ks-key-alias bytecraftcareer \
+            --ks-pass env:PASSWORD \
+            --key-pass env:PASSWORD \
+            --out "$RUNNER_TEMP/bytecraft-career.apk" \
+            "$APK"
+          mv "$RUNNER_TEMP/bytecraft-career.apk" "$APK"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee signature.txt
+
+      - name: Save Career signing key
+        if: steps.sign.outputs.created == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.bytecraft-career-signing
+          key: bytecraft-career-signing-v1
+
+      - name: Verify package identity
+        run: |
+          set -euo pipefail
+          BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          BADGING="$($BUILD_TOOLS/aapt dump badging build/app/outputs/flutter-apk/app-release.apk | head -n 1)"
+          echo "$BADGING"
+          echo "$BADGING" | grep -q "name='com.pazzia.bytecraftcareer'"
+
+      - name: Upload Career APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: bytecraft-career-0.2.0-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download Career APK
+        uses: actions/download-artifact@v4
+        with:
+          name: bytecraft-career-0.2.0-apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install and launch Career edition
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash tool/android/smoke_career.sh app-release.apk
+
+      - name: Upload Career smoke results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bytecraft-career-smoke
+          path: |
+            smoke.txt
+            logcat.txt
+            app-log.txt
+            screen.png
+            ui.xml
+          if-no-files-found: ignore
