@@ -1,8 +1,9 @@
 {
   "name": "bytecraft-pyodide",
   "private": true,
-  "description": "Pins the Pyodide version bundled into the app and used by the content check.",
+  "description": "Pins the Pyodide version bundled into the app and used by the content check; Playwright runs the sandbox page in Chromium.",
   "dependencies": {
-    "pyodide": "0.27.7"
+    "pyodide": "0.27.7",
+    "playwright": "1.48.2"
   }
 }
