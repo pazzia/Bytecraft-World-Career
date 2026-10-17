@@ -117,7 +117,7 @@ class _Scheduler:
             raise
         except BaseException as error:  # noqa: BLE001 - printed like threading.excepthook
             self._finish(thread)
-            _print_thread_error(thread, error)
+            _report_thread_error(thread, error)
         else:
             if isinstance(request, _Block):
                 self.blocked.append((thread, request))
@@ -198,15 +198,29 @@ def _deadline(timeout):
     return _now() + timeout
 
 
+import weakref, functools
+_GREENS = weakref.WeakKeyDictionary()  # plain function -> green twin (not copied by functools.wraps)
+
+
 def _green(plain_method, green_method):
-    plain_method.__green__ = green_method
+    _GREENS[plain_method] = green_method
     return plain_method
+
+
+def _report_thread_error(thread, error):
+    import threading
+    hook = threading.excepthook
+    if hook is not _ORIGINAL_EXCEPTHOOK:
+        hook(threading.ExceptHookArgs((type(error), error, error.__traceback__, thread)))
+        return
+    _print_thread_error(thread, error)
 
 
 def _print_thread_error(thread, error):
     tb = error.__traceback__
     frames = [f for f in traceback.extract_tb(tb) if f.filename == "main.py"]
-    lines = [f"Exception in thread {thread.name}:\n", "Traceback (most recent call last):\n"]
+    header = f"Process {thread.name}:\n" if isinstance(thread, _Process) else f"Exception in thread {thread.name}:\n"
+    lines = [header, "Traceback (most recent call last):\n"]
     lines += traceback.format_list(frames)
     lines += traceback.format_exception_only(type(error), error)
     sys.stderr.write("".join(lines))
@@ -214,42 +228,70 @@ def _print_thread_error(thread, error):
 
 # ----------------------------------------------------- calls from green code
 def _green_of(func):
+    if isinstance(func, functools.partial):
+        green = _green_of(func.func)
+        if green is None:
+            return None
+        args, keywords = func.args, func.keywords
+        return lambda *a, **k: green(*args, *a, **{**keywords, **k})
     if isinstance(func, types.MethodType):
-        green = getattr(func.__func__, "__green__", None)
+        green = _GREENS.get(func.__func__)
         if green is None:
             return None
         owner = func.__self__
         return lambda *args, **kwargs: green(owner, *args, **kwargs)
     if isinstance(func, types.FunctionType):
-        return func.__dict__.get("__green__")
+        return _GREENS.get(func)
     return None
+
+
+class _Done:
+    """Already-computed result for `yield from`: no generator frame, and a
+    StopIteration from the plain call reaches the caller's frame as is."""
+    __slots__ = ("value",)
+
+    def __init__(self, value):
+        self.value = value
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        raise StopIteration(self.value)
 
 
 def _bytecraft_call(func, /, *args, **kwargs):
     green = _green_of(func)
     if green is None:
-        return func(*args, **kwargs)
-    return (yield from green(*args, **kwargs))
+        return _Done(func(*args, **kwargs))
+    return green(*args, **kwargs)
 
 
 def _bytecraft_enter(manager):
-    enter = type(manager).__enter__.__get__(manager)
+    cls = type(manager)
+    if cls is Lock and not manager._locked:  # fast path: free lock
+        return _Done(manager._take())
+    enter = cls.__enter__.__get__(manager)
     green = _green_of(enter)
     if green is None:
-        return enter()
-    return (yield from green())
+        return _Done(enter())
+    return green()
 
 
 def _bytecraft_exit(manager, kind, value, tb):
     exit_ = type(manager).__exit__.__get__(manager)
     green = _green_of(exit_)
     if green is None:
-        return exit_(kind, value, tb)
-    return (yield from green(kind, value, tb))
+        return _Done(exit_(kind, value, tb))
+    return green(kind, value, tb)
+
+
+def _bytecraft_exit_error(manager, error):
+    return _bytecraft_exit(manager, type(error), error, error.__traceback__)
 
 
 def _bytecraft_lambda(plain, green):
-    plain.__green__ = green
+    _GREENS[plain] = green
     return plain
 
 
@@ -259,9 +301,11 @@ def _bytecraft_link(func, green):
                                                 co_qualname=func.__code__.co_qualname)
     except (AttributeError, ValueError):
         pass
+    green.__name__ = func.__name__
+    green.__qualname__ = func.__qualname__
     green.__defaults__ = func.__defaults__
     green.__kwdefaults__ = func.__kwdefaults__
-    func.__green__ = green
+    _GREENS[func] = green
 
 
 def _bytecraft_tick():
@@ -276,6 +320,7 @@ def _bytecraft_poll():
 
 
 # ------------------------------------------------------------- rewriting
+_FRAME_HELPERS = {"_getframe", "currentframe", "stack", "getouterframes"}
 _UNWRAPPED = {"super", "locals", "globals", "vars", "eval", "exec", "dir", "breakpoint",
               "_bytecraft_lambda", "_bytecraft_call", "_bytecraft_tick", "_bytecraft_poll"}
 _SCOPES = (ast.Lambda, ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp,
@@ -314,6 +359,8 @@ class _WrapCalls(ast.NodeTransformer):
     def visit_Call(self, node):
         node = super().generic_visit(node)
         if isinstance(node.func, ast.Name) and node.func.id in _UNWRAPPED:
+            return node
+        if isinstance(node.func, ast.Attribute) and node.func.attr in _FRAME_HELPERS:
             return node
         call = ast.Call(func=ast.Name("_bytecraft_call", ast.Load()),
                         args=[node.func, *node.args], keywords=node.keywords)
@@ -354,7 +401,7 @@ try:
     pass
 except BaseException as {error}:
     {ok} = False
-    if not (yield from _bytecraft_exit({manager}, type({error}), {error}, {error}.__traceback__)):
+    if not (yield from _bytecraft_exit_error({manager}, {error})):
         raise
 finally:
     if {ok}:
@@ -426,13 +473,35 @@ def _wrap_header(stmt):
 
 def _process_def(func):
     import copy
-    eligible = not func.decorator_list and not _is_generator(func)
+    eligible = not _is_generator(func)
     twin = copy.deepcopy(func) if eligible else None
     func.body = _process_block(func.body, False)
     if not eligible:
         return [func]
+    # Decorators are evaluated first (as in CPython) and applied after the
+    # twin is linked, so the undecorated function gets a green twin too.
+    pre, post = [], []
+    if func.decorator_list:
+        n = next(_with_counter)
+        temps = [f"_bcdec{n}_{i}" for i in range(len(func.decorator_list))]
+        for temp, dec in zip(temps, func.decorator_list):
+            pre.append(ast.Assign([ast.Name(temp, ast.Store())], dec))
+        value = ast.Name(func.name, ast.Load())
+        for temp in reversed(temps):
+            value = ast.Call(ast.Name(temp, ast.Load()), [value], [])
+        post = [ast.Assign([ast.Name(func.name, ast.Store())], value),
+                ast.Delete([ast.Name(t, ast.Del()) for t in temps])]
+        func.decorator_list = []
+        twin.decorator_list = []
+        for node in pre + post:
+            ast.copy_location(node, func)
     name = "_bcg_" + func.name
     twin.name = name
+    # Defaults are copied from the original by _bytecraft_link: evaluating
+    # them twice would repeat their side effects.
+    twin.args.defaults = [ast.copy_location(ast.Constant(None), d) for d in twin.args.defaults]
+    twin.args.kw_defaults = [None if d is None else ast.copy_location(ast.Constant(None), d)
+                             for d in twin.args.kw_defaults]
     twin.body = _process_block(twin.body, True)
     never = ast.If(test=ast.Constant(False), body=[ast.Expr(ast.Yield(None))], orelse=[])
     twin.body.append(ast.copy_location(never, func))
@@ -442,7 +511,7 @@ def _process_def(func):
     for node in (link, delete):
         ast.copy_location(node, func)
         node.lineno = node.end_lineno = func.end_lineno or func.lineno
-    return [func, twin, link, delete]
+    return [*pre, func, twin, link, delete, *post]
 
 
 class _Lambdas(ast.NodeTransformer):
@@ -462,7 +531,7 @@ class _Lambdas(ast.NodeTransformer):
         return ast.copy_location(call, node)
 
 
-_USES_THREADS = re.compile(r"\b(threading|concurrent|queue|multiprocessing|_thread)\b")
+_USES_THREADS = re.compile(r"\b(threading|concurrent|queue|multiprocessing|_thread|to_thread|run_in_executor)\b")
 
 
 def _bytecraft_compile(source, filename="main.py"):
@@ -659,10 +728,20 @@ class Condition:
             self._lock._owner = current_thread()
             self._lock._count = saved
 
+    def _is_owned(self):
+        if isinstance(self._lock, RLock):
+            return self._lock._count > 0 and self._lock._owner is current_thread()
+        return self._lock._locked
+
+    def _check_owned(self, what):
+        if not self._is_owned():
+            raise RuntimeError(f"cannot {what} on un-acquired lock")
+
     def _lock_free(self):
         return (self._lock._count == 0) if isinstance(self._lock, RLock) else not self._lock._locked
 
     def wait(self, timeout=None):
+        self._check_owned("wait")
         slot = [False]
         self._waiters.append(slot)
         saved = self._release_all()
@@ -679,6 +758,7 @@ class Condition:
         return got
 
     def _wait_green(self, timeout=None):
+        self._check_owned("wait")
         slot = [False]
         self._waiters.append(slot)
         saved = self._release_all()
@@ -721,6 +801,7 @@ class Condition:
     _green(wait_for, _wait_for_green)
 
     def notify(self, n=1):
+        self._check_owned("notify")
         for slot in self._waiters[:n]:
             slot[0] = True
         del self._waiters[:n]
@@ -823,6 +904,7 @@ class Barrier:
         self._count = 0
         self._generation = 0
         self.broken = False
+        self._reset_generations = set()
 
     @property
     def n_waiting(self):
@@ -836,7 +918,11 @@ class Barrier:
         generation = self._generation
         if self._count == self.parties:
             if self._action:
-                self._action()
+                try:
+                    self._action()
+                except BaseException:
+                    self.broken = True
+                    raise
             self._count = 0
             self._generation += 1
         return index, generation
@@ -846,7 +932,7 @@ class Barrier:
         timeout = self._timeout if timeout is None else timeout
         if not _wait(lambda: self._generation != generation or self.broken, _deadline(timeout)):
             self.abort()
-        if self.broken and self._generation == generation:
+        if generation in self._reset_generations or (self.broken and self._generation == generation):
             raise BrokenBarrierError
         return index
 
@@ -855,7 +941,7 @@ class Barrier:
         timeout = self._timeout if timeout is None else timeout
         if not (yield from _gwait(lambda: self._generation != generation or self.broken, _deadline(timeout))):
             self.abort()
-        if self.broken and self._generation == generation:
+        if generation in self._reset_generations or (self.broken and self._generation == generation):
             raise BrokenBarrierError
         return index
 
@@ -865,25 +951,41 @@ class Barrier:
         self.broken = True
 
     def reset(self):
+        if self._count:
+            self._reset_generations.add(self._generation)
         self.broken = False
         self._count = 0
         self._generation += 1
 
 
 class local:
-    def __init__(self):
-        object.__setattr__(self, "_bytecraft_data", {})
+    """Per-thread attributes. As in CPython, a subclass __init__ runs again
+    (with the same arguments) the first time each thread touches it."""
+
+    def __new__(cls, *args, **kwargs):
+        if (args or kwargs) and cls.__init__ is object.__init__:
+            raise TypeError("Initialization arguments are not supported")
+        self = object.__new__(cls)
+        data = weakref.WeakKeyDictionary()
+        data[current_thread()] = {}
+        object.__setattr__(self, "_bytecraft_local", (data, args, kwargs))
+        return self
 
     def _dict(self):
-        data = object.__getattribute__(self, "_bytecraft_data")
-        return data.setdefault(id(current_thread()), {})
+        data, args, kwargs = object.__getattribute__(self, "_bytecraft_local")
+        thread = current_thread()
+        values = data.get(thread)
+        if values is None:
+            values = data[thread] = {}
+            type(self).__init__(self, *args, **kwargs)
+        return values
 
     def __getattribute__(self, name):
-        if name in ("_dict", "__class__", "__dict__"):
-            if name == "__dict__":
-                return object.__getattribute__(self, "_dict")()
+        if name in ("_dict", "__class__"):
             return object.__getattribute__(self, name)
         values = object.__getattribute__(self, "_dict")()
+        if name == "__dict__":
+            return values
         if name in values:
             return values[name]
         return object.__getattribute__(self, name)
@@ -904,7 +1006,7 @@ _thread_counter = itertools.count(1)
 class Thread:
     def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, *, daemon=None):
         self._target = target
-        self._args = tuple(args)
+        self._args = args
         self._kwargs = dict(kwargs or {})
         if name is None:
             name = f"Thread-{next(_thread_counter)}"
@@ -950,6 +1052,16 @@ class Thread:
         self._alive = True
         self._ident = next(_sched.ident)
         _sched.spawn(self, self._bootstrap())
+        if _sched.current is None:
+            # Like CPython: the new thread runs right away until it blocks.
+            _sched.ready.remove(self)
+            _sched._step(self)
+
+    def _start_green(self):
+        self.start()
+        yield  # let the new thread go first (it is ahead in the ready queue)
+
+    _green(start, _start_green)
 
     def _bootstrap(self):
         run = self.run
@@ -1060,6 +1172,15 @@ class Queue:
         self._init(maxsize)
         self.unfinished_tasks = 0
         self.is_shutdown = False
+        self.mutex = RLock()
+        self.not_empty = Condition(self.mutex)
+        self.not_full = Condition(self.mutex)
+        self.all_tasks_done = Condition(self.mutex)
+
+    @staticmethod
+    def _check_timeout(timeout):
+        if timeout is not None and timeout < 0:
+            raise ValueError("'timeout' must be a non-negative number")
 
     def _init(self, maxsize):
         self.queue = collections.deque()
@@ -1090,12 +1211,14 @@ class Queue:
         self.unfinished_tasks += 1
 
     def put(self, item, block=True, timeout=None):
+        self._check_timeout(timeout)
         if not self._has_room():
             if not block or not _wait(self._has_room, _deadline(timeout)):
                 raise Full
         self._do_put(item)
 
     def _put_green(self, item, block=True, timeout=None):
+        self._check_timeout(timeout)
         if not self._has_room():
             if not block or not (yield from _gwait(self._has_room, _deadline(timeout))):
                 raise Full
@@ -1104,12 +1227,14 @@ class Queue:
     _green(put, _put_green)
 
     def get(self, block=True, timeout=None):
+        self._check_timeout(timeout)
         if not self._qsize():
             if not block or not _wait(self._qsize, _deadline(timeout)):
                 raise Empty
         return self._get()
 
     def _get_green(self, block=True, timeout=None):
+        self._check_timeout(timeout)
         if not self._qsize():
             if not block or not (yield from _gwait(self._qsize, _deadline(timeout))):
                 raise Empty
@@ -1283,7 +1408,8 @@ class ThreadPoolExecutor:
 
     def __init__(self, max_workers=None, thread_name_prefix="", initializer=None, initargs=()):
         if max_workers is None:
-            max_workers = min(32, 5)
+            import os
+            max_workers = min(32, (os.cpu_count() or 1) + 4)
         if max_workers <= 0:
             raise ValueError("max_workers must be greater than 0")
         self._max_workers = max_workers
@@ -1586,6 +1712,95 @@ class _ListResult(_AsyncResult):
                     self._callback(values)
 
 
+class _ThreadPool(_Pool):
+    """multiprocessing.pool.ThreadPool: real threads, so lambdas are fine."""
+
+    def __init__(self, processes=None, initializer=None, initargs=()):
+        self._executor = ThreadPoolExecutor(processes or 4, initializer=initializer, initargs=initargs)
+
+
+class _Value:
+    def __init__(self, typecode_or_type, value=0, *, lock=True):
+        self.value = value
+        self._lock = RLock()
+
+    def get_lock(self):
+        return self._lock
+
+    def __repr__(self):
+        return f"<Synchronized wrapper for {self.value!r}>"
+
+
+class _Array(list):
+    def __init__(self, typecode_or_type, size_or_initializer, *, lock=True):
+        if isinstance(size_or_initializer, int):
+            super().__init__([0] * size_or_initializer)
+        else:
+            super().__init__(size_or_initializer)
+        self._lock = RLock()
+
+    def get_lock(self):
+        return self._lock
+
+
+class _Manager:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def start(self):
+        pass
+
+    def shutdown(self):
+        pass
+
+    def list(self, *args):
+        return list(*args)
+
+    def dict(self, *args, **kwargs):
+        return dict(*args, **kwargs)
+
+    def Queue(self, maxsize=0):
+        return Queue(maxsize)
+
+    def Lock(self):
+        return Lock()
+
+    def Value(self, typecode, value):
+        return _Value(typecode, value)
+
+
+class _Connection:
+    def __init__(self, inbox, outbox):
+        self._inbox, self._outbox = inbox, outbox
+
+    def send(self, obj):
+        self._outbox.put(obj)
+
+    def recv(self):
+        return self._inbox.get()
+
+    def _recv_green(self):
+        return (yield from self._inbox._get_green())
+
+    _green(recv, _recv_green)
+
+    def poll(self, timeout=0.0):
+        if timeout:
+            _wait(lambda: not self._inbox.empty(), _deadline(timeout))
+        return not self._inbox.empty()
+
+    def close(self):
+        pass
+
+
+def _pipe(duplex=True):
+    a, b = Queue(), Queue()
+    return _Connection(a, b), _Connection(b, a)
+
+
 class _CurrentProcess:
     name = "MainProcess"
     pid = 1000
@@ -1607,7 +1822,12 @@ def _make_multiprocessing():
     module.Condition = Condition
     module.Barrier = Barrier
     module.cpu_count = lambda: 4
-    module.current_process = lambda: _CurrentProcess
+    module.current_process = lambda: _sched.current if isinstance(_sched.current, _Process) else _CurrentProcess
+    module.Value = _Value
+    module.Array = _Array
+    module.Manager = _Manager
+    module.Pipe = _pipe
+    module.pool = types.SimpleNamespace(Pool=_Pool, ThreadPool=_ThreadPool)
     module.parent_process = lambda: None
     module.set_start_method = lambda method, force=False: None
     module.get_start_method = lambda allow_none=False: "spawn"
@@ -1618,9 +1838,14 @@ def _make_multiprocessing():
 
 
 # --------------------------------------------------------------- install
+_ORIGINAL_EXCEPTHOOK = None
+
+
 def _install():
+    global _ORIGINAL_EXCEPTHOOK
     import threading
     import _thread
+    _ORIGINAL_EXCEPTHOOK = threading.excepthook
     builtins._bytecraft_call = _bytecraft_call
     builtins._bytecraft_link = _bytecraft_link
     builtins._bytecraft_tick = _bytecraft_tick
@@ -1670,7 +1895,15 @@ def _install():
 
     multiprocessing = _make_multiprocessing()
     sys.modules["multiprocessing"] = multiprocessing
-    sys.modules["multiprocessing.pool"] = types.SimpleNamespace(Pool=_Pool, ThreadPool=_Pool)
+    sys.modules["multiprocessing.pool"] = multiprocessing.pool
+
+    import os
+    real_getpid = os.getpid
+    os.getpid = lambda: _sched.current.pid if isinstance(_sched.current, _Process) else real_getpid()
+    for cls, module, name in ((_Pool, "multiprocessing.pool", "Pool"),
+                              (_ThreadPool, "multiprocessing.pool", "ThreadPool"),
+                              (_Process, "multiprocessing.context", "Process")):
+        cls.__module__, cls.__name__, cls.__qualname__ = module, name, name
 
     _time.sleep = _sleep
     _time.monotonic = lambda: _real_monotonic() + _offset
@@ -1682,7 +1915,19 @@ def _install():
 
 
 def _bytecraft_threads_reset():
-    global _thread_counter
+    global _thread_counter, _offset
+    import contextlib
+    import io
+    # Threads left by a stopped program: close them now, quietly, so their
+    # finally blocks don't print into the next program.
+    with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        for thread in list(_sched.threads):
+            try:
+                if thread._gen is not None:
+                    thread._gen.close()
+            except BaseException:  # noqa: BLE001
+                pass
+    _offset = 0.0
     _sched.reset()
     _executors.clear()
     _thread_counter = itertools.count(1)
@@ -1703,8 +1948,20 @@ _install()
 DeadlockError.__module__ = "builtins"
 builtins._bytecraft_wait_until = _sched.run_until
 builtins._bytecraft_enter = _bytecraft_enter
+builtins._bytecraft_exit_error = _bytecraft_exit_error
 builtins._bytecraft_exit = _bytecraft_exit
 builtins._bytecraft_lambda = _bytecraft_lambda
 builtins._bytecraft_compile = _bytecraft_compile
 builtins._bytecraft_threads_reset = _bytecraft_threads_reset
 builtins._bytecraft_threads_finish = _bytecraft_threads_finish
+
+
+import asyncio as _asyncio  # noqa: E402
+
+
+async def _to_thread(func, /, *args, **kwargs):
+    loop = _asyncio.get_running_loop()
+    return await loop.run_in_executor(None, functools.partial(func, *args, **kwargs))
+
+
+_asyncio.to_thread = _asyncio.threads.to_thread = _to_thread

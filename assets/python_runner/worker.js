@@ -52,6 +52,12 @@ def _bytecraft_run(code, quiet_input=False):
             lines.insert(0, "Traceback (most recent call last):\n")
         lines += traceback.format_exception_only(type(error), error)
         sys.stderr.write("".join(lines))
+        if finish and not isinstance(error, (KeyboardInterrupt,)) and type(error).__name__ != "DeadlockError":
+            # Like CPython: other threads still run to the end.
+            try:
+                finish()
+            except BaseException:
+                pass
     finally:
         try:
             sys.stdout.flush()
