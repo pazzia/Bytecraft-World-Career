@@ -11,6 +11,7 @@ void main() {
     final store = await pumpBytecraft(tester);
 
     expect(find.text('Код за пару минут в день'), findsOneWidget);
+    expect(find.text('Версия dev'), findsOneWidget);
     await tester.tap(find.text('Немного знаю'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Дальше'));
