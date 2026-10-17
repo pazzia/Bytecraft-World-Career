@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/di/providers.dart';
@@ -133,7 +131,10 @@ class WorldController extends AsyncNotifier<WorldState> {
     final current = await _current();
     final old = current.mistakes[category] ?? 0;
     if (old <= 0) return;
-    final next = {...current.mistakes, category: (old - 4).clamp(0, 100)};
+    final next = <String, int>{
+      ...current.mistakes,
+      category: (old - 4).clamp(0, 100).toInt(),
+    };
     await _set(
       current.copyWith(
         mistakes: next,
@@ -145,7 +146,10 @@ class WorldController extends AsyncNotifier<WorldState> {
 
   Future<void> toggleProjectStep(String id) async {
     final current = await _current();
-    final next = {...current.projectSteps, id: !(current.projectSteps[id] ?? false)};
+    final next = <String, bool>{
+      ...current.projectSteps,
+      id: !(current.projectSteps[id] ?? false),
+    };
     await _set(current.copyWith(projectSteps: next));
   }
 
