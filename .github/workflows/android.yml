@@ -44,6 +44,16 @@ jobs:
           sed -i 's/android:label="bytecraft"/android:label="Bytecraft"/' android/app/src/main/AndroidManifest.xml
           grep -q 'android:label="Bytecraft"' android/app/src/main/AndroidManifest.xml
           cp -r tool/android/res/. android/app/src/main/res/
+          # R8 keep rules: plugins called from native code (see the file).
+          cp tool/android/proguard-rules.pro android/app/proguard-rules.pro
+          G=android/app/build.gradle.kts
+          [ -f "$G" ] || G=android/app/build.gradle
+          if grep -q 'build.gradle.kts' <<< "$G"; then
+            sed -i '0,/release {/s//release {\n            proguardFiles("proguard-rules.pro")/' "$G"
+          else
+            sed -i "0,/release {/s//release {\n            proguardFiles 'proguard-rules.pro'/" "$G"
+          fi
+          grep -n 'proguardFiles' "$G"
           # The Python sandbox talks to a loopback HTTP server (see
           # lib/features/playground/data/asset_http_server.dart): it needs
           # INTERNET and plain HTTP to 127.0.0.1 only.
@@ -94,7 +104,10 @@ jobs:
           node tool/pyodide/check_content.mjs assets/content/python 2>&1 | tee pyodide.txt
 
       - name: Install dependencies
-        run: flutter pub get 2>&1 | tee pub.txt
+        run: |
+          flutter pub get 2>&1 | tee pub.txt
+          # Exact plugin versions of this build (there is no committed lock file).
+          grep -A3 -E '^  (shared_preferences[a-z_]*|webview_flutter[a-z_]*|jni|path_provider[a-z_]*):' pubspec.lock | grep -E '^  [a-z]|version:' | paste - - | sed 's/ \+/ /g' >> pub.txt || true
 
       - name: Analyze
         id: analyze
