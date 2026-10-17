@@ -68,7 +68,9 @@ class WorldState {
     Map<String, int> ints(String key, Map<String, int> fallback) {
       final raw = json[key];
       if (raw is! Map) return fallback;
-      return raw.map((k, v) => MapEntry('$k', (v as num?)?.toInt() ?? 0));
+      return raw.map(
+        (k, v) => MapEntry('$k', v is num ? v.toInt() : 0),
+      );
     }
 
     Map<String, bool> bools(String key, Map<String, bool> fallback) {
@@ -89,8 +91,7 @@ class WorldState {
       hearts: (json['hearts'] as num?)?.toInt() ?? initial.hearts,
       expeditionStep:
           (json['expeditionStep'] as num?)?.toInt() ?? initial.expeditionStep,
-      expeditionChestClaimed:
-          json['expeditionChestClaimed'] == true,
+      expeditionChestClaimed: json['expeditionChestClaimed'] == true,
       bossHp: (json['bossHp'] as num?)?.toInt() ?? initial.bossHp,
       bossTask: (json['bossTask'] as num?)?.toInt() ?? initial.bossTask,
       bossCleared: json['bossCleared'] == true,
@@ -135,7 +136,7 @@ class WorldState {
 
   int get completedProjectSteps => projectSteps.values.where((v) => v).length;
   bool get projectUnlocked => completedProjectSteps >= 4;
-  int get expeditionProgress => expeditionStep.clamp(0, 5);
+  int get expeditionProgress => expeditionStep.clamp(0, 5).toInt();
 
   WorldState copyWith({
     int? coins,
