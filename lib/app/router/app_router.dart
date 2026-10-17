@@ -7,8 +7,6 @@ import '../../features/playground/presentation/playground_screen.dart';
 import '../../features/playground/presentation/practice_task_screen.dart';
 import '../../features/learning_map/presentation/learning_map_screen.dart';
 import '../../features/level/presentation/level_screen.dart';
-import '../../features/onboarding/presentation/course_selection_screen.dart';
-import '../../features/onboarding/presentation/experience_screen.dart';
 import '../../features/premium/presentation/premium_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/settings/domain/app_settings.dart';
@@ -29,6 +27,9 @@ class _RouterRefresh extends ChangeNotifier {
   }
 }
 
+/// Bytecraft World is a separate experimental product line. It deliberately
+/// skips the old course onboarding and drops a fresh install straight into
+/// the game hub. The default Python course is already selected by AppSettings.
 String? resolveRedirect({
   required String location,
   required bool isReady,
@@ -36,11 +37,7 @@ String? resolveRedirect({
 }) {
   final atSplash = location == Routes.splash;
   if (!isReady || settings == null) return atSplash ? null : Routes.splash;
-  final inOnboarding = location.startsWith(Routes.onboarding);
-  if (!settings.onboardingCompleted) {
-    return inOnboarding ? null : Routes.onboarding;
-  }
-  if (atSplash || inOnboarding) return Routes.home;
+  if (atSplash || location.startsWith(Routes.onboarding)) return Routes.home;
   return null;
 }
 
@@ -65,19 +62,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.splash,
         builder: (context, state) => const SplashScreen(),
-      ),
-      GoRoute(
-        path: Routes.onboarding,
-        builder: (context, state) => const ExperienceScreen(),
-        routes: [
-          GoRoute(
-            path: 'course',
-            builder: (context, state) => CourseSelectionScreen(
-              experienceId:
-                  state.uri.queryParameters[Routes.experienceQuery],
-            ),
-          ),
-        ],
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, shell) => MainShell(shell: shell),
