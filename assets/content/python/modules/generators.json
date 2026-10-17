@@ -72,22 +72,22 @@
    "topic": "gen_yield",
    "difficulty": 1,
    "hint": "Нужно отдать значение и продолжить с того же места.",
-   "explanation": "yield отдаёт значение и замораживает функцию до следующего шага. return вернул бы одно число и закончил функцию.",
+   "explanation": "yield отдаёт значение и замораживает функцию до следующего шага. return вернул бы одно число и закончил функцию, а yield from ждёт не число, а последовательность.",
    "payload": {
     "template": "def countdown(n):\n    while n > 0:\n        {{0}} n\n        n -= 1\n\nprint(list(countdown(3)))",
     "options": [
      "yield",
      "return",
-     "print",
-     "await"
+     "yield from",
+     "pass"
     ],
     "answers": [
      "yield"
     ],
     "variantResults": {
      "return": "TypeError: 'int' object is not iterable",
-     "print": "SyntaxError: Missing parentheses in call to 'print'. Did you mean print(...)?",
-     "await": "SyntaxError: 'await' outside async function"
+     "yield from": "TypeError: 'int' object is not iterable",
+     "pass": "SyntaxError: invalid syntax"
     }
    },
    "solution": {
@@ -97,21 +97,33 @@
   },
   {
    "id": "py_gen_004",
-   "type": "type_output",
+   "type": "predict_output",
    "role": "practice",
-   "title": "yield from",
-   "prompt": "Напишите, что выведет код",
+   "title": "Что вернул yield from",
+   "prompt": "Что выведет код?",
    "topic": "gen_yield",
-   "difficulty": 2,
-   "hint": "yield from отдаёт все значения вложенного генератора по очереди.",
-   "explanation": "outer выдаёт 0, затем всё из inner (1 и 2), затем 3.",
-   "code": "def inner():\n    yield 1\n    yield 2\n\ndef outer():\n    yield 0\n    yield from inner()\n    yield 3\n\nprint(list(outer()))",
+   "difficulty": 3,
+   "hint": "return внутри генератора не попадает в поток значений — он становится результатом yield from. И когда срабатывает print внутри outer?",
+   "explanation": "inner отдаёт 1, а «готово» становится результатом выражения yield from. print внутри outer выполняется, пока list прокручивает генератор, — то есть раньше, чем list будет напечатан.",
+   "code": "def inner():\n    yield 1\n    return \"готово\"\n\ndef outer():\n    result = yield from inner()\n    print(\"inner вернул\", result)\n\nprint(list(outer()))",
    "payload": {
-    "expectedOutput": "[0, 1, 2, 3]"
+    "options": [
+     "[1, 'готово']",
+     "[1]\ninner вернул готово",
+     "inner вернул None\n[1]",
+     "inner вернул готово\n[1]"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Значение return не выдаётся как элемент: оно становится результатом yield from.",
+     "print внутри outer срабатывает во время работы list — раньше внешнего print.",
+     "yield from возвращает то, что вернул inner, — «готово».",
+     ""
+    ]
    },
    "solution": {
-    "code": "def inner():\n    yield 1\n    yield 2\n\ndef outer():\n    yield 0\n    yield from inner()\n    yield 3\n\nprint(list(outer()))",
-    "output": "[0, 1, 2, 3]\n"
+    "code": "def inner():\n    yield 1\n    return \"готово\"\n\ndef outer():\n    result = yield from inner()\n    print(\"inner вернул\", result)\n\nprint(list(outer()))",
+    "output": "inner вернул готово\n[1]\n"
    }
   },
   {
@@ -122,7 +134,7 @@
    "prompt": "Сопоставьте выражения и результаты",
    "topic": "gen_yield",
    "difficulty": 2,
-   "hint": "squares(4) выдаёт 0, 1, 4, 9. Каждый вызов squares создаёт новый генератор.",
+   "hint": "Каждый вызов squares создаёт новый генератор квадратов от 0 до (n-1)².",
    "explanation": "Каждое выражение создаёт свой генератор, поэтому они не мешают друг другу: список, сумма 14, первое значение 0, максимум 4 для n = 3, пустой список для n = 0.",
    "code": "def squares(n):\n    for i in range(n):\n        yield i * i",
    "payload": {
@@ -207,6 +219,68 @@
      "",
      "Строка итерируемая, но не итератор."
     ]
+   }
+  },
+  {
+   "id": "py_gen_010",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Генератор принимает данные",
+   "prompt": "Что выведет код?",
+   "topic": "gen_yield",
+   "difficulty": 4,
+   "hint": "send передаёт значение в x и возвращает следующее значение yield — текущее среднее.",
+   "explanation": "next(g) доводит генератор до первого yield. Каждый send кладёт число в x, генератор пересчитывает среднее и отдаёт его: 10 / 1, 30 / 2, 30 / 3.",
+   "code": "def average():\n    total = count = 0\n    result = None\n    while True:\n        x = yield result\n        total += x\n        count += 1\n        result = total / count\n\ng = average()\nnext(g)\nprint(g.send(10), g.send(20), g.send(0))",
+   "payload": {
+    "options": [
+     "10 20 0",
+     "None 10.0 15.0",
+     "10.0 30.0 30.0",
+     "10.0 15.0 10.0"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Генератор возвращает не присланное число, а текущее среднее.",
+     "None отдал первый yield при next(g); send получает уже новые значения.",
+     "Возвращается среднее, а не сумма: 30 / 2 = 15.0.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "def average():\n    total = count = 0\n    result = None\n    while True:\n        x = yield result\n        total += x\n        count += 1\n        result = total / count\n\ng = average()\nnext(g)\nprint(g.send(10), g.send(20), g.send(0))",
+    "output": "10.0 15.0 10.0\n"
+   }
+  },
+  {
+   "id": "py_gen_011",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Чужой StopIteration",
+   "prompt": "Что выведет код?",
+   "topic": "gen_yield",
+   "difficulty": 4,
+   "hint": "Что Python делает со StopIteration, вылетевшим изнутри генератора?",
+   "explanation": "Во втором вызове next(it) внутри генератора выбрасывает StopIteration. Начиная с Python 3.7 он превращается в RuntimeError — иначе ошибка выглядела бы как тихий конец генератора.",
+   "code": "def first_two(items):\n    it = iter(items)\n    yield next(it)\n    yield next(it)\n\nprint(list(first_two([1, 2, 3])))\ntry:\n    print(list(first_two([1])))\nexcept RuntimeError:\n    print(\"RuntimeError\")",
+   "payload": {
+    "options": [
+     "[1, 2]\n[1]",
+     "[1, 2]\n[]",
+     "[1, 2]\nStopIteration",
+     "[1, 2]\nRuntimeError"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Так было до Python 3.7. Теперь StopIteration изнутри генератора превращается в RuntimeError.",
+     "Ошибка не глотается: list получает RuntimeError.",
+     "StopIteration превращён в RuntimeError — его и ловит except.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "def first_two(items):\n    it = iter(items)\n    yield next(it)\n    yield next(it)\n\nprint(list(first_two([1, 2, 3])))\ntry:\n    print(list(first_two([1])))\nexcept RuntimeError:\n    print(\"RuntimeError\")",
+    "output": "[1, 2]\nRuntimeError\n"
    }
   },
   {

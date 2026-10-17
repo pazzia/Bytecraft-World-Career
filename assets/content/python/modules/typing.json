@@ -40,7 +40,7 @@
    "prompt": "Что выведет код?",
    "topic": "typing_basics",
    "difficulty": 2,
-   "hint": "Аннотации хранятся в словаре — значения в нём сами классы.",
+   "hint": "Аннотации хранятся в словаре __annotations__. Что в нём лежит и как это печатается?",
    "explanation": "__annotations__ — словарь «параметр → тип», результат хранится под ключом 'return'. Значения — объекты-классы, поэтому печатаются как <class 'str'>.",
    "code": "def greet(name: str, times: int = 1) -> str:\n    return name * times\n\nprint(greet.__annotations__)",
    "payload": {
@@ -113,7 +113,7 @@
      },
      {
       "left": "dict[str, float]",
-      "right": "Словарь: строка → дробное число"
+      "right": "Словарь: строка → число float"
      },
      {
       "left": "tuple[int, ...]",
@@ -173,46 +173,46 @@
    "prompt": "Что выведет код?",
    "topic": "typing_advanced",
    "difficulty": 3,
-   "hint": "Protocol проверяет наличие методов, а не наследование.",
-   "explanation": "Robot не наследует Speaker, но у него есть speak — этого достаточно. У строки метода speak нет.",
-   "code": "from typing import Protocol, runtime_checkable\n\n@runtime_checkable\nclass Speaker(Protocol):\n    def speak(self) -> str: ...\n\nclass Robot:\n    def speak(self) -> str:\n        return \"бип\"\n\nprint(isinstance(Robot(), Speaker), isinstance(\"hi\", Speaker))",
+   "hint": "runtime_checkable-протокол при isinstance проверяет только наличие атрибута с нужным именем.",
+   "explanation": "Socket не наследует Closer, но у него есть close — подходит. У Fake тоже есть атрибут close (пусть и число), и isinstance его пропускает: проверяются только имена. У строки close нет.",
+   "code": "from typing import Protocol, runtime_checkable\n\n@runtime_checkable\nclass Closer(Protocol):\n    def close(self) -> None: ...\n\nclass Socket:\n    def close(self) -> None:\n        print(\"закрыт\")\n\nclass Fake:\n    close = 5\n\nprint(isinstance(Socket(), Closer), isinstance(Fake(), Closer), isinstance(\"hi\", Closer))",
    "payload": {
     "options": [
-     "False False",
-     "True False",
-     "True True",
+     "True False False",
+     "True True False",
+     "False False False",
      "TypeError"
     ],
     "correctIndex": 1,
     "optionFeedback": [
-     "Протокол проверяет форму объекта: у Robot есть speak.",
+     "isinstance с протоколом проверяет лишь, что атрибут close есть, — у Fake он есть.",
      "",
-     "У строки нет метода speak.",
+     "Наследовать протокол не нужно: у Socket есть close.",
      "@runtime_checkable разрешает isinstance с протоколом."
     ]
    },
    "solution": {
-    "code": "from typing import Protocol, runtime_checkable\n\n@runtime_checkable\nclass Speaker(Protocol):\n    def speak(self) -> str: ...\n\nclass Robot:\n    def speak(self) -> str:\n        return \"бип\"\n\nprint(isinstance(Robot(), Speaker), isinstance(\"hi\", Speaker))",
-    "output": "True False\n"
+    "code": "from typing import Protocol, runtime_checkable\n\n@runtime_checkable\nclass Closer(Protocol):\n    def close(self) -> None: ...\n\nclass Socket:\n    def close(self) -> None:\n        print(\"закрыт\")\n\nclass Fake:\n    close = 5\n\nprint(isinstance(Socket(), Closer), isinstance(Fake(), Closer), isinstance(\"hi\", Closer))",
+    "output": "True True False\n"
    }
   },
   {
    "id": "py_typing_007",
    "type": "type_output",
    "role": "practice",
-   "title": "Дженерик 3.12",
+   "title": "Обобщённый класс",
    "prompt": "Напишите, что выведет код",
    "topic": "typing_advanced",
    "difficulty": 3,
-   "hint": "[T] после имени объявляет параметр типа. __type_params__ — кортеж таких параметров.",
-   "explanation": "first возвращает первый элемент любого списка. __type_params__ — кортеж из одного параметра T, он печатается как (T,).",
-   "code": "def first[T](items: list[T]) -> T:\n    return items[0]\n\nprint(first([3, 1]), first([\"a\"]))\nprint(first.__type_params__)",
+   "hint": "[T] после имени класса объявляет параметр типа. Box[str] при выполнении ничего не проверяет.",
+   "explanation": "Box хранит значение любого типа. Box[str](...) работает как обычный вызов. __type_params__ — кортеж из параметра T, он печатается как (T,).",
+   "code": "class Box[T]:\n    def __init__(self, item: T):\n        self.item = item\n\nprint(Box(5).item, Box[str](\"x\").item)\nprint(Box.__type_params__)",
    "payload": {
-    "expectedOutput": "3 a\n(T,)"
+    "expectedOutput": "5 x\n(T,)"
    },
    "solution": {
-    "code": "def first[T](items: list[T]) -> T:\n    return items[0]\n\nprint(first([3, 1]), first([\"a\"]))\nprint(first.__type_params__)",
-    "output": "3 a\n(T,)\n"
+    "code": "class Box[T]:\n    def __init__(self, item: T):\n        self.item = item\n\nprint(Box(5).item, Box[str](\"x\").item)\nprint(Box.__type_params__)",
+    "output": "5 x\n(T,)\n"
    }
   },
   {
@@ -220,20 +220,51 @@
    "type": "bug_finder",
    "role": "challenge",
    "title": "Забытый None",
-   "prompt": "greet() без имени должна приветствовать гостя. Найдите строку с ошибкой",
+   "prompt": "Если имени нет (None), функция должна приветствовать гостя. Найдите строку с ошибкой",
    "topic": "typing_basics",
    "difficulty": 2,
    "hint": "Аннотация str | None говорит: name может быть None. Что тогда сделает name.title()?",
    "explanation": "У None нет метода title — AttributeError. Анализатор типов предупредил бы об этом заранее. Нужно обработать None, например name or \"гость\".",
-   "code": "def greet(name: str | None = None) -> str:\n    return \"Привет, \" + name.title()\n\nprint(greet())\nprint(greet(\"ада\"))",
+   "code": "def greet(name: str | None) -> str:\n    return \"Привет, \" + name.title()\n\nprint(greet(\"ада\"))\nprint(greet(None))",
    "payload": {
     "buggyLines": [
      1
     ]
    },
    "solution": {
-    "code": "def greet(name: str | None = None) -> str:\n    return \"Привет, \" + (name or \"гость\").title()\n\nprint(greet())\nprint(greet(\"ада\"))",
-    "output": "Привет, Гость\nПривет, Ада\n"
+    "code": "def greet(name: str | None) -> str:\n    return \"Привет, \" + (name or \"гость\").title()\n\nprint(greet(\"ада\"))\nprint(greet(None))",
+    "output": "Привет, Ада\nПривет, Гость\n"
+   }
+  },
+  {
+   "id": "py_typing_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Final и Literal",
+   "prompt": "Что выведет код?",
+   "topic": "typing_advanced",
+   "difficulty": 3,
+   "hint": "Final и Literal — подсказки для анализатора. Что из этого проверяется при выполнении?",
+   "explanation": "Python не мешает переприсвоить Final и передать в Literal другое значение: программа печатает 4 x. Ошибки покажет только статический анализатор (mypy, pyright) — до запуска.",
+   "code": "from typing import Final, Literal\n\nLIMIT: Final = 3\nLIMIT = 4\n\ndef open_mode(m: Literal[\"r\", \"w\"]) -> str:\n    return m\n\nprint(LIMIT, open_mode(\"x\"))",
+   "payload": {
+    "options": [
+     "4 x",
+     "3 x",
+     "TypeError",
+     "4 r"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Final не запрещает присваивание во время выполнения — LIMIT стал 4.",
+     "Аннотации не проверяются при выполнении.",
+     "Literal ничего не подставляет: функция возвращает переданное «x»."
+    ]
+   },
+   "solution": {
+    "code": "from typing import Final, Literal\n\nLIMIT: Final = 3\nLIMIT = 4\n\ndef open_mode(m: Literal[\"r\", \"w\"]) -> str:\n    return m\n\nprint(LIMIT, open_mode(\"x\"))",
+    "output": "4 x\n"
    }
   },
   {
@@ -246,25 +277,25 @@
    "difficulty": 4,
    "hint": "TypedDict существует только для анализатора: во время выполнения — обычный словарь без проверок.",
    "explanation": "u — обычный dict, и строка «7» вместо числа проходит без ошибки. get_type_hints(User) возвращает объявленные ключи: id и name.",
-   "code": "from typing import TypedDict, get_type_hints\n\ntype UserId = int\n\nclass User(TypedDict):\n    id: UserId\n    name: str\n\nu: User = {\"id\": \"7\", \"name\": \"Ада\"}\nprint(type(u).__name__, u[\"id\"], list(get_type_hints(User)))",
+   "code": "from typing import TypedDict, get_type_hints\n\ntype UserId = int\n\nclass User(TypedDict):\n    id: UserId\n    name: str\n\nu: User = {\"id\": \"7\", \"name\": \"Ада\"}\nprint(type(u).__name__, repr(u[\"id\"]), list(get_type_hints(User)))",
    "payload": {
     "options": [
-     "User 7 ['id', 'name']",
+     "User '7' ['id', 'name']",
+     "dict '7' ['id', 'name']",
      "dict 7 ['id', 'name']",
-     "TypeError",
-     "dict 7 []"
+     "TypeError"
     ],
     "correctIndex": 1,
     "optionFeedback": [
      "Объект, созданный литералом {...}, — обычный dict.",
      "",
-     "Во время выполнения TypedDict ничего не проверяет.",
-     "get_type_hints видит аннотации класса User: id и name."
+     "Значение осталось строкой: TypedDict ничего не преобразует — repr показывает кавычки.",
+     "Во время выполнения TypedDict ничего не проверяет."
     ]
    },
    "solution": {
-    "code": "from typing import TypedDict, get_type_hints\n\ntype UserId = int\n\nclass User(TypedDict):\n    id: UserId\n    name: str\n\nu: User = {\"id\": \"7\", \"name\": \"Ада\"}\nprint(type(u).__name__, u[\"id\"], list(get_type_hints(User)))",
-    "output": "dict 7 ['id', 'name']\n"
+    "code": "from typing import TypedDict, get_type_hints\n\ntype UserId = int\n\nclass User(TypedDict):\n    id: UserId\n    name: str\n\nu: User = {\"id\": \"7\", \"name\": \"Ада\"}\nprint(type(u).__name__, repr(u[\"id\"]), list(get_type_hints(User)))",
+    "output": "dict '7' ['id', 'name']\n"
    }
   }
  ]

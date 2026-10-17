@@ -15,7 +15,7 @@ MODULES.append(dict(
     icon="🌀",
     topics=[
         topic("gen_iter", "Протокол итерации",
-              "Итерируемый объект отдаёт итератор через iter(); итератор выдаёт значения через next(), а в конце вызывает StopIteration.",
+              "Итерируемый объект отдаёт итератор через iter(); итератор выдаёт значения через next(), а в конце выбрасывает StopIteration.",
               """
               for x in items на самом деле делает так: it = iter(items), затем много раз x = next(it), пока не возникнет StopIteration — тогда цикл тихо заканчивается.
 
@@ -24,7 +24,7 @@ MODULES.append(dict(
               Проверить: у итератора есть метод __next__, а iter(it) возвращает его самого.
               """,
               [("""\
-                it = iter([10, 20, 30])
+                it = iter("xyz")
                 print(next(it), next(it))
                 print(list(it))
                 print(list(it))""", "Итератор помнит позицию и после конца пуст."),
@@ -38,20 +38,23 @@ MODULES.append(dict(
               """
               Вызов функции-генератора не выполняет её тело — он только создаёт объект-генератор. Код запускается при первом next() и идёт до ближайшего yield. Локальные переменные сохраняются между шагами.
 
-              Когда функция доходит до конца (или до return), генератор заканчивается: next() вызывает StopIteration, а for завершает цикл.
+              Когда функция доходит до конца (или до return), генератор заканчивается: next() выбрасывает StopIteration, а for завершает цикл. Если внутри генератора «вылетает» чужой StopIteration (например, от next() без значения по умолчанию), Python превращает его в RuntimeError — чтобы ошибка не выглядела как тихий конец (PEP 479).
 
-              yield from другой_генератор отдаёт все его значения по очереди — так генераторы складывают в цепочки.
+              yield from другой_генератор отдаёт все его значения по очереди — так генераторы складывают в цепочки. Значение return вложенного генератора становится результатом выражения yield from.
+
+              Генератор умеет и принимать данные: x = yield отдаёт значение и ждёт, что пришлёт g.send(значение). g.close() останавливает генератор (срабатывает его finally).
 
               Генераторное выражение (x * x for x in data) — короткая запись простого генератора.
               """,
               [("""\
-                def countdown(n):
-                    while n > 0:
+                def evens(limit):
+                    n = 0
+                    while n <= limit:
                         yield n
-                        n -= 1
+                        n += 2
 
-                print(list(countdown(3)))
-                g = countdown(2)
+                print(list(evens(6)))
+                g = evens(2)
                 print(next(g), next(g), next(g, "стоп"))""", None),
                ("""\
                 def inner():
@@ -76,17 +79,16 @@ MODULES.append(dict(
               list(...) или sum(...) по генератору «прокручивает» его до конца — для бесконечного генератора это зависание.
               """,
               [("""\
-                from itertools import islice
+                from itertools import islice, batched
 
-                def naturals():
-                    n = 1
+                def squares_forever():
+                    n = 0
                     while True:
-                        yield n
+                        yield n * n
                         n += 1
 
-                print(list(islice(naturals(), 5)))
-                evens = (n for n in naturals() if n % 2 == 0)
-                print(next(evens), next(evens))""", None)],
+                print(list(islice(squares_forever(), 6)))
+                print(list(batched("abcde", 2)))""", "itertools.batched (Python 3.12) режет поток на пачки.")],
               ["Вызвать list() у бесконечного генератора — программа никогда не закончится."]),
     ],
     tasks=[
@@ -109,7 +111,7 @@ MODULES.append(dict(
                     print(" ".join(part))""",
              tests=["2\na b c d e\n", "3\nx y z\n", "1\nодин два\n", "4\na b c d e f g h i\n"],
              hint="range(0, len(items), size) даёт начало каждой пачки; срез — саму пачку.", difficulty=2,
-             requires=dict(defines=["chunks"], uses=["yield"])),
+             requires=dict(defines=["chunks"], yields=["chunks"], calls=["chunks"])),
         task("t_gen_fib", "Бесконечный Фибоначчи",
              "Напишите бесконечный генератор fib(), выдающий числа Фибоначчи 0, 1, 1, 2, 3, 5… Прочитайте n и выведите первые n чисел через пробел.",
              solution="""\
@@ -129,9 +131,9 @@ MODULES.append(dict(
 
                 n = int(input())
                 print(0)""",
-             tests=["5\n", "1\n", "10\n", "15\n"],
+             tests=["5\n", "1\n", "2\n", "10\n", "15\n"],
              hint="Храните пару a, b и сдвигайте её: a, b = b, a + b. Первые n значений даст itertools.islice.",
-             difficulty=2, requires=dict(defines=["fib"], uses=["yield"])),
+             difficulty=2, requires=dict(defines=["fib"], yields=["fib"], calls=["fib"])),
     ],
     levels=[
         predict("py_gen_001", "Ручной next", """\
@@ -168,30 +170,34 @@ MODULES.append(dict(
                      {{0}} n
                      n -= 1
 
-             print(list(countdown(3)))""", ["yield", "return", "print", "await"], ["yield"],
+             print(list(countdown(3)))""", ["yield", "return", "yield from", "pass"], ["yield"],
              topic="gen_yield", hint="Нужно отдать значение и продолжить с того же места.",
-             explanation="yield отдаёт значение и замораживает функцию до следующего шага. return вернул бы одно число и закончил функцию.",
+             explanation="yield отдаёт значение и замораживает функцию до следующего шага. return вернул бы одно число и закончил функцию, а yield from ждёт не число, а последовательность.",
              expect="[3, 2, 1]\n"),
-        typed("py_gen_004", "yield from", """\
-              def inner():
-                  yield 1
-                  yield 2
+        predict("py_gen_004", "Что вернул yield from", """\
+                def inner():
+                    yield 1
+                    return "готово"
 
-              def outer():
-                  yield 0
-                  yield from inner()
-                  yield 3
+                def outer():
+                    result = yield from inner()
+                    print("inner вернул", result)
 
-              print(list(outer()))""",
-              topic="gen_yield", hint="yield from отдаёт все значения вложенного генератора по очереди.",
-              explanation="outer выдаёт 0, затем всё из inner (1 и 2), затем 3."),
+                print(list(outer()))""",
+                ["[1, 'готово']", "[1]\ninner вернул готово", "inner вернул None\n[1]"], position=3, topic="gen_yield",
+                hint="return внутри генератора не попадает в поток значений — он становится результатом yield from. И когда срабатывает print внутри outer?",
+                explanation="inner отдаёт 1, а «готово» становится результатом выражения yield from. print внутри outer выполняется, пока list прокручивает генератор, — то есть раньше, чем list будет напечатан.",
+                role="practice", difficulty=3,
+                feedback={"[1, 'готово']": "Значение return не выдаётся как элемент: оно становится результатом yield from.",
+                          "[1]\ninner вернул готово": "print внутри outer срабатывает во время работы list — раньше внешнего print.",
+                          "inner вернул None\n[1]": "yield from возвращает то, что вернул inner, — «готово»."}),
         match("py_gen_005", "Генератор квадратов",
               ["list(squares(4))", "sum(squares(4))", "next(squares(4))", "max(squares(3))", "list(squares(0))"],
               setup="""\
                 def squares(n):
                     for i in range(n):
                         yield i * i""",
-              topic="gen_yield", hint="squares(4) выдаёт 0, 1, 4, 9. Каждый вызов squares создаёт новый генератор.",
+              topic="gen_yield", hint="Каждый вызов squares создаёт новый генератор квадратов от 0 до (n-1)².",
               explanation="Каждое выражение создаёт свой генератор, поэтому они не мешают друг другу: список, сумма 14, первое значение 0, максимум 4 для n = 3, пустой список для n = 0."),
         bug("py_gen_006", "Только первая строка", """\
             def clean(text):
@@ -212,6 +218,44 @@ MODULES.append(dict(
               feedback={"[1, 2]": "Список итерируемый, но не итератор: next([1, 2]) — TypeError.",
                         "range(3)": "range итерируемый и многоразовый, у него нет __next__.",
                         "\"abc\"": "Строка итерируемая, но не итератор."}),
+        predict("py_gen_010", "Генератор принимает данные", """\
+                def average():
+                    total = count = 0
+                    result = None
+                    while True:
+                        x = yield result
+                        total += x
+                        count += 1
+                        result = total / count
+
+                g = average()
+                next(g)
+                print(g.send(10), g.send(20), g.send(0))""",
+                ["10 20 0", "None 10.0 15.0", "10.0 30.0 30.0"], position=3, topic="gen_yield",
+                hint="send передаёт значение в x и возвращает следующее значение yield — текущее среднее.",
+                explanation="next(g) доводит генератор до первого yield. Каждый send кладёт число в x, генератор пересчитывает среднее и отдаёт его: 10 / 1, 30 / 2, 30 / 3.",
+                role="challenge", difficulty=4,
+                feedback={"10 20 0": "Генератор возвращает не присланное число, а текущее среднее.",
+                          "None 10.0 15.0": "None отдал первый yield при next(g); send получает уже новые значения.",
+                          "10.0 30.0 30.0": "Возвращается среднее, а не сумма: 30 / 2 = 15.0."}),
+        predict("py_gen_011", "Чужой StopIteration", """\
+                def first_two(items):
+                    it = iter(items)
+                    yield next(it)
+                    yield next(it)
+
+                print(list(first_two([1, 2, 3])))
+                try:
+                    print(list(first_two([1])))
+                except RuntimeError:
+                    print("RuntimeError")""",
+                ["[1, 2]\n[1]", "[1, 2]\n[]", "[1, 2]\nStopIteration"], position=3, topic="gen_yield",
+                hint="Что Python делает со StopIteration, вылетевшим изнутри генератора?",
+                explanation="Во втором вызове next(it) внутри генератора выбрасывает StopIteration. Начиная с Python 3.7 он превращается в RuntimeError — иначе ошибка выглядела бы как тихий конец генератора.",
+                role="challenge", difficulty=4,
+                feedback={"[1, 2]\n[1]": "Так было до Python 3.7. Теперь StopIteration изнутри генератора превращается в RuntimeError.",
+                          "[1, 2]\n[]": "Ошибка не глотается: list получает RuntimeError.",
+                          "[1, 2]\nStopIteration": "StopIteration превращён в RuntimeError — его и ловит except."}),
         predict("py_gen_008", "Бесконечность под контролем", """\
                 from itertools import islice
 
@@ -255,8 +299,8 @@ MODULES.append(dict(
 ))
 
 # --------------------------------------------------------------- decorators
-STDLIB_DECORATORS = ["property", "staticmethod", "functools.lru_cache", "dataclasses.dataclass",
-                     "functools.memoize", "builtins.decorator"]
+STDLIB_DECORATORS = ["functools.wraps", "functools.singledispatch", "typing.override", "contextlib.contextmanager",
+                     "functools.memoize", "functools.retry"]
 
 
 def resolves(name):
@@ -270,7 +314,7 @@ MODULES.append(dict(
     id="decorators", title="Декораторы", description="Функции, которые меняют функции", icon="🎀",
     topics=[
         topic("deco_basics", "Как работает декоратор",
-              "Декоратор — функция, которая принимает функцию и возвращает новую (обычно обёртку). @deco над def f — то же, что f = deco(f).",
+              "Декоратор — функция, которая принимает функцию и возвращает новую (обычно обёртку). @deco над def f — по сути то же, что f = deco(f).",
               """
               Функции в Python — обычные значения: их можно передать в другую функцию и вернуть из неё. Декоратор пользуется этим: получает функцию, создаёт внутри обёртку wrapper, которая что-то делает до и после вызова оригинала, и возвращает wrapper.
 
@@ -278,7 +322,9 @@ MODULES.append(dict(
 
               @functools.wraps(func) над wrapper копирует имя, docstring и другие атрибуты оригинала — без этого f.__name__ станет «wrapper».
 
-              Несколько декораторов применяются снизу вверх: @a @b def f — это f = a(b(f)).
+              Декоратор срабатывает один раз — в момент объявления функции, а не при каждом вызове: при каждом вызове работает уже обёртка.
+
+              Несколько декораторов применяются снизу вверх: @a @b def f — это f = a(b(f)). Декорировать можно и классы: декоратор получает класс (так устроены реестры плагинов и @dataclass).
               """,
               [("""\
                 from functools import wraps
@@ -350,7 +396,8 @@ MODULES.append(dict(
                 print(fib(int(input())))""",
              tests=["10\n", "1\n", "50\n", "300\n"],
              hint="Словарь cache внутри memoize живёт в замыкании обёртки.", difficulty=3,
-             requires=dict(defines=["memoize", "fib"], recursive=["fib"], uses=["decorator"])),
+             requires=dict(defines=["memoize", "fib"], recursive=["fib"], decorated={"fib": "memoize"},
+                           returns_function=["memoize"], no_calls=["lru_cache", "cache"])),
     ],
     levels=[
         predict("py_deco_001", "Первый декоратор", """\
@@ -371,17 +418,17 @@ MODULES.append(dict(
                           "привет!": "upper() переводит буквы в верхний регистр.",
                           "ПРИВЕТ": "Обёртка добавляет ещё и «!»."}),
         choice("py_deco_002", "Синтаксис @", "Запись @deco над def f(): ... — это то же самое, что:",
-               ["f = deco(f)", "deco = f(deco)", "f(deco)", "deco()"], 0,
+               ["f = deco(f)", "f = deco(f())", "f = deco", "deco(f)"], 0,
                check=lambda option: runs(
-                   "def deco(fn):\n    return lambda: 'deco'\n"
+                   "def deco(fn):\n    return lambda: fn() + '!'\n"
                    "def f():\n    return 'f'\n"
-                   f"result = {option}\n"
-                   "assert f() == 'deco'"),
+                   f"{option}\n"
+                   "assert f() == 'f!'"),
                topic="deco_basics", hint="Декоратор получает функцию и возвращает то, что займёт её имя.",
                explanation="@deco — сокращение для f = deco(f): функция передаётся декоратору, а имя f связывается с тем, что он вернул.",
-               feedback={"deco = f(deco)": "Наоборот: функцию передают в декоратор, а не декоратор в функцию.",
-                         "f(deco)": "Результат декоратора должен заменить f — нужно присваивание.",
-                         "deco()": "Декоратор получает декорируемую функцию аргументом."}),
+               feedback={"f = deco(f())": "Декоратору передают саму функцию, а не результат её вызова.",
+                         "f = deco": "Декоратор нужно вызвать с функцией: иначе f станет самим декоратором.",
+                         "deco(f)": "Результат декоратора должен заменить f — нужно присваивание."}),
         fill("py_deco_003", "Обёртка на все случаи", "Сделайте обёртку, которая подходит для любых аргументов",
              """\
              def log(func):
@@ -400,24 +447,24 @@ MODULES.append(dict(
              explanation="wrapper должен принять любые аргументы (*args, **kwargs) и передать их дальше в том же виде.",
              expect="вызов add\n5\n"),
         typed("py_deco_004", "Порядок декораторов", """\
-              def bold(f):
+              def square(f):
                   def w():
-                      return "<b>" + f() + "</b>"
+                      return "[" + f() + "]"
                   return w
 
-              def italic(f):
+              def round_(f):
                   def w():
-                      return "<i>" + f() + "</i>"
+                      return "(" + f() + ")"
                   return w
 
-              @bold
-              @italic
+              @square
+              @round_
               def text():
                   return "hi"
 
               print(text())""",
-              topic="deco_basics", hint="Декораторы применяются снизу вверх: text = bold(italic(text)).",
-              explanation="Сначала italic оборачивает text в <i>…</i>, затем bold оборачивает результат в <b>…</b>."),
+              topic="deco_basics", hint="Декораторы применяются снизу вверх: text = square(round_(text)).",
+              explanation="Сначала round_ оборачивает text в круглые скобки, затем square оборачивает результат в квадратные."),
         predict("py_deco_005", "Потерянное имя", """\
                 from functools import wraps
 
@@ -465,6 +512,26 @@ MODULES.append(dict(
             hint="Что возвращает wrapper?",
             explanation="Обёртка вызывает func, но не возвращает результат — значит, возвращает None. Нужно return func(*args).",
             difficulty=2),
+        predict("py_deco_010", "Когда срабатывает декоратор", """\
+                def announce(func):
+                    print("декорирую", func.__name__)
+                    return func
+
+                @announce
+                def ping():
+                    print("ping")
+
+                print("старт")
+                ping()
+                ping()""",
+                ["старт\nдекорирую ping\nping\nping", "старт\nдекорирую ping\nping\nдекорирую ping\nping",
+                 "старт\nping\nping"], position=0, topic="deco_basics",
+                hint="@announce — это ping = announce(ping). Когда выполняется эта строка?",
+                explanation="Декоратор вызывается один раз — при объявлении функции, ещё до print(\"старт\"). Дальше вызывается уже то, что он вернул (здесь — сама функция).",
+                role="practice", difficulty=2,
+                feedback={"старт\nдекорирую ping\nping\nping": "Декоратор срабатывает при объявлении функции — раньше, чем print(\"старт\").",
+                          "старт\nдекорирую ping\nping\nдекорирую ping\nping": "Декоратор вызывается один раз, а не при каждом вызове функции.",
+                          "старт\nping\nping": "print внутри декоратора выполняется — при объявлении ping."}),
         match("py_deco_007", "Фабрика декораторов", ["one()", "echo('a')", "len(one())", "repeat(1)(len)('ab')"],
               setup="""\
                 def repeat(n):
@@ -483,19 +550,19 @@ MODULES.append(dict(
                     return x""",
               topic="deco_params", hint="@repeat(3) возвращает список из трёх результатов.",
               explanation="one вызывается трижды, echo — дважды. repeat(1)(len) применяет декоратор вручную: len('ab') один раз в списке."),
-        multi("py_deco_008", "Стандартные декораторы", "Какие из этих декораторов есть в Python и стандартной библиотеке?",
+        multi("py_deco_008", "Стандартные декораторы", "Какие из этих декораторов есть в стандартной библиотеке Python 3.12?",
               STDLIB_DECORATORS, [0, 1, 2, 3], check=resolves, topic="deco_params",
-              hint="Кэш в functools называется lru_cache (и cache).",
-              explanation="property и staticmethod — встроенные, lru_cache — из functools, dataclass — из dataclasses. functools.memoize и builtins.decorator не существуют.",
+              hint="Кэш в functools называется lru_cache (и cache), повтор при ошибке пишут сами.",
+              explanation="wraps и singledispatch — из functools, override — новинка typing в 3.12, contextmanager — из contextlib. functools.memoize и functools.retry не существуют: кэш — это lru_cache, а повтор пишут сами или берут из сторонних библиотек.",
               feedback={"functools.memoize": "Такого нет: кэш в functools — это lru_cache и cache.",
-                        "builtins.decorator": "Специального встроенного decorator нет — декоратором может быть любая функция."}),
+                        "functools.retry": "В стандартной библиотеке повтора при ошибке нет — его пишут сами (как в боссе этого модуля)."}),
         predict("py_deco_009", "Босс: повтор при ошибке", """\
                 def retry(times):
                     def deco(func):
-                        def wrapper():
+                        def wrapper(*args, **kwargs):
                             for attempt in range(1, times + 1):
                                 try:
-                                    return func()
+                                    return func(*args, **kwargs)
                                 except ValueError:
                                     print("попытка", attempt, "не удалась")
                             return "сдаюсь"
@@ -525,7 +592,8 @@ MODULES.append(dict(
 ))
 
 # ------------------------------------------------------------ context managers
-WITH_OBJECTS = ["open(\"f.txt\", \"w\")", "threading.Lock()", "[1, 2]", "contextlib.suppress(KeyError)", "42"]
+WITH_OBJECTS = ["open(\"f.txt\", \"w\")", "contextlib.suppress(KeyError)", "contextlib.nullcontext()",
+                "io.StringIO()", "iter([1, 2])", "contextlib.contextmanager"]
 
 MODULES.append(dict(
     id="contexts", title="Контекстные менеджеры", description="with, __enter__, __exit__, contextlib", icon="🚪",
@@ -535,7 +603,9 @@ MODULES.append(dict(
               """
               Контекстный менеджер гарантирует «закрытие» ресурса: файла, соединения, блокировки. __exit__ вызывается при любом выходе из блока — нормальном, по return или по исключению.
 
-              Если внутри блока было исключение, __exit__ получает его тип, объект и трассировку; если нет — три None. Если __exit__ вернёт True, исключение подавляется и программа продолжается после with. Обычно возвращают None — тогда исключение летит дальше.
+              Если внутри блока было исключение, __exit__ получает его тип, объект и трассировку; если нет — три None. Если __exit__ вернёт истинное значение (обычно True), исключение подавляется и программа продолжается после with. Обычно возвращают None — тогда исключение летит дальше.
+
+              Если ошибка возникла в самом __enter__, блок не начинается и __exit__ не вызывается.
 
               Несколько менеджеров: with a() as x, b() as y: — выход идёт в обратном порядке.
               """,
@@ -577,7 +647,9 @@ MODULES.append(dict(
                 with suppress(KeyError):
                     {}["нет"]
                 print("ошибка подавлена")""", None)],
-              ["Писать уборку после yield без try/finally: при исключении внутри with она не выполнится."]),
+              ["Писать уборку после yield без try/finally: при исключении внутри with она не выполнится.",
+               "Перехватить исключение вокруг yield и не пробросить его дальше (raise): @contextmanager тогда тихо проглотит ошибку.",
+               "Использовать объект из @contextmanager дважды: он одноразовый, для второго with нужен новый вызов."]),
     ],
     tasks=[
         task("t_ctx_tags", "Вложенные теги",
@@ -606,42 +678,45 @@ MODULES.append(dict(
                 print("текст")""",
              tests=["html body p\n", "b\n", "a b\n", "div section article span\n"],
              hint="ExitStack.enter_context входит в менеджер и закроет его в конце, в обратном порядке. Рекурсия тоже подойдёт.",
-             difficulty=3, requires=dict(defines=["tag"], uses=["with", "yield", "decorator"])),
+             difficulty=3, requires=dict(defines=["tag"], yields=["tag"], decorated={"tag": "contextmanager"}, uses=["with"])),
     ],
     levels=[
         predict("py_ctx_001", "Вход и выход", """\
-                class Tag:
-                    def __init__(self, name):
-                        self.name = name
+                class Timer:
                     def __enter__(self):
-                        print(f"<{self.name}>")
-                        return self
+                        print("старт")
+                        return 42
                     def __exit__(self, exc_type, exc, tb):
-                        print(f"</{self.name}>")
+                        print("стоп")
 
-                with Tag("p"):
-                    print("текст")""",
-                ["текст", "<p>\n</p>\nтекст", "<p>\nтекст"], position=3, topic="ctx_protocol",
-                hint="__enter__ — при входе в блок, __exit__ — при выходе.",
-                explanation="with вызывает __enter__ (печатает <p>), выполняет тело (текст), затем __exit__ (</p>).",
-                feedback={"текст": "with вызывает __enter__ и __exit__ — их print тоже выполняются.",
-                          "<p>\n</p>\nтекст": "__exit__ вызывается после тела блока.",
-                          "<p>\nтекст": "__exit__ вызывается при выходе из блока — он напечатает </p>."}),
-        fill("py_ctx_002", "Менеджер из генератора", "Отметьте место, где выполняется тело блока with",
+                with Timer() as t:
+                    print("внутри", t)""",
+                ["внутри 42", "старт\nвнутри Timer\nстоп", "старт\nстоп\nвнутри 42"], position=3, topic="ctx_protocol",
+                hint="__enter__ — при входе в блок, и его результат попадает в as. __exit__ — при выходе.",
+                explanation="with вызывает __enter__ (печатает «старт» и возвращает 42 — оно попадает в t), выполняет тело, затем __exit__.",
+                feedback={"внутри 42": "with вызывает __enter__ и __exit__ — их print тоже выполняются.",
+                          "старт\nвнутри Timer\nстоп": "В t попадает то, что вернул __enter__, — 42, а не сам объект.",
+                          "старт\nстоп\nвнутри 42": "__exit__ вызывается после тела блока."}),
+        fill("py_ctx_002", "Уборка при ошибке", "Сделайте так, чтобы «конец» печатался даже при ошибке внутри with",
              """\
              from contextlib import contextmanager
 
              @contextmanager
              def section(title):
                  print("начало", title)
-                 {{0}}
-                 print("конец", title)
+                 {{0}}:
+                     yield
+                 {{1}}:
+                     print("конец", title)
 
-             with section("A"):
-                 print("работа")""", ["yield", "return", "pass", "raise"], ["yield"],
-             topic="ctx_contextlib", hint="Менеджер из генератора делится на «до» и «после» одной инструкцией.",
-             explanation="@contextmanager ждёт генератор: код до yield — вход, тело блока выполняется на месте yield, код после — выход.",
-             expect="начало A\nработа\nконец A\n"),
+             try:
+                 with section("A"):
+                     1 / 0
+             except ZeroDivisionError:
+                 print("поймали")""", ["try", "finally", "except", "else", "with"], ["try", "finally"],
+             topic="ctx_contextlib", hint="Тело with выполняется на месте yield. Какой блок выполняется всегда?",
+             explanation="try/finally вокруг yield гарантирует «конец» при любом выходе, а исключение летит дальше и попадает в except снаружи. except проглотил бы ошибку, else не выполнился бы при ошибке.",
+             role="practice", difficulty=3, expect="начало A\nконец A\nпоймали\n"),
         predict("py_ctx_003", "Выход при ошибке", """\
                 class Resource:
                     def __enter__(self):
@@ -675,14 +750,15 @@ MODULES.append(dict(
                   with Ignore():
                       [][0]
               except IndexError:
-                  print("IndexError прошёл")""",
-              topic="ctx_protocol", hint="True из __exit__ подавляет исключение, False — пропускает дальше.",
+                  print("индекс прошёл")""",
+              topic="ctx_protocol", hint="Истинное значение из __exit__ подавляет исключение, ложное — пропускает дальше.",
               explanation="Для KeyError __exit__ возвращает True — ошибка подавлена, программа идёт дальше. Для IndexError — False, и исключение долетает до except.",
               role="practice", difficulty=3),
         match("py_ctx_005", "Детали протокола",
               ["__enter__", "__exit__", "return True из __exit__", "@contextmanager", "suppress(KeyError)"],
-              rights=["Вызывается при входе в with", "Вызывается при выходе, даже при ошибке", "Подавляет исключение",
-                      "Делает менеджер из генератора с yield", "Игнорирует только KeyError внутри блока"],
+              rights=["Вызывается при входе в with", "Вызывается при выходе, даже при ошибке",
+                      "Менеджер сам решает подавить ошибку", "Делает менеджер из генератора с yield",
+                      "Подавляет KeyError и его подклассы, остальные пропускает"],
               prompt="Сопоставьте элемент и его роль", topic="ctx_contextlib",
               hint="Вход, выход, подавление, генератор, готовый инструмент.",
               explanation="__enter__ и __exit__ — две половины протокола. True из __exit__ подавляет исключение. @contextmanager и suppress — готовые инструменты из contextlib."),
@@ -706,13 +782,13 @@ MODULES.append(dict(
             topic="ctx_contextlib", hint="Когда выполняется блок except, а когда — finally?",
             explanation="except срабатывает только при ValueError, а здесь ошибки нет — unlock не выполнился. finally выполняется всегда: и при успехе, и при исключении.",
             difficulty=3),
-        multi("py_ctx_007", "Что подходит для with", "Какие объекты можно использовать в with?", WITH_OBJECTS, [0, 1, 3],
-              check=lambda expr: run(f"import threading, contextlib\nobj = {expr}\n"
+        multi("py_ctx_007", "Что подходит для with", "Какие объекты можно поставить в with?", WITH_OBJECTS, [0, 1, 2, 3],
+              check=lambda expr: run(f"import io, contextlib\nobj = {expr}\n"
                                      "assert hasattr(obj, '__enter__') and hasattr(obj, '__exit__')").ok,
               topic="ctx_protocol", hint="Нужны методы __enter__ и __exit__.",
-              explanation="Файл, блокировка и suppress — контекстные менеджеры. Список и число не реализуют протокол: with [1, 2] даёт TypeError.",
-              feedback={"[1, 2]": "У списка нет __enter__ и __exit__.",
-                        "42": "Число — не контекстный менеджер."}),
+              explanation="Файл, suppress, nullcontext (менеджер-пустышка) и StringIO реализуют протокол. Итератор — нет. contextmanager — это декоратор: он делает менеджер из функции, но сам менеджером не является.",
+              feedback={"iter([1, 2])": "У итератора нет __enter__ и __exit__: with iter(...) — TypeError.",
+                        "contextlib.contextmanager": "Это декоратор для создания менеджеров, а не сам менеджер."}),
         predict("py_ctx_008", "ExitStack", """\
                 from contextlib import ExitStack
 
@@ -729,13 +805,56 @@ MODULES.append(dict(
                     nums = [stack.enter_context(Step(i)) for i in range(1, 3)]
                     print("внутри", nums)""",
                 ["вход 1\nвход 2\nвнутри [1, 2]\nвыход 1\nвыход 2", "вход 1\nвыход 1\nвход 2\nвыход 2\nвнутри [1, 2]",
-                 "вход 1\nвход 2\nвнутри [Step, Step]\nвыход 2\nвыход 1"], position=1, topic="ctx_contextlib",
+                 "вход 1\nвход 2\nвнутри [None, None]\nвыход 2\nвыход 1"], position=1, topic="ctx_contextlib",
                 hint="Выход из менеджеров — в обратном порядке, как у вложенных with.",
                 explanation="enter_context входит в каждый менеджер и возвращает результат __enter__ (числа). При выходе ExitStack закрывает их в обратном порядке: сначала 2, потом 1.",
                 role="challenge", difficulty=3,
                 feedback={"вход 1\nвход 2\nвнутри [1, 2]\nвыход 1\nвыход 2": "ExitStack закрывает менеджеры в обратном порядке.",
                           "вход 1\nвыход 1\nвход 2\nвыход 2\nвнутри [1, 2]": "Менеджеры остаются открытыми до конца блока with.",
-                          "вход 1\nвход 2\nвнутри [Step, Step]\nвыход 2\nвыход 1": "enter_context возвращает то, что вернул __enter__, — числа."}),
+                          "вход 1\nвход 2\nвнутри [None, None]\nвыход 2\nвыход 1": "enter_context возвращает то, что вернул __enter__, — числа."}),
+        bug("py_ctx_010", "Проглоченная ошибка", """\
+            from contextlib import contextmanager
+
+            @contextmanager
+            def transaction(log):
+                log.append("begin")
+                try:
+                    yield
+                except ValueError:
+                    log.append("rollback")
+                    return
+
+            log = []
+            try:
+                with transaction(log):
+                    raise ValueError("плохие данные")
+            except ValueError:
+                log.append("ошибка дошла")
+            print(log)""", {9: "        raise"},
+            prompt="После отката ошибка должна дойти до вызывающего кода. Найдите строку с ошибкой", topic="ctx_contextlib",
+            hint="Что происходит с исключением, если генератор менеджера его перехватил и просто завершился?",
+            explanation="Перехватив ValueError и выйдя через return, генератор сообщает @contextmanager, что всё в порядке, — ошибка подавлена. Чтобы откатить и всё равно сообщить о проблеме, исключение пробрасывают дальше голым raise.",
+            difficulty=4, role="challenge"),
+        predict("py_ctx_011", "Ошибка при входе", """\
+                class Conn:
+                    def __enter__(self):
+                        print("вход")
+                        raise ConnectionError("нет сети")
+                    def __exit__(self, *exc):
+                        print("выход")
+
+                try:
+                    with Conn():
+                        print("тело")
+                except ConnectionError:
+                    print("поймали")""",
+                ["вход\nвыход\nпоймали", "вход\nтело\nвыход\nпоймали", "вход\nпоймали\nвыход"], position=3,
+                topic="ctx_protocol", hint="Если __enter__ не завершился, начался ли блок with?",
+                explanation="Ошибка возникла в __enter__: блок with не начался, поэтому и __exit__ не вызывается. Исключение сразу летит в except.",
+                role="practice", difficulty=3,
+                feedback={"вход\nвыход\nпоймали": "__exit__ вызывается только для блока, который начался. Здесь вход не завершился.",
+                          "вход\nтело\nвыход\nпоймали": "Тело не выполняется: ошибка случилась ещё при входе.",
+                          "вход\nпоймали\nвыход": "__exit__ не вызывается вовсе."}),
         predict("py_ctx_009", "Босс: перенаправления", """\
                 import io
                 from contextlib import redirect_stdout, suppress
@@ -770,27 +889,28 @@ MODULES.append(dict(
               """
               Аннотации пишутся после двоеточия у параметров и после -> у результата: def add(a: int, b: int) -> int. У переменных: count: int = 0.
 
-              Встроенные коллекции параметризуются прямо: list[int], dict[str, float], tuple[int, ...] (любой длины), set[str]. «Значение или None» — int | None (раньше писали Optional[int]).
+              Встроенные коллекции параметризуются прямо: list[int], dict[str, float], tuple[int, ...] (любой длины), set[str]. «Значение или None» — int | None (раньше писали Optional[int]). Функции описывают через Callable[[аргументы], результат] из collections.abc.
 
               Python не проверяет типы при выполнении: add("4", "2") вернёт «42». Ошибки находят статические анализаторы — mypy, pyright — до запуска программы. Аннотации доступны как f.__annotations__ или typing.get_type_hints(f).
               """,
               [("""\
-                def add(a: int, b: int) -> int:
-                    return a + b
+                def mul(a: int, b: int) -> int:
+                    return a * b
 
-                print(add(2, 3), add("4", "2"))
-                print(add.__annotations__)""", "Аннотации не мешают передать строки."),
+                print(mul(2, 3), mul("ab", 3))
+                print(mul.__annotations__)""", "Аннотации не мешают передать строку."),
                ("""\
-                def find(names: list[str], target: str) -> int | None:
-                    return names.index(target) if target in names else None
+                def first_word(text: str) -> str | None:
+                    words = text.split()
+                    return words[0] if words else None
 
-                print(find(["a", "b"], "b"), find(["a"], "z"))""", None)],
+                print(first_word("Привет, мир"), first_word("   "))""", None)],
               ["Ждать, что аннотация защитит от неверного типа во время выполнения.",
                "Писать List[int] без from typing import List — в Python 3.9+ просто list[int]."]),
         topic("typing_advanced", "Protocol, дженерики, TypedDict",
               "Protocol описывает «утиный» интерфейс, def first[T](x: list[T]) -> T — обобщённую функцию, TypedDict — словарь с известными ключами.",
               """
-              Protocol: класс-протокол перечисляет методы. Любой класс с такими методами подходит, даже не наследуя протокол (структурная типизация). @runtime_checkable разрешает isinstance с протоколом.
+              Protocol: класс-протокол перечисляет методы. Любой класс с такими методами подходит, даже не наследуя протокол (структурная типизация). @runtime_checkable разрешает isinstance с протоколом — но проверяет только наличие атрибутов с такими именами, а не их сигнатуры и типы.
 
               Дженерики (Python 3.12): def first[T](items: list[T]) -> T и class Box[T]: — параметр типа T связывает вход и выход: first([1, 2]) — это int, first(["a"]) — str. type UserId = int — псевдоним типа.
 
@@ -817,11 +937,13 @@ MODULES.append(dict(
 
                 print(first([3, 1]), first(["a", "b"]), first.__type_params__)""", "Синтаксис дженериков Python 3.12.")],
               ["isinstance с Protocol без @runtime_checkable — TypeError.",
+               "Полагаться на isinstance с runtime_checkable-протоколом: он пропустит даже speak = 5, если имя совпадает.",
+               "type UserId = int — псевдоним только для анализатора: isinstance(5, UserId) даёт TypeError.",
                "Думать, что TypedDict проверяет значения при создании: это обычный dict."]),
     ],
     tasks=[
         task("t_typing_parse", "Разбор настроек",
-             "Напишите функцию parse(text: str) -> dict[str, int] с аннотациями типов: она принимает строку вида «a=1,b=20» и возвращает словарь. Прочитайте строку и выведите пары «ключ значение» по одной на строке в порядке sorted() ключей.",
+             "Напишите функцию parse(text: str) -> dict[str, int] с аннотациями типов: она принимает строку вида «a=1,b=20» и возвращает словарь. После запятых могут стоять пробелы — убирайте их у ключей. Прочитайте строку и выведите пары «ключ значение» по одной на строке в порядке sorted() ключей.",
              solution="""\
                 def parse(text: str) -> dict[str, int]:
                     result: dict[str, int] = {}
@@ -840,7 +962,7 @@ MODULES.append(dict(
                     print(key, value)""",
              tests=["a=1,b=20\n", "x=5\n", "z=1, a=2, m=3\n", "width=800,height=600\n"],
              hint="split(\",\") даёт пары, split(\"=\") — ключ и значение.", difficulty=2,
-             requires=dict(defines=["parse"], uses=["annotations"])),
+             requires=dict(defines=["parse"], annotated=["parse"])),
     ],
     levels=[
         predict("py_typing_001", "Аннотация — не проверка", """\
@@ -860,7 +982,7 @@ MODULES.append(dict(
 
                 print(greet.__annotations__)""",
                 ["{'name': str, 'times': int, 'return': str}", "{'name': 'str', 'times': 'int'}", "None"], position=0,
-                topic="typing_basics", hint="Аннотации хранятся в словаре — значения в нём сами классы.",
+                topic="typing_basics", hint="Аннотации хранятся в словаре __annotations__. Что в нём лежит и как это печатается?",
                 explanation="__annotations__ — словарь «параметр → тип», результат хранится под ключом 'return'. Значения — объекты-классы, поэтому печатаются как <class 'str'>.",
                 role="practice", difficulty=2,
                 feedback={"{'name': str, 'times': int, 'return': str}": "Классы в словаре печатаются как <class 'str'>.",
@@ -877,7 +999,7 @@ MODULES.append(dict(
              expect="1 int | None\n"),
         match("py_typing_004", "Читаем аннотации",
               ["list[int]", "dict[str, float]", "tuple[int, ...]", "int | None", "Callable[[int], str]"],
-              rights=["Список целых чисел", "Словарь: строка → дробное число", "Кортеж любой длины из целых",
+              rights=["Список целых чисел", "Словарь: строка → число float", "Кортеж любой длины из целых",
                       "Целое число или None", "Функция: принимает int, возвращает str"],
               prompt="Сопоставьте аннотацию и её смысл", topic="typing_basics",
               hint="Многоточие в tuple означает «сколько угодно элементов».",
@@ -893,40 +1015,62 @@ MODULES.append(dict(
                 from typing import Protocol, runtime_checkable
 
                 @runtime_checkable
-                class Speaker(Protocol):
-                    def speak(self) -> str: ...
+                class Closer(Protocol):
+                    def close(self) -> None: ...
 
-                class Robot:
-                    def speak(self) -> str:
-                        return "бип"
+                class Socket:
+                    def close(self) -> None:
+                        print("закрыт")
 
-                print(isinstance(Robot(), Speaker), isinstance("hi", Speaker))""",
-                ["False False", "True True", "TypeError"], position=1, topic="typing_advanced",
-                hint="Protocol проверяет наличие методов, а не наследование.",
-                explanation="Robot не наследует Speaker, но у него есть speak — этого достаточно. У строки метода speak нет.",
+                class Fake:
+                    close = 5
+
+                print(isinstance(Socket(), Closer), isinstance(Fake(), Closer), isinstance("hi", Closer))""",
+                ["True False False", "False False False", "TypeError"], position=1, topic="typing_advanced",
+                hint="runtime_checkable-протокол при isinstance проверяет только наличие атрибута с нужным именем.",
+                explanation="Socket не наследует Closer, но у него есть close — подходит. У Fake тоже есть атрибут close (пусть и число), и isinstance его пропускает: проверяются только имена. У строки close нет.",
                 role="practice", difficulty=3,
-                feedback={"False False": "Протокол проверяет форму объекта: у Robot есть speak.",
-                          "True True": "У строки нет метода speak.",
+                feedback={"True False False": "isinstance с протоколом проверяет лишь, что атрибут close есть, — у Fake он есть.",
+                          "False False False": "Наследовать протокол не нужно: у Socket есть close.",
                           "TypeError": "@runtime_checkable разрешает isinstance с протоколом."}),
-        typed("py_typing_007", "Дженерик 3.12", """\
-              def first[T](items: list[T]) -> T:
-                  return items[0]
+        typed("py_typing_007", "Обобщённый класс", """\
+              class Box[T]:
+                  def __init__(self, item: T):
+                      self.item = item
 
-              print(first([3, 1]), first(["a"]))
-              print(first.__type_params__)""",
-              topic="typing_advanced", hint="[T] после имени объявляет параметр типа. __type_params__ — кортеж таких параметров.",
-              explanation="first возвращает первый элемент любого списка. __type_params__ — кортеж из одного параметра T, он печатается как (T,).",
+              print(Box(5).item, Box[str]("x").item)
+              print(Box.__type_params__)""",
+              topic="typing_advanced", hint="[T] после имени класса объявляет параметр типа. Box[str] при выполнении ничего не проверяет.",
+              explanation="Box хранит значение любого типа. Box[str](...) работает как обычный вызов. __type_params__ — кортеж из параметра T, он печатается как (T,).",
               role="practice", difficulty=3),
         bug("py_typing_008", "Забытый None", """\
-            def greet(name: str | None = None) -> str:
+            def greet(name: str | None) -> str:
                 return "Привет, " + name.title()
 
-            print(greet())
-            print(greet("ада"))""", {1: "    return \"Привет, \" + (name or \"гость\").title()"},
-            prompt="greet() без имени должна приветствовать гостя. Найдите строку с ошибкой", topic="typing_basics",
+            print(greet("ада"))
+            print(greet(None))""", {1: "    return \"Привет, \" + (name or \"гость\").title()"},
+            alt_fixes={0: "def greet(name: str = \"гость\") -> str:"},
+            prompt="Если имени нет (None), функция должна приветствовать гостя. Найдите строку с ошибкой", topic="typing_basics",
             hint="Аннотация str | None говорит: name может быть None. Что тогда сделает name.title()?",
             explanation="У None нет метода title — AttributeError. Анализатор типов предупредил бы об этом заранее. Нужно обработать None, например name or \"гость\".",
             expect_error="AttributeError", difficulty=2),
+        predict("py_typing_010", "Final и Literal", """\
+                from typing import Final, Literal
+
+                LIMIT: Final = 3
+                LIMIT = 4
+
+                def open_mode(m: Literal["r", "w"]) -> str:
+                    return m
+
+                print(LIMIT, open_mode("x"))""",
+                ["3 x", "TypeError", "4 r"], position=0, topic="typing_advanced",
+                hint="Final и Literal — подсказки для анализатора. Что из этого проверяется при выполнении?",
+                explanation="Python не мешает переприсвоить Final и передать в Literal другое значение: программа печатает 4 x. Ошибки покажет только статический анализатор (mypy, pyright) — до запуска.",
+                role="practice", difficulty=3,
+                feedback={"3 x": "Final не запрещает присваивание во время выполнения — LIMIT стал 4.",
+                          "TypeError": "Аннотации не проверяются при выполнении.",
+                          "4 r": "Literal ничего не подставляет: функция возвращает переданное «x»."}),
         predict("py_typing_009", "Босс: TypedDict и псевдонимы", """\
                 from typing import TypedDict, get_type_hints
 
@@ -937,13 +1081,13 @@ MODULES.append(dict(
                     name: str
 
                 u: User = {"id": "7", "name": "Ада"}
-                print(type(u).__name__, u["id"], list(get_type_hints(User)))""",
-                ["User 7 ['id', 'name']", "TypeError", "dict 7 []"], position=1, topic="typing_advanced",
+                print(type(u).__name__, repr(u["id"]), list(get_type_hints(User)))""",
+                ["User '7' ['id', 'name']", "dict 7 ['id', 'name']", "TypeError"], position=1, topic="typing_advanced",
                 hint="TypedDict существует только для анализатора: во время выполнения — обычный словарь без проверок.",
                 explanation="u — обычный dict, и строка «7» вместо числа проходит без ошибки. get_type_hints(User) возвращает объявленные ключи: id и name.",
                 role="boss", difficulty=4,
-                feedback={"User 7 ['id', 'name']": "Объект, созданный литералом {...}, — обычный dict.",
-                          "TypeError": "Во время выполнения TypedDict ничего не проверяет.",
-                          "dict 7 []": "get_type_hints видит аннотации класса User: id и name."}),
+                feedback={"User '7' ['id', 'name']": "Объект, созданный литералом {...}, — обычный dict.",
+                          "dict 7 ['id', 'name']": "Значение осталось строкой: TypedDict ничего не преобразует — repr показывает кавычки.",
+                          "TypeError": "Во время выполнения TypedDict ничего не проверяет."}),
     ],
 ))

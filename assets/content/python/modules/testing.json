@@ -1,0 +1,295 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_test_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Сработавший assert",
+   "prompt": "Что выведет код?",
+   "topic": "test_assert",
+   "difficulty": 1,
+   "hint": "Пустой список — ложь, assert падает раньше деления.",
+   "explanation": "Для [2, 4] проверка проходит: 6 / 2 = 3.0. Для [] assert падает с AssertionError и своим сообщением — до деления на ноль дело не доходит.",
+   "code": "def average(xs):\n    assert xs, \"пустой список\"\n    return sum(xs) / len(xs)\n\nprint(average([2, 4]))\ntry:\n    average([])\nexcept AssertionError as e:\n    print(\"ошибка:\", e)",
+   "payload": {
+    "options": [
+     "3.0\nZeroDivisionError",
+     "3.0\nошибка: пустой список",
+     "3\nошибка: пустой список",
+     "3.0\nошибка: AssertionError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "assert срабатывает раньше деления и останавливает функцию.",
+     "",
+     "/ всегда даёт float: 3.0.",
+     "str(e) — это сообщение из assert, а не имя исключения."
+    ]
+   },
+   "solution": {
+    "code": "def average(xs):\n    assert xs, \"пустой список\"\n    return sum(xs) / len(xs)\n\nprint(average([2, 4]))\ntry:\n    average([])\nexcept AssertionError as e:\n    print(\"ошибка:\", e)",
+    "output": "3.0\nошибка: пустой список\n"
+   }
+  },
+  {
+   "id": "py_test_002",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Проверка в unittest",
+   "prompt": "Проверьте, что add(2, 3) равно 5",
+   "topic": "test_unittest",
+   "difficulty": 1,
+   "hint": "Нужно сравнить два значения на равенство.",
+   "explanation": "assertEqual(a, b) проходит, если a == b. Остальные проверки здесь не сходятся, и тест не проходит.",
+   "payload": {
+    "template": "import io\nimport unittest\n\ndef add(a, b):\n    return a + b\n\nclass TestAdd(unittest.TestCase):\n    def test_sum(self):\n        self.{{0}}(add(2, 3), 5)\n\nsuite = unittest.defaultTestLoader.loadTestsFromTestCase(TestAdd)\nresult = unittest.TextTestRunner(stream=io.StringIO()).run(suite)\nprint(result.wasSuccessful(), result.testsRun)",
+    "options": [
+     "assertEqual",
+     "assertNotEqual",
+     "assertIsNone",
+     "assertIn"
+    ],
+    "answers": [
+     "assertEqual"
+    ],
+    "variantResults": {
+     "assertNotEqual": "False 1",
+     "assertIsNone": "False 1",
+     "assertIn": "False 1"
+    }
+   },
+   "solution": {
+    "code": "import io\nimport unittest\n\ndef add(a, b):\n    return a + b\n\nclass TestAdd(unittest.TestCase):\n    def test_sum(self):\n        self.assertEqual(add(2, 3), 5)\n\nsuite = unittest.defaultTestLoader.loadTestsFromTestCase(TestAdd)\nresult = unittest.TextTestRunner(stream=io.StringIO()).run(suite)\nprint(result.wasSuccessful(), result.testsRun)",
+    "output": "True 1\n"
+   }
+  },
+  {
+   "id": "py_test_003",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Итоги прогона",
+   "prompt": "Что выведет код?",
+   "topic": "test_unittest",
+   "difficulty": 3,
+   "hint": "round(2.5) в Python — 2 (округление к чётному). assertRaises ожидает ошибку.",
+   "explanation": "Тестов три. round(2.5) == 2, поэтому test_round — failure (проверка не сошлась). Деление на ноль ожидалось в assertRaises — это успех, а не error.",
+   "code": "import io\nimport unittest\n\nclass T(unittest.TestCase):\n    def test_ok(self):\n        self.assertEqual(2 * 2, 4)\n    def test_round(self):\n        self.assertEqual(round(2.5), 3)\n    def test_error(self):\n        with self.assertRaises(ZeroDivisionError):\n            1 / 0\n\nsuite = unittest.defaultTestLoader.loadTestsFromTestCase(T)\nresult = unittest.TextTestRunner(stream=io.StringIO()).run(suite)\nprint(result.testsRun, len(result.failures), len(result.errors))",
+   "payload": {
+    "options": [
+     "3 0 0",
+     "3 1 0",
+     "3 0 1",
+     "3 1 1"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "round(2.5) — это 2: test_round не проходит.",
+     "",
+     "Не сошедшаяся проверка — failure, а не error. А ошибка внутри assertRaises ожидалась.",
+     "Деление на ноль поймано assertRaises — тест успешен."
+    ]
+   },
+   "solution": {
+    "code": "import io\nimport unittest\n\nclass T(unittest.TestCase):\n    def test_ok(self):\n        self.assertEqual(2 * 2, 4)\n    def test_round(self):\n        self.assertEqual(round(2.5), 3)\n    def test_error(self):\n        with self.assertRaises(ZeroDivisionError):\n            1 / 0\n\nsuite = unittest.defaultTestLoader.loadTestsFromTestCase(T)\nresult = unittest.TextTestRunner(stream=io.StringIO()).run(suite)\nprint(result.testsRun, len(result.failures), len(result.errors))",
+    "output": "3 1 0\n"
+   }
+  },
+  {
+   "id": "py_test_004",
+   "type": "multiple_choice",
+   "role": "practice",
+   "title": "Тест, который не падает",
+   "prompt": "Почему этот тест никогда не падает, хотя функция сломана?",
+   "topic": "test_assert",
+   "difficulty": 3,
+   "hint": "Что стоит после assert — условие или что-то другое?",
+   "explanation": "assert (условие, \"сообщение\") проверяет кортеж из двух элементов. Непустой кортеж всегда истинен, поэтому тест проходит при любой функции. Нужно assert is_even(4), \"4 — чётное\" — без скобок.",
+   "code": "def is_even(n):\n    return n % 2 == 1\n\ndef test_is_even():\n    assert (is_even(4), \"4 — чётное\")\n\ntest_is_even()\nprint(\"тест пройден\")",
+   "payload": {
+    "options": [
+     "assert с кортежем всегда истинен",
+     "is_even вызывается неправильно",
+     "Тесты в Python не запускаются без pytest",
+     "4 — чётное, поэтому проверка верна"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Вызов корректен: проблема в том, что результат вообще не проверяется.",
+     "Функцию test_is_even вызывают вручную — она выполняется.",
+     "is_even(4) возвращает False, но assert проверяет не его, а кортеж."
+    ]
+   },
+   "solution": {
+    "code": "def is_even(n):\n    return n % 2 == 1\n\ndef test_is_even():\n    assert (is_even(4), \"4 — чётное\")\n\ntest_is_even()\nprint(\"тест пройден\")",
+    "output": "тест пройден\n"
+   }
+  },
+  {
+   "id": "py_test_005",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Уровни логирования",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "test_logging",
+   "difficulty": 2,
+   "hint": "Уровни — числа с шагом 10.",
+   "explanation": "Уровни — это числа: DEBUG 10, INFO 20, WARNING 30, ERROR 40, CRITICAL 50. Логгер показывает сообщения с уровнем не ниже настроенного.",
+   "code": "import logging",
+   "payload": {
+    "pairs": [
+     {
+      "left": "logging.DEBUG",
+      "right": "10"
+     },
+     {
+      "left": "logging.INFO",
+      "right": "20"
+     },
+     {
+      "left": "logging.WARNING",
+      "right": "30"
+     },
+     {
+      "left": "logging.ERROR",
+      "right": "40"
+     },
+     {
+      "left": "logging.CRITICAL",
+      "right": "50"
+     }
+    ]
+   },
+   "solution": {
+    "code": "import logging\nprint(logging.DEBUG)\nprint(logging.INFO)\nprint(logging.WARNING)\nprint(logging.ERROR)\nprint(logging.CRITICAL)",
+    "output": "10\n20\n30\n40\n50\n"
+   }
+  },
+  {
+   "id": "py_test_006",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Про logging",
+   "prompt": "Какие утверждения о модуле logging верны?",
+   "topic": "test_logging",
+   "difficulty": 2,
+   "hint": "Какой уровень у logging по умолчанию и куда он пишет?",
+   "explanation": "По умолчанию logging показывает WARNING и выше и пишет в stderr. logging.exception добавляет трассировку. Уровень меняется в basicConfig(level=...).",
+   "payload": {
+    "options": [
+     "По умолчанию показываются сообщения уровня WARNING и выше",
+     "logging.exception() внутри except записывает и трассировку",
+     "logging.debug() видно всегда, без настройки",
+     "Уровень меняют через basicConfig(level=...)",
+     "По умолчанию logging пишет в stdout, как print"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     3
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "DEBUG ниже порога WARNING — без настройки не виден.",
+     "",
+     "По умолчанию — в stderr, отдельно от обычного вывода."
+    ]
+   }
+  },
+  {
+   "id": "py_test_007",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Тесты без фреймворка",
+   "prompt": "Что выведет код?",
+   "topic": "test_assert",
+   "difficulty": 2,
+   "hint": "split() без аргумента не оставляет пустых строк.",
+   "explanation": "Первый тест проходит. split() без аргумента возвращает ['a', 'b'], без пустой строки, поэтому второй падает с AssertionError.",
+   "code": "def test_upper():\n    assert \"ab\".upper() == \"AB\"\n\ndef test_split():\n    assert \"a b\".split() == [\"a\", \"b\", \"\"]\n\npassed = failed = 0\nfor test in [test_upper, test_split]:\n    try:\n        test()\n        passed += 1\n    except AssertionError:\n        failed += 1\nprint(passed, failed)",
+   "payload": {
+    "options": [
+     "2 0",
+     "1 1",
+     "0 2",
+     "1 0"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "split() без аргумента не даёт пустую строку в конце: второй тест падает.",
+     "",
+     "\"ab\".upper() — это \"AB\": первый тест проходит.",
+     "Упавший тест тоже считается — failed = 1."
+    ]
+   },
+   "solution": {
+    "code": "def test_upper():\n    assert \"ab\".upper() == \"AB\"\n\ndef test_split():\n    assert \"a b\".split() == [\"a\", \"b\", \"\"]\n\npassed = failed = 0\nfor test in [test_upper, test_split]:\n    try:\n        test()\n        passed += 1\n    except AssertionError:\n        failed += 1\nprint(passed, failed)",
+    "output": "1 1\n"
+   }
+  },
+  {
+   "id": "py_test_008",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Записать вместо печати",
+   "prompt": "Что выведет код?",
+   "topic": "test_logging",
+   "difficulty": 2,
+   "hint": "level=logging.INFO отсекает всё, что ниже INFO.",
+   "explanation": "DEBUG ниже порога INFO и не выводится. Остальные сообщения форматируются по шаблону «уровень:имя логгера:сообщение».",
+   "code": "import logging\nimport sys\n\nlogging.basicConfig(stream=sys.stdout, level=logging.INFO,\n                    format=\"%(levelname)s:%(name)s:%(message)s\", force=True)\nlog = logging.getLogger(\"shop\")\nlog.debug(\"корзина: 3 товара\")\nlog.info(\"оплата принята\")\nlog.error(\"склад недоступен\")",
+   "payload": {
+    "options": [
+     "DEBUG:shop:корзина: 3 товара\nINFO:shop:оплата принята\nERROR:shop:склад недоступен",
+     "INFO:shop:оплата принята\nERROR:shop:склад недоступен",
+     "оплата принята\nсклад недоступен",
+     "ERROR:shop:склад недоступен"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Порог — INFO: DEBUG не проходит.",
+     "",
+     "format добавляет уровень и имя логгера.",
+     "INFO не ниже порога INFO — сообщение выводится."
+    ]
+   },
+   "solution": {
+    "code": "import logging\nimport sys\n\nlogging.basicConfig(stream=sys.stdout, level=logging.INFO,\n                    format=\"%(levelname)s:%(name)s:%(message)s\", force=True)\nlog = logging.getLogger(\"shop\")\nlog.debug(\"корзина: 3 товара\")\nlog.info(\"оплата принята\")\nlog.error(\"склад недоступен\")",
+    "output": "INFO:shop:оплата принята\nERROR:shop:склад недоступен\n"
+   }
+  },
+  {
+   "id": "py_test_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: заглушка вместо почты",
+   "prompt": "Что выведет код?",
+   "topic": "test_unittest",
+   "difficulty": 4,
+   "hint": "Mock запоминает каждый вызов своих методов. call_args — аргументы последнего вызова.",
+   "explanation": "Письмо уходит только активному пользователю: send вызван один раз с ('a@x', 'Привет!'). Mock ничего не отправляет, а только записывает вызовы — так тестируют код с внешними зависимостями.",
+   "code": "from unittest.mock import Mock\n\ndef notify(sender, users):\n    for user in users:\n        if user[\"active\"]:\n            sender.send(user[\"email\"], \"Привет!\")\n\nsender = Mock()\nnotify(sender, [{\"email\": \"a@x\", \"active\": True}, {\"email\": \"b@x\", \"active\": False}])\nprint(sender.send.call_count, sender.send.call_args.args)",
+   "payload": {
+    "options": [
+     "2 ('b@x', 'Привет!')",
+     "1 ('b@x', 'Привет!')",
+     "0 None",
+     "1 ('a@x', 'Привет!')"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Второй пользователь не активен: ему send не вызывается.",
+     "b@x не активен — ему письмо не отправляется; единственный вызов был с a@x.",
+     "Mock принимает любые вызовы и запоминает их — send был вызван.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "from unittest.mock import Mock\n\ndef notify(sender, users):\n    for user in users:\n        if user[\"active\"]:\n            sender.send(user[\"email\"], \"Привет!\")\n\nsender = Mock()\nnotify(sender, [{\"email\": \"a@x\", \"active\": True}, {\"email\": \"b@x\", \"active\": False}])\nprint(sender.send.call_count, sender.send.call_args.args)",
+    "output": "1 ('a@x', 'Привет!')\n"
+   }
+  }
+ ]
+}

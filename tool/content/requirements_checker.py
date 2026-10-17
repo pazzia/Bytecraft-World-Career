@@ -19,6 +19,10 @@ Requirement keys (all optional):
   calls:      functions/methods that must be called (open, sorted, ...)
   no_calls:   functions/methods that must not be called
   no_imports: modules that must not be imported (fractions, ...)
+  yields:     functions that must be generators (yield in their own body)
+  annotated:  functions whose parameters (except self/cls) and result are annotated
+  decorated:  {function: decorator} — the function must carry that decorator
+  returns_function: functions that must define a nested function and return it
 """
 import ast
 import json
@@ -86,6 +90,7 @@ USES = {
     "with": (_any(ast.With, ast.AsyncWith), "with"),
     "try": (_any(ast.Try, ast.TryStar), "try/except"),
     "raise": (_any(ast.Raise), "raise"),
+    "assert": (_any(ast.Assert), "assert"),
     "star_args": (_has_star_args, "*args"),
     "star_kwargs": (_has_star_kwargs, "**kwargs"),
     "decorator": (_has_decorator, "декоратор (@...)"),
@@ -150,6 +155,53 @@ def _imported_modules(tree):
     return modules
 
 
+def _functions(tree):
+    return {n.name: n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+
+
+def _own_nodes(func):
+    """Nodes of a function body without nested functions and classes."""
+    stack = list(func.body)
+    while stack:
+        node = stack.pop()
+        yield node
+        for child in ast.iter_child_nodes(node):
+            if not isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef, ast.Lambda)):
+                stack.append(child)
+
+
+def _is_generator(func):
+    return any(isinstance(n, (ast.Yield, ast.YieldFrom)) for n in _own_nodes(func))
+
+
+def _is_annotated(func):
+    args = func.args.posonlyargs + func.args.args + func.args.kwonlyargs
+    params = [a for a in args if a.arg not in ("self", "cls")]
+    return func.returns is not None and all(a.annotation is not None for a in params)
+
+
+def _decorators_of(func):
+    names = set()
+    for deco in func.decorator_list:
+        target = deco.func if isinstance(deco, ast.Call) else deco
+        if isinstance(target, ast.Name):
+            names.add(target.id)
+        elif isinstance(target, ast.Attribute):
+            names.add(target.attr)
+    return names
+
+
+def _returns_nested_function(func):
+    nested = {n.name for n in func.body if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+    for node in _own_nodes(func):
+        if isinstance(node, ast.Return) and node.value is not None:
+            if isinstance(node.value, ast.Name) and node.value.id in nested:
+                return True
+            if isinstance(node.value, ast.Lambda):
+                return True
+    return False
+
+
 def check(code, requires):
     """Returns a list of problems (in Russian), empty when all is fine."""
     try:
@@ -188,7 +240,20 @@ def check(code, requires):
         test, title = USES[key]
         if test(tree):
             problems.append(f"В этой задаче нельзя использовать: {title}.")
-    called = _called_names(tree)
+    functions = _functions(tree)
+    for name in requires.get("yields", []):
+        if name in functions and not _is_generator(functions[name]):
+            problems.append(f"{name} должна быть генератором: внутри нужен yield.")
+    for name in requires.get("annotated", []):
+        if name in functions and not _is_annotated(functions[name]):
+            problems.append(f"Укажите аннотации типов у всех параметров {name} и у результата (-> ...).")
+    for name, deco in requires.get("decorated", {}).items():
+        if name in functions and deco not in _decorators_of(functions[name]):
+            problems.append(f"Функция {name} должна быть объявлена с декоратором @{deco}.")
+    for name in requires.get("returns_function", []):
+        if name in functions and not _returns_nested_function(functions[name]):
+            problems.append(f"{name} должна объявлять внутри функцию-обёртку и возвращать её.")
+    called = _called_names(tree) | _decorator_names(tree)
     for name in requires.get("calls", []):
         if name not in called:
             problems.append(f"В решении нужно вызвать {name}().")
@@ -205,7 +270,7 @@ def check(code, requires):
 def validate_spec(requires):
     """For the generator: unknown keys or constructs are content bugs."""
     allowed = {"defines", "classes", "methods", "inherits", "recursive", "uses", "forbids",
-               "calls", "no_calls", "no_imports"}
+               "calls", "no_calls", "no_imports", "yields", "annotated", "decorated", "returns_function"}
     assert set(requires) <= allowed, ("unknown requirement", set(requires) - allowed)
     for key in requires.get("uses", []) + requires.get("forbids", []):
         assert key in USES, ("unknown construct", key)

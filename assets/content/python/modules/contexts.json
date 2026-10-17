@@ -9,59 +9,82 @@
    "prompt": "Что выведет код?",
    "topic": "ctx_protocol",
    "difficulty": 1,
-   "hint": "__enter__ — при входе в блок, __exit__ — при выходе.",
-   "explanation": "with вызывает __enter__ (печатает <p>), выполняет тело (текст), затем __exit__ (</p>).",
-   "code": "class Tag:\n    def __init__(self, name):\n        self.name = name\n    def __enter__(self):\n        print(f\"<{self.name}>\")\n        return self\n    def __exit__(self, exc_type, exc, tb):\n        print(f\"</{self.name}>\")\n\nwith Tag(\"p\"):\n    print(\"текст\")",
+   "hint": "__enter__ — при входе в блок, и его результат попадает в as. __exit__ — при выходе.",
+   "explanation": "with вызывает __enter__ (печатает «старт» и возвращает 42 — оно попадает в t), выполняет тело, затем __exit__.",
+   "code": "class Timer:\n    def __enter__(self):\n        print(\"старт\")\n        return 42\n    def __exit__(self, exc_type, exc, tb):\n        print(\"стоп\")\n\nwith Timer() as t:\n    print(\"внутри\", t)",
    "payload": {
     "options": [
-     "текст",
-     "<p>\n</p>\nтекст",
-     "<p>\nтекст",
-     "<p>\nтекст\n</p>"
+     "внутри 42",
+     "старт\nвнутри Timer\nстоп",
+     "старт\nстоп\nвнутри 42",
+     "старт\nвнутри 42\nстоп"
     ],
     "correctIndex": 3,
     "optionFeedback": [
      "with вызывает __enter__ и __exit__ — их print тоже выполняются.",
+     "В t попадает то, что вернул __enter__, — 42, а не сам объект.",
      "__exit__ вызывается после тела блока.",
-     "__exit__ вызывается при выходе из блока — он напечатает </p>.",
      ""
     ]
    },
    "solution": {
-    "code": "class Tag:\n    def __init__(self, name):\n        self.name = name\n    def __enter__(self):\n        print(f\"<{self.name}>\")\n        return self\n    def __exit__(self, exc_type, exc, tb):\n        print(f\"</{self.name}>\")\n\nwith Tag(\"p\"):\n    print(\"текст\")",
-    "output": "<p>\nтекст\n</p>\n"
+    "code": "class Timer:\n    def __enter__(self):\n        print(\"старт\")\n        return 42\n    def __exit__(self, exc_type, exc, tb):\n        print(\"стоп\")\n\nwith Timer() as t:\n    print(\"внутри\", t)",
+    "output": "старт\nвнутри 42\nстоп\n"
    }
   },
   {
    "id": "py_ctx_002",
    "type": "fill_code",
-   "role": "lesson",
-   "title": "Менеджер из генератора",
-   "prompt": "Отметьте место, где выполняется тело блока with",
+   "role": "practice",
+   "title": "Уборка при ошибке",
+   "prompt": "Сделайте так, чтобы «конец» печатался даже при ошибке внутри with",
    "topic": "ctx_contextlib",
-   "difficulty": 1,
-   "hint": "Менеджер из генератора делится на «до» и «после» одной инструкцией.",
-   "explanation": "@contextmanager ждёт генератор: код до yield — вход, тело блока выполняется на месте yield, код после — выход.",
+   "difficulty": 3,
+   "hint": "Тело with выполняется на месте yield. Какой блок выполняется всегда?",
+   "explanation": "try/finally вокруг yield гарантирует «конец» при любом выходе, а исключение летит дальше и попадает в except снаружи. except проглотил бы ошибку, else не выполнился бы при ошибке.",
    "payload": {
-    "template": "from contextlib import contextmanager\n\n@contextmanager\ndef section(title):\n    print(\"начало\", title)\n    {{0}}\n    print(\"конец\", title)\n\nwith section(\"A\"):\n    print(\"работа\")",
+    "template": "from contextlib import contextmanager\n\n@contextmanager\ndef section(title):\n    print(\"начало\", title)\n    {{0}}:\n        yield\n    {{1}}:\n        print(\"конец\", title)\n\ntry:\n    with section(\"A\"):\n        1 / 0\nexcept ZeroDivisionError:\n    print(\"поймали\")",
     "options": [
-     "yield",
-     "return",
-     "pass",
-     "raise"
+     "try",
+     "finally",
+     "except",
+     "else",
+     "with"
     ],
     "answers": [
-     "yield"
+     "try",
+     "finally"
     ],
     "variantResults": {
-     "return": "TypeError: 'NoneType' object is not an iterator",
-     "pass": "TypeError: 'NoneType' object is not an iterator",
-     "raise": "RuntimeError: No active exception to reraise"
+     "try\u0001try": "SyntaxError: expected 'except' or 'finally' block",
+     "try\u0001except": "начало A\nконец A",
+     "try\u0001else": "SyntaxError: expected 'except' or 'finally' block",
+     "try\u0001with": "SyntaxError: expected 'except' or 'finally' block",
+     "finally\u0001try": "SyntaxError: invalid syntax",
+     "finally\u0001finally": "SyntaxError: invalid syntax",
+     "finally\u0001except": "SyntaxError: invalid syntax",
+     "finally\u0001else": "SyntaxError: invalid syntax",
+     "finally\u0001with": "SyntaxError: invalid syntax",
+     "except\u0001try": "SyntaxError: invalid syntax",
+     "except\u0001finally": "SyntaxError: invalid syntax",
+     "except\u0001except": "SyntaxError: invalid syntax",
+     "except\u0001else": "SyntaxError: invalid syntax",
+     "except\u0001with": "SyntaxError: invalid syntax",
+     "else\u0001try": "SyntaxError: invalid syntax",
+     "else\u0001finally": "SyntaxError: invalid syntax",
+     "else\u0001except": "SyntaxError: invalid syntax",
+     "else\u0001else": "SyntaxError: invalid syntax",
+     "else\u0001with": "SyntaxError: invalid syntax",
+     "with\u0001try": "SyntaxError: invalid syntax",
+     "with\u0001finally": "SyntaxError: invalid syntax",
+     "with\u0001except": "SyntaxError: invalid syntax",
+     "with\u0001else": "SyntaxError: invalid syntax",
+     "with\u0001with": "SyntaxError: invalid syntax"
     }
    },
    "solution": {
-    "code": "from contextlib import contextmanager\n\n@contextmanager\ndef section(title):\n    print(\"начало\", title)\n    yield\n    print(\"конец\", title)\n\nwith section(\"A\"):\n    print(\"работа\")",
-    "output": "начало A\nработа\nконец A\n"
+    "code": "from contextlib import contextmanager\n\n@contextmanager\ndef section(title):\n    print(\"начало\", title)\n    try:\n        yield\n    finally:\n        print(\"конец\", title)\n\ntry:\n    with section(\"A\"):\n        1 / 0\nexcept ZeroDivisionError:\n    print(\"поймали\")",
+    "output": "начало A\nконец A\nпоймали\n"
    }
   },
   {
@@ -103,15 +126,15 @@
    "prompt": "Напишите, что выведет код",
    "topic": "ctx_protocol",
    "difficulty": 3,
-   "hint": "True из __exit__ подавляет исключение, False — пропускает дальше.",
+   "hint": "Истинное значение из __exit__ подавляет исключение, ложное — пропускает дальше.",
    "explanation": "Для KeyError __exit__ возвращает True — ошибка подавлена, программа идёт дальше. Для IndexError — False, и исключение долетает до except.",
-   "code": "class Ignore:\n    def __enter__(self):\n        return self\n    def __exit__(self, exc_type, exc, tb):\n        return exc_type is KeyError\n\nwith Ignore():\n    {}[\"x\"]\nprint(\"дальше\")\ntry:\n    with Ignore():\n        [][0]\nexcept IndexError:\n    print(\"IndexError прошёл\")",
+   "code": "class Ignore:\n    def __enter__(self):\n        return self\n    def __exit__(self, exc_type, exc, tb):\n        return exc_type is KeyError\n\nwith Ignore():\n    {}[\"x\"]\nprint(\"дальше\")\ntry:\n    with Ignore():\n        [][0]\nexcept IndexError:\n    print(\"индекс прошёл\")",
    "payload": {
-    "expectedOutput": "дальше\nIndexError прошёл"
+    "expectedOutput": "дальше\nиндекс прошёл"
    },
    "solution": {
-    "code": "class Ignore:\n    def __enter__(self):\n        return self\n    def __exit__(self, exc_type, exc, tb):\n        return exc_type is KeyError\n\nwith Ignore():\n    {}[\"x\"]\nprint(\"дальше\")\ntry:\n    with Ignore():\n        [][0]\nexcept IndexError:\n    print(\"IndexError прошёл\")",
-    "output": "дальше\nIndexError прошёл\n"
+    "code": "class Ignore:\n    def __enter__(self):\n        return self\n    def __exit__(self, exc_type, exc, tb):\n        return exc_type is KeyError\n\nwith Ignore():\n    {}[\"x\"]\nprint(\"дальше\")\ntry:\n    with Ignore():\n        [][0]\nexcept IndexError:\n    print(\"индекс прошёл\")",
+    "output": "дальше\nиндекс прошёл\n"
    }
   },
   {
@@ -136,7 +159,7 @@
      },
      {
       "left": "return True из __exit__",
-      "right": "Подавляет исключение"
+      "right": "Менеджер сам решает подавить ошибку"
      },
      {
       "left": "@contextmanager",
@@ -144,7 +167,7 @@
      },
      {
       "left": "suppress(KeyError)",
-      "right": "Игнорирует только KeyError внутри блока"
+      "right": "Подавляет KeyError и его подклассы, остальные пропускает"
      }
     ]
    }
@@ -175,30 +198,33 @@
    "type": "multi_select",
    "role": "practice",
    "title": "Что подходит для with",
-   "prompt": "Какие объекты можно использовать в with?",
+   "prompt": "Какие объекты можно поставить в with?",
    "topic": "ctx_protocol",
    "difficulty": 2,
    "hint": "Нужны методы __enter__ и __exit__.",
-   "explanation": "Файл, блокировка и suppress — контекстные менеджеры. Список и число не реализуют протокол: with [1, 2] даёт TypeError.",
+   "explanation": "Файл, suppress, nullcontext (менеджер-пустышка) и StringIO реализуют протокол. Итератор — нет. contextmanager — это декоратор: он делает менеджер из функции, но сам менеджером не является.",
    "payload": {
     "options": [
      "open(\"f.txt\", \"w\")",
-     "threading.Lock()",
-     "[1, 2]",
      "contextlib.suppress(KeyError)",
-     "42"
+     "contextlib.nullcontext()",
+     "io.StringIO()",
+     "iter([1, 2])",
+     "contextlib.contextmanager"
     ],
     "correctIndexes": [
      0,
      1,
+     2,
      3
     ],
     "optionFeedback": [
      "",
      "",
-     "У списка нет __enter__ и __exit__.",
      "",
-     "Число — не контекстный менеджер."
+     "",
+     "У итератора нет __enter__ и __exit__: with iter(...) — TypeError.",
+     "Это декоратор для создания менеджеров, а не сам менеджер."
     ]
    }
   },
@@ -218,7 +244,7 @@
      "вход 1\nвход 2\nвнутри [1, 2]\nвыход 1\nвыход 2",
      "вход 1\nвход 2\nвнутри [1, 2]\nвыход 2\nвыход 1",
      "вход 1\nвыход 1\nвход 2\nвыход 2\nвнутри [1, 2]",
-     "вход 1\nвход 2\nвнутри [Step, Step]\nвыход 2\nвыход 1"
+     "вход 1\nвход 2\nвнутри [None, None]\nвыход 2\nвыход 1"
     ],
     "correctIndex": 1,
     "optionFeedback": [
@@ -231,6 +257,58 @@
    "solution": {
     "code": "from contextlib import ExitStack\n\nclass Step:\n    def __init__(self, n):\n        self.n = n\n    def __enter__(self):\n        print(\"вход\", self.n)\n        return self.n\n    def __exit__(self, *exc):\n        print(\"выход\", self.n)\n\nwith ExitStack() as stack:\n    nums = [stack.enter_context(Step(i)) for i in range(1, 3)]\n    print(\"внутри\", nums)",
     "output": "вход 1\nвход 2\nвнутри [1, 2]\nвыход 2\nвыход 1\n"
+   }
+  },
+  {
+   "id": "py_ctx_010",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Проглоченная ошибка",
+   "prompt": "После отката ошибка должна дойти до вызывающего кода. Найдите строку с ошибкой",
+   "topic": "ctx_contextlib",
+   "difficulty": 4,
+   "hint": "Что происходит с исключением, если генератор менеджера его перехватил и просто завершился?",
+   "explanation": "Перехватив ValueError и выйдя через return, генератор сообщает @contextmanager, что всё в порядке, — ошибка подавлена. Чтобы откатить и всё равно сообщить о проблеме, исключение пробрасывают дальше голым raise.",
+   "code": "from contextlib import contextmanager\n\n@contextmanager\ndef transaction(log):\n    log.append(\"begin\")\n    try:\n        yield\n    except ValueError:\n        log.append(\"rollback\")\n        return\n\nlog = []\ntry:\n    with transaction(log):\n        raise ValueError(\"плохие данные\")\nexcept ValueError:\n    log.append(\"ошибка дошла\")\nprint(log)",
+   "payload": {
+    "buggyLines": [
+     9
+    ]
+   },
+   "solution": {
+    "code": "from contextlib import contextmanager\n\n@contextmanager\ndef transaction(log):\n    log.append(\"begin\")\n    try:\n        yield\n    except ValueError:\n        log.append(\"rollback\")\n        raise\n\nlog = []\ntry:\n    with transaction(log):\n        raise ValueError(\"плохие данные\")\nexcept ValueError:\n    log.append(\"ошибка дошла\")\nprint(log)",
+    "output": "['begin', 'rollback', 'ошибка дошла']\n"
+   }
+  },
+  {
+   "id": "py_ctx_011",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Ошибка при входе",
+   "prompt": "Что выведет код?",
+   "topic": "ctx_protocol",
+   "difficulty": 3,
+   "hint": "Если __enter__ не завершился, начался ли блок with?",
+   "explanation": "Ошибка возникла в __enter__: блок with не начался, поэтому и __exit__ не вызывается. Исключение сразу летит в except.",
+   "code": "class Conn:\n    def __enter__(self):\n        print(\"вход\")\n        raise ConnectionError(\"нет сети\")\n    def __exit__(self, *exc):\n        print(\"выход\")\n\ntry:\n    with Conn():\n        print(\"тело\")\nexcept ConnectionError:\n    print(\"поймали\")",
+   "payload": {
+    "options": [
+     "вход\nвыход\nпоймали",
+     "вход\nтело\nвыход\nпоймали",
+     "вход\nпоймали\nвыход",
+     "вход\nпоймали"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "__exit__ вызывается только для блока, который начался. Здесь вход не завершился.",
+     "Тело не выполняется: ошибка случилась ещё при входе.",
+     "__exit__ не вызывается вовсе.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "class Conn:\n    def __enter__(self):\n        print(\"вход\")\n        raise ConnectionError(\"нет сети\")\n    def __exit__(self, *exc):\n        print(\"выход\")\n\ntry:\n    with Conn():\n        print(\"тело\")\nexcept ConnectionError:\n    print(\"поймали\")",
+    "output": "вход\nпоймали\n"
    }
   },
   {

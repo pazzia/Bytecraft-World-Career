@@ -1502,12 +1502,12 @@
   {
    "id": "gen_iter",
    "title": "Протокол итерации",
-   "summary": "Итерируемый объект отдаёт итератор через iter(); итератор выдаёт значения через next(), а в конце вызывает StopIteration.",
+   "summary": "Итерируемый объект отдаёт итератор через iter(); итератор выдаёт значения через next(), а в конце выбрасывает StopIteration.",
    "body": "for x in items на самом деле делает так: it = iter(items), затем много раз x = next(it), пока не возникнет StopIteration — тогда цикл тихо заканчивается.\n\nИтерируемые объекты (список, строка, range, словарь) можно пройти сколько угодно раз: каждый for получает новый итератор. Итератор (результат iter(), map, filter, zip, генератор) — одноразовый: он помнит позицию и после конца пуст.\n\nПроверить: у итератора есть метод __next__, а iter(it) возвращает его самого.",
    "examples": [
     {
-     "code": "it = iter([10, 20, 30])\nprint(next(it), next(it))\nprint(list(it))\nprint(list(it))",
-     "output": "10 20\n[30]\n[]\n",
+     "code": "it = iter(\"xyz\")\nprint(next(it), next(it))\nprint(list(it))\nprint(list(it))",
+     "output": "x y\n['z']\n[]\n",
      "note": "Итератор помнит позицию и после конца пуст."
     },
     {
@@ -1526,11 +1526,11 @@
    "id": "gen_yield",
    "title": "Функции-генераторы и yield",
    "summary": "Функция с yield возвращает генератор: тело выполняется по шагам, на каждом yield отдаёт значение и замирает до следующего next().",
-   "body": "Вызов функции-генератора не выполняет её тело — он только создаёт объект-генератор. Код запускается при первом next() и идёт до ближайшего yield. Локальные переменные сохраняются между шагами.\n\nКогда функция доходит до конца (или до return), генератор заканчивается: next() вызывает StopIteration, а for завершает цикл.\n\nyield from другой_генератор отдаёт все его значения по очереди — так генераторы складывают в цепочки.\n\nГенераторное выражение (x * x for x in data) — короткая запись простого генератора.",
+   "body": "Вызов функции-генератора не выполняет её тело — он только создаёт объект-генератор. Код запускается при первом next() и идёт до ближайшего yield. Локальные переменные сохраняются между шагами.\n\nКогда функция доходит до конца (или до return), генератор заканчивается: next() выбрасывает StopIteration, а for завершает цикл. Если внутри генератора «вылетает» чужой StopIteration (например, от next() без значения по умолчанию), Python превращает его в RuntimeError — чтобы ошибка не выглядела как тихий конец (PEP 479).\n\nyield from другой_генератор отдаёт все его значения по очереди — так генераторы складывают в цепочки. Значение return вложенного генератора становится результатом выражения yield from.\n\nГенератор умеет и принимать данные: x = yield отдаёт значение и ждёт, что пришлёт g.send(значение). g.close() останавливает генератор (срабатывает его finally).\n\nГенераторное выражение (x * x for x in data) — короткая запись простого генератора.",
    "examples": [
     {
-     "code": "def countdown(n):\n    while n > 0:\n        yield n\n        n -= 1\n\nprint(list(countdown(3)))\ng = countdown(2)\nprint(next(g), next(g), next(g, \"стоп\"))",
-     "output": "[3, 2, 1]\n2 1 стоп\n"
+     "code": "def evens(limit):\n    n = 0\n    while n <= limit:\n        yield n\n        n += 2\n\nprint(list(evens(6)))\ng = evens(2)\nprint(next(g), next(g), next(g, \"стоп\"))",
+     "output": "[0, 2, 4, 6]\n0 2 стоп\n"
     },
     {
      "code": "def inner():\n    yield 1\n    yield 2\n\ndef outer():\n    yield 0\n    yield from inner()\n    yield 3\n\nprint(list(outer()))",
@@ -1550,8 +1550,9 @@
    "body": "Бесконечный генератор (while True: yield n) безопасен, если брать из него ограниченное число значений: itertools.islice(gen, 5), next() или цикл с break.\n\nКонвейер из генераторов (прочитать → отфильтровать → преобразовать) обрабатывает данные по одному элементу: каждый элемент проходит всю цепочку, прежде чем начнётся следующий.\n\nlist(...) или sum(...) по генератору «прокручивает» его до конца — для бесконечного генератора это зависание.",
    "examples": [
     {
-     "code": "from itertools import islice\n\ndef naturals():\n    n = 1\n    while True:\n        yield n\n        n += 1\n\nprint(list(islice(naturals(), 5)))\nevens = (n for n in naturals() if n % 2 == 0)\nprint(next(evens), next(evens))",
-     "output": "[1, 2, 3, 4, 5]\n2 4\n"
+     "code": "from itertools import islice, batched\n\ndef squares_forever():\n    n = 0\n    while True:\n        yield n * n\n        n += 1\n\nprint(list(islice(squares_forever(), 6)))\nprint(list(batched(\"abcde\", 2)))",
+     "output": "[0, 1, 4, 9, 16, 25]\n[('a', 'b'), ('c', 'd'), ('e',)]\n",
+     "note": "itertools.batched (Python 3.12) режет поток на пачки."
     }
    ],
    "pitfalls": [
@@ -1562,8 +1563,8 @@
   {
    "id": "deco_basics",
    "title": "Как работает декоратор",
-   "summary": "Декоратор — функция, которая принимает функцию и возвращает новую (обычно обёртку). @deco над def f — то же, что f = deco(f).",
-   "body": "Функции в Python — обычные значения: их можно передать в другую функцию и вернуть из неё. Декоратор пользуется этим: получает функцию, создаёт внутри обёртку wrapper, которая что-то делает до и после вызова оригинала, и возвращает wrapper.\n\nЧтобы обёртка подходила к любой функции, она принимает *args, **kwargs и передаёт их дальше: func(*args, **kwargs). И обязательно возвращает результат — иначе декорированная функция будет возвращать None.\n\n@functools.wraps(func) над wrapper копирует имя, docstring и другие атрибуты оригинала — без этого f.__name__ станет «wrapper».\n\nНесколько декораторов применяются снизу вверх: @a @b def f — это f = a(b(f)).",
+   "summary": "Декоратор — функция, которая принимает функцию и возвращает новую (обычно обёртку). @deco над def f — по сути то же, что f = deco(f).",
+   "body": "Функции в Python — обычные значения: их можно передать в другую функцию и вернуть из неё. Декоратор пользуется этим: получает функцию, создаёт внутри обёртку wrapper, которая что-то делает до и после вызова оригинала, и возвращает wrapper.\n\nЧтобы обёртка подходила к любой функции, она принимает *args, **kwargs и передаёт их дальше: func(*args, **kwargs). И обязательно возвращает результат — иначе декорированная функция будет возвращать None.\n\n@functools.wraps(func) над wrapper копирует имя, docstring и другие атрибуты оригинала — без этого f.__name__ станет «wrapper».\n\nДекоратор срабатывает один раз — в момент объявления функции, а не при каждом вызове: при каждом вызове работает уже обёртка.\n\nНесколько декораторов применяются снизу вверх: @a @b def f — это f = a(b(f)). Декорировать можно и классы: декоратор получает класс (так устроены реестры плагинов и @dataclass).",
    "examples": [
     {
      "code": "from functools import wraps\n\ndef log(func):\n    @wraps(func)\n    def wrapper(*args, **kwargs):\n        print(\"вызов\", func.__name__, args)\n        return func(*args, **kwargs)\n    return wrapper\n\n@log\ndef add(a, b):\n    return a + b\n\nprint(add(2, 3), add.__name__)",
@@ -1597,7 +1598,7 @@
    "id": "ctx_protocol",
    "title": "Протокол with",
    "summary": "with obj as x: вызывает obj.__enter__() (его результат попадает в x), а при выходе — obj.__exit__(тип, ошибка, трассировка), даже если внутри было исключение.",
-   "body": "Контекстный менеджер гарантирует «закрытие» ресурса: файла, соединения, блокировки. __exit__ вызывается при любом выходе из блока — нормальном, по return или по исключению.\n\nЕсли внутри блока было исключение, __exit__ получает его тип, объект и трассировку; если нет — три None. Если __exit__ вернёт True, исключение подавляется и программа продолжается после with. Обычно возвращают None — тогда исключение летит дальше.\n\nНесколько менеджеров: with a() as x, b() as y: — выход идёт в обратном порядке.",
+   "body": "Контекстный менеджер гарантирует «закрытие» ресурса: файла, соединения, блокировки. __exit__ вызывается при любом выходе из блока — нормальном, по return или по исключению.\n\nЕсли внутри блока было исключение, __exit__ получает его тип, объект и трассировку; если нет — три None. Если __exit__ вернёт истинное значение (обычно True), исключение подавляется и программа продолжается после with. Обычно возвращают None — тогда исключение летит дальше.\n\nЕсли ошибка возникла в самом __enter__, блок не начинается и __exit__ не вызывается.\n\nНесколько менеджеров: with a() as x, b() as y: — выход идёт в обратном порядке.",
    "examples": [
     {
      "code": "class Tag:\n    def __init__(self, name):\n        self.name = name\n    def __enter__(self):\n        print(f\"<{self.name}>\")\n        return self\n    def __exit__(self, exc_type, exc, tb):\n        print(f\"</{self.name}>\")\n\nwith Tag(\"div\"), Tag(\"p\"):\n    print(\"текст\")",
@@ -1623,7 +1624,9 @@
     }
    ],
    "pitfalls": [
-    "Писать уборку после yield без try/finally: при исключении внутри with она не выполнится."
+    "Писать уборку после yield без try/finally: при исключении внутри with она не выполнится.",
+    "Перехватить исключение вокруг yield и не пробросить его дальше (raise): @contextmanager тогда тихо проглотит ошибку.",
+    "Использовать объект из @contextmanager дважды: он одноразовый, для второго with нужен новый вызов."
    ],
    "module": "contexts"
   },
@@ -1631,16 +1634,16 @@
    "id": "typing_basics",
    "title": "Аннотации и проверка типов",
    "summary": "def f(x: int) -> str — подсказка для людей и инструментов (mypy, IDE). Python при выполнении их не проверяет.",
-   "body": "Аннотации пишутся после двоеточия у параметров и после -> у результата: def add(a: int, b: int) -> int. У переменных: count: int = 0.\n\nВстроенные коллекции параметризуются прямо: list[int], dict[str, float], tuple[int, ...] (любой длины), set[str]. «Значение или None» — int | None (раньше писали Optional[int]).\n\nPython не проверяет типы при выполнении: add(\"4\", \"2\") вернёт «42». Ошибки находят статические анализаторы — mypy, pyright — до запуска программы. Аннотации доступны как f.__annotations__ или typing.get_type_hints(f).",
+   "body": "Аннотации пишутся после двоеточия у параметров и после -> у результата: def add(a: int, b: int) -> int. У переменных: count: int = 0.\n\nВстроенные коллекции параметризуются прямо: list[int], dict[str, float], tuple[int, ...] (любой длины), set[str]. «Значение или None» — int | None (раньше писали Optional[int]). Функции описывают через Callable[[аргументы], результат] из collections.abc.\n\nPython не проверяет типы при выполнении: add(\"4\", \"2\") вернёт «42». Ошибки находят статические анализаторы — mypy, pyright — до запуска программы. Аннотации доступны как f.__annotations__ или typing.get_type_hints(f).",
    "examples": [
     {
-     "code": "def add(a: int, b: int) -> int:\n    return a + b\n\nprint(add(2, 3), add(\"4\", \"2\"))\nprint(add.__annotations__)",
-     "output": "5 42\n{'a': <class 'int'>, 'b': <class 'int'>, 'return': <class 'int'>}\n",
-     "note": "Аннотации не мешают передать строки."
+     "code": "def mul(a: int, b: int) -> int:\n    return a * b\n\nprint(mul(2, 3), mul(\"ab\", 3))\nprint(mul.__annotations__)",
+     "output": "6 ababab\n{'a': <class 'int'>, 'b': <class 'int'>, 'return': <class 'int'>}\n",
+     "note": "Аннотации не мешают передать строку."
     },
     {
-     "code": "def find(names: list[str], target: str) -> int | None:\n    return names.index(target) if target in names else None\n\nprint(find([\"a\", \"b\"], \"b\"), find([\"a\"], \"z\"))",
-     "output": "1 None\n"
+     "code": "def first_word(text: str) -> str | None:\n    words = text.split()\n    return words[0] if words else None\n\nprint(first_word(\"Привет, мир\"), first_word(\"   \"))",
+     "output": "Привет, None\n"
     }
    ],
    "pitfalls": [
@@ -1653,7 +1656,7 @@
    "id": "typing_advanced",
    "title": "Protocol, дженерики, TypedDict",
    "summary": "Protocol описывает «утиный» интерфейс, def first[T](x: list[T]) -> T — обобщённую функцию, TypedDict — словарь с известными ключами.",
-   "body": "Protocol: класс-протокол перечисляет методы. Любой класс с такими методами подходит, даже не наследуя протокол (структурная типизация). @runtime_checkable разрешает isinstance с протоколом.\n\nДженерики (Python 3.12): def first[T](items: list[T]) -> T и class Box[T]: — параметр типа T связывает вход и выход: first([1, 2]) — это int, first([\"a\"]) — str. type UserId = int — псевдоним типа.\n\nTypedDict задаёт ключи и типы значений словаря для анализатора. Во время выполнения это обычный dict — никакой проверки нет. Literal[\"r\", \"w\"] — только перечисленные значения, Callable[[int], str] — функция int → str.",
+   "body": "Protocol: класс-протокол перечисляет методы. Любой класс с такими методами подходит, даже не наследуя протокол (структурная типизация). @runtime_checkable разрешает isinstance с протоколом — но проверяет только наличие атрибутов с такими именами, а не их сигнатуры и типы.\n\nДженерики (Python 3.12): def first[T](items: list[T]) -> T и class Box[T]: — параметр типа T связывает вход и выход: first([1, 2]) — это int, first([\"a\"]) — str. type UserId = int — псевдоним типа.\n\nTypedDict задаёт ключи и типы значений словаря для анализатора. Во время выполнения это обычный dict — никакой проверки нет. Literal[\"r\", \"w\"] — только перечисленные значения, Callable[[int], str] — функция int → str.",
    "examples": [
     {
      "code": "from typing import Protocol, runtime_checkable\n\n@runtime_checkable\nclass Speaker(Protocol):\n    def speak(self) -> str: ...\n\nclass Dog:\n    def speak(self) -> str:\n        return \"гав\"\n\ndef talk(s: Speaker) -> str:\n    return s.speak()\n\nprint(talk(Dog()), isinstance(Dog(), Speaker), isinstance(42, Speaker))",
@@ -1668,9 +1671,169 @@
    ],
    "pitfalls": [
     "isinstance с Protocol без @runtime_checkable — TypeError.",
+    "Полагаться на isinstance с runtime_checkable-протоколом: он пропустит даже speak = 5, если имя совпадает.",
+    "type UserId = int — псевдоним только для анализатора: isinstance(5, UserId) даёт TypeError.",
     "Думать, что TypedDict проверяет значения при создании: это обычный dict."
    ],
    "module": "typing"
+  },
+  {
+   "id": "algo_complexity",
+   "title": "Сложность алгоритма",
+   "summary": "O-большое показывает, как растёт время работы с ростом данных: O(1) — не зависит от n, O(log n) — бинарный поиск, O(n) — один проход, O(n log n) — сортировка, O(n²) — вложенные циклы.",
+   "body": "Важен не точный счёт операций, а порядок роста. Для n = 1 000 000 разница между O(n) и O(n²) — это миллион операций против триллиона.\n\nЦена операций Python: x in list — O(n) (просмотр всех элементов), x in set и d[key] — O(1) в среднем (хеш-таблица), list.append — O(1), list.insert(0, x) и list.pop(0) — O(n) (сдвиг всех элементов), deque.appendleft/popleft — O(1), sorted — O(n log n).\n\nЧастый приём ускорения — заменить поиск в списке на множество или словарь: вложенный цикл O(n²) превращается в один проход O(n).",
+   "examples": [
+    {
+     "code": "ops = 0\nfor a in range(100):\n    for b in range(100):\n        ops += 1\nprint(\"вложенные циклы:\", ops)\n\nseen = set(range(100))\nops = 0\nfor a in range(100):\n    ops += 1\n    found = (99 - a) in seen\nprint(\"один проход с множеством:\", ops)",
+     "output": "вложенные циклы: 10000\nодин проход с множеством: 100\n",
+     "note": "Одна и та же задача: 10 000 шагов против 100."
+    }
+   ],
+   "pitfalls": [
+    "Проверять x in список внутри цикла по большому списку — это скрытый вложенный цикл O(n²).",
+    "Оптимизировать «на глаз»: сначала измерьте, где программа тратит время."
+   ],
+   "module": "algorithms"
+  },
+  {
+   "id": "algo_search_sort",
+   "title": "Поиск и сортировка",
+   "summary": "Бинарный поиск находит элемент в отсортированном списке за O(log n). Модуль bisect делает это готово; sorted и sort — устойчивая сортировка O(n log n).",
+   "body": "Бинарный поиск каждый раз сравнивает с серединой и отбрасывает половину: для миллиона элементов хватает около 20 сравнений. Работает только на отсортированных данных.\n\nbisect.bisect_left(a, x) — позиция, куда вставить x слева от равных, bisect_right — справа от равных, insort — вставка с сохранением порядка.\n\nСортировка в Python устойчивая: элементы с равным ключом сохраняют исходный порядок. Поэтому сложную сортировку можно делать в несколько проходов или ключом-кортежем.",
+   "examples": [
+    {
+     "code": "import bisect\n\nscores = [10, 20, 30, 40]\nprint(bisect.bisect_left(scores, 25), bisect.bisect_left(scores, 30), bisect.bisect_right(scores, 30))\nbisect.insort(scores, 25)\nprint(scores)",
+     "output": "2 2 3\n[10, 20, 25, 30, 40]\n"
+    }
+   ],
+   "pitfalls": [
+    "Запускать бинарный поиск по неотсортированному списку — результат будет случайным.",
+    "Ошибка на единицу в границах: lo = mid вместо mid + 1 зацикливает поиск."
+   ],
+   "module": "algorithms"
+  },
+  {
+   "id": "algo_patterns",
+   "title": "Приёмы: куча, очередь, окно, два указателя",
+   "summary": "heapq — быстрый доступ к минимуму, deque — очередь для обхода в ширину (BFS), скользящее окно и два указателя — проход за O(n) вместо перебора пар.",
+   "body": "heapq хранит список как кучу: heappush/heappop за O(log n), минимум всегда в heap[0]. nlargest(k, data) — k наибольших.\n\nОбход в ширину (BFS) на очереди deque находит кратчайшее число шагов в графе: соседи вершины обрабатываются раньше соседей соседей.\n\nСкользящее окно: сумму окна не пересчитывают заново, а прибавляют новый элемент и вычитают ушедший. Два указателя идут навстречу по отсортированному списку.",
+   "examples": [
+    {
+     "code": "import heapq\n\ntasks = [(3, \"тесты\"), (1, \"баг в проде\"), (2, \"ревью\")]\nheapq.heapify(tasks)\nwhile tasks:\n    priority, name = heapq.heappop(tasks)\n    print(priority, name)",
+     "output": "1 баг в проде\n2 ревью\n3 тесты\n",
+     "note": "Самый важный (наименьший приоритет) выходит первым."
+    },
+    {
+     "code": "nums = [2, 1, 5, 1, 3, 2]\nk = 3\nwindow = sum(nums[:k])\nbest = window\nfor i in range(k, len(nums)):\n    window += nums[i] - nums[i - k]\n    best = max(best, window)\nprint(best)",
+     "output": "9\n",
+     "note": "Скользящее окно: каждая сумма за O(1)."
+    }
+   ],
+   "pitfalls": [
+    "Использовать list.pop(0) как очередь в BFS: каждый pop(0) — O(n)."
+   ],
+   "module": "algorithms"
+  },
+  {
+   "id": "idiom_match",
+   "title": "match / case",
+   "summary": "Структурное сопоставление: match значение: case шаблон: — проверяет форму данных (литералы, последовательности, словари, классы) и сразу достаёт из них части.",
+   "body": "case 0: — литерал. case [x, y]: — список из двух элементов (x и y получают значения). case [\"take\", *items]: — первый элемент «take», остальные в items. case {\"type\": \"click\", \"x\": x}: — словарь с такими ключами (лишние ключи допускаются). case Point(x=0, y=y): — объект класса с полями. case _: — всё остальное.\n\nПосле шаблона можно добавить условие: case int() if x < 0:. Срабатывает первый подходящий case.\n\nГолое имя в case — это захват, а не сравнение: case RED: поймает что угодно и запишет в RED (Python не даст поставить такой case не последним — SyntaxError). Для сравнения с константой нужно имя с точкой: case Color.RED:.",
+   "examples": [
+    {
+     "code": "def parse(cmd):\n    match cmd.split():\n        case [\"go\", direction]:\n            return f\"идём {direction}\"\n        case [\"take\", *items]:\n            return f\"берём {len(items)}\"\n        case []:\n            return \"пусто\"\n        case _:\n            return \"непонятно\"\n\nprint(parse(\"go north\"), \"|\", parse(\"take a b\"), \"|\", parse(\"\"), \"|\", parse(\"go\"))",
+     "output": "идём north | берём 2 | пусто | непонятно\n"
+    }
+   ],
+   "pitfalls": [
+    "Писать case RED: для сравнения с переменной: это захват любого значения.",
+    "Ждать, что match работает как switch в других языках «с проваливанием»: срабатывает ровно один case."
+   ],
+   "module": "pythonic"
+  },
+  {
+   "id": "idiom_walrus",
+   "title": "Моржовый оператор и распаковка",
+   "summary": ":= присваивает значение внутри выражения. Звёздочка при распаковке собирает «всё остальное»: first, *rest = items.",
+   "body": "if (n := len(data)) > 10: — вычисляет длину один раз, сохраняет в n и сразу сравнивает. Удобно в while: while (line := f.readline()):.\n\nfirst, *middle, last = [1, 2, 3, 4, 5] — звёздочка собирает середину в список. a, b = b, a — обмен без временной переменной.\n\nf\"{x + y = }\" — f-строка с = печатает и выражение, и его значение: удобно для отладки.",
+   "examples": [
+    {
+     "code": "data = [3, 8, 1, 9]\nif (n := len(data)) > 3:\n    print(f\"длинный список: {n}\")\nfirst, *rest = data\nprint(first, rest)\nx, y = 3, 4\nprint(f\"{x + y = }\")",
+     "output": "длинный список: 4\n3 [8, 1, 9]\nx + y = 7\n"
+    }
+   ],
+   "pitfalls": [
+    "Писать if n = len(data): — в условии = недопустим, нужен :=."
+   ],
+   "module": "pythonic"
+  },
+  {
+   "id": "idiom_eafp",
+   "title": "EAFP и питоничный код",
+   "summary": "EAFP — «проще попросить прощения»: пробуем действие и обрабатываем исключение. Питоничный код использует встроенные инструменты вместо ручных циклов.",
+   "body": "Вместо цепочки проверок if key in d: ... — d.get(key, default) или try/except KeyError. Вместо for i in range(len(items)) — enumerate. Вместо флага found — any() или for/else. Вместо ручного подсчёта — Counter, sum, max(key=...).\n\nd.setdefault(k, v) возвращает d[k], а если ключа нет — записывает v и возвращает его (меняет словарь). any(...) и all(...) с генераторным выражением останавливаются на первом ответе.\n\n«Явное лучше неявного», «простое лучше сложного» — из import this, дзена Python.",
+   "examples": [
+    {
+     "code": "prices = {\"чай\": 3}\nprint(prices.get(\"кофе\", 0), prices.setdefault(\"сок\", 5), prices)\nnums = [3, 7, 10]\nprint(any(n > 9 for n in nums), all(n > 2 for n in nums))\nfor i, n in enumerate(nums, 1):\n    print(i, n)",
+     "output": "0 5 {'чай': 3, 'сок': 5}\nTrue True\n1 3\n2 7\n3 10\n"
+    }
+   ],
+   "pitfalls": [
+    "for i in range(len(items)): items[i] — там, где нужен enumerate."
+   ],
+   "module": "pythonic"
+  },
+  {
+   "id": "test_assert",
+   "title": "assert и тесты-функции",
+   "summary": "assert условие, \"сообщение\" — проверка, которая падает с AssertionError, если условие ложно. Тест — функция, которая вызывает код и проверяет результат через assert.",
+   "body": "В стиле pytest тест — обычная функция test_...() с assert внутри; pytest находит их сам и показывает, где проверка не сошлась.\n\nХороший тест проверяет один сценарий, включая крайние случаи: пустой ввод, ноль, отрицательные числа, повторы.\n\nassert — не для проверки пользовательского ввода: с флагом python -O все assert отключаются. Для данных пользователя — if и raise ValueError.\n\nЛовушка: assert (условие, \"сообщение\") с скобками проверяет непустой кортеж — он всегда истинен, и тест никогда не падает (Python 3.12 даже выдаёт SyntaxWarning).",
+   "examples": [
+    {
+     "code": "def median(nums):\n    s = sorted(nums)\n    mid = len(s) // 2\n    return s[mid] if len(s) % 2 else (s[mid - 1] + s[mid]) / 2\n\ndef test_median():\n    assert median([3, 1, 2]) == 2\n    assert median([4, 1, 3, 2]) == 2.5\n    assert median([5]) == 5\n\ntest_median()\nprint(\"тесты прошли\")",
+     "output": "тесты прошли\n"
+    }
+   ],
+   "pitfalls": [
+    "assert (x > 0, \"сообщение\") — кортеж всегда истинен, проверка не работает.",
+    "Проверять assert-ом ввод пользователя: с python -O проверка исчезнет."
+   ],
+   "module": "testing"
+  },
+  {
+   "id": "test_unittest",
+   "title": "unittest и mock",
+   "summary": "unittest — встроенный фреймворк: класс-наследник TestCase, методы test_*, проверки assertEqual, assertRaises… unittest.mock подменяет зависимости.",
+   "body": "setUp() выполняется перед каждым тестом — там готовят данные. assertEqual(a, b), assertTrue(x), assertIn(item, container), with self.assertRaises(Error): ... — проверки с понятными сообщениями.\n\nТесты запускают командой python -m unittest или pytest. Результат: число тестов, failures (проверка не сошлась) и errors (тест упал с исключением).\n\nMock() — объект-заглушка: принимает любые вызовы и запоминает их. mock.method.call_count, call_args — чем и сколько раз его вызывали. Так тестируют код, который отправляет письма или ходит в сеть, не делая этого на самом деле.",
+   "examples": [
+    {
+     "code": "import io\nimport unittest\n\nclass TestDivide(unittest.TestCase):\n    def test_half(self):\n        self.assertEqual(10 / 4, 2.5)\n\n    def test_zero(self):\n        with self.assertRaises(ZeroDivisionError):\n            1 / 0\n\nsuite = unittest.defaultTestLoader.loadTestsFromTestCase(TestDivide)\nresult = unittest.TextTestRunner(stream=io.StringIO()).run(suite)\nprint(result.testsRun, len(result.failures), len(result.errors))",
+     "output": "2 0 0\n",
+     "note": "Отчёт перенаправлен в буфер, печатаем только итоги."
+    }
+   ],
+   "pitfalls": [
+    "Тест без проверок: он «проходит», даже если код сломан.",
+    "Тест зависит от другого теста или от порядка запуска."
+   ],
+   "module": "testing"
+  },
+  {
+   "id": "test_logging",
+   "title": "logging вместо print",
+   "summary": "logging пишет сообщения с уровнем важности (DEBUG < INFO < WARNING < ERROR < CRITICAL), временем и источником; уровень и формат настраиваются в одном месте.",
+   "body": "logging.basicConfig(level=logging.INFO, format=\"%(levelname)s:%(name)s:%(message)s\") — настройка один раз в начале программы. logging.getLogger(__name__) — свой логгер для модуля.\n\nПо умолчанию видно WARNING и выше, а вывод идёт в stderr. В отличие от print, отладочные сообщения не нужно удалять: достаточно поднять уровень.\n\nlogging.exception(\"текст\") внутри except пишет сообщение уровня ERROR вместе с трассировкой.",
+   "examples": [
+    {
+     "code": "import logging\nimport sys\n\nlogging.basicConfig(stream=sys.stdout, level=logging.INFO,\n                    format=\"%(levelname)s:%(name)s:%(message)s\", force=True)\nlog = logging.getLogger(\"app\")\nlog.debug(\"детали не видны\")\nlog.info(\"старт\")\nlog.warning(\"мало места\")",
+     "output": "INFO:app:старт\nWARNING:app:мало места\n",
+     "note": "stream=sys.stdout только для примера; force=True перенастраивает logging заново."
+    }
+   ],
+   "pitfalls": [
+    "Оставлять отладочные print в коде вместо logging.debug."
+   ],
+   "module": "testing"
   }
  ]
 }

@@ -40,7 +40,7 @@ class Run:
     def summary(self):
         """What the player sees for their version of the program."""
         if self.error == "TimeLimitExceeded":
-            return f"Программа работает дольше {TIME_LIMIT_SECONDS} секунд и была остановлена"
+            return "Программа зациклилась или работает слишком долго — её пришлось остановить"
         if self.error:
             text = f"{self.error}: {self.message}" if self.message else self.error
             return text[:MAX_RESULT_CHARS]
@@ -177,6 +177,11 @@ def choice(level_id, title, prompt, options, correct, *, topic, hint, explanatio
     return level
 
 
+# Wrong fill-in variants often loop forever (lo = mid in a binary search):
+# they are stopped quickly, the right answer still gets the full limit.
+VARIANT_TIME_LIMIT_SECONDS = 1
+
+
 def fill(level_id, title, prompt, template, options, answers, *, topic, hint, explanation,
          expect=None, stdin="", role="lesson", difficulty=1):
     """Fill-in-the-blanks. The filled program must run (and print `expect`
@@ -203,7 +208,7 @@ def fill(level_id, title, prompt, template, options, answers, *, topic, hint, ex
     for combo in combos:
         if list(combo) == list(answers):
             continue
-        other = run(filled(combo), stdin)
+        other = run(filled(combo), stdin, time_limit=VARIANT_TIME_LIMIT_SECONDS)
         assert not (other.ok and other.out == correct.out), (level_id, "ambiguous", combo)
         variants["\u0001".join(combo)] = other.summary()
     level = _base(level_id, "fill_code", role, title, prompt, topic, difficulty, hint, explanation)

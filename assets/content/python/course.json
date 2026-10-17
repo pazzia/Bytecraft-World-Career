@@ -219,7 +219,7 @@
    "description": "iter, next, yield, ленивые вычисления",
    "icon": "🌀",
    "file": "modules/generators.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 830
   },
   {
    "id": "decorators",
@@ -227,7 +227,7 @@
    "description": "Функции, которые меняют функции",
    "icon": "🎀",
    "file": "modules/decorators.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "contexts",
@@ -235,7 +235,7 @@
    "description": "with, __enter__, __exit__, contextlib",
    "icon": "🚪",
    "file": "modules/contexts.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 830
   },
   {
    "id": "typing",
@@ -243,6 +243,30 @@
    "description": "Подсказки типов, Protocol, дженерики",
    "icon": "🏷️",
    "file": "modules/typing.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "algorithms",
+   "title": "Алгоритмы и сложность",
+   "description": "O-большое, поиск, сортировка, графы",
+   "icon": "🧮",
+   "file": "modules/algorithms.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "pythonic",
+   "title": "Идиомы Python",
+   "description": "match/case, :=, распаковка, EAFP",
+   "icon": "🐍",
+   "file": "modules/pythonic.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "testing",
+   "title": "Тестирование и отладка",
+   "description": "assert, unittest, mock, logging",
+   "icon": "🧪",
+   "file": "modules/testing.json",
    "timedRunSeconds": 690
   }
  ]

@@ -45,16 +45,16 @@
    "payload": {
     "options": [
      "f = deco(f)",
-     "deco = f(deco)",
-     "f(deco)",
-     "deco()"
+     "f = deco(f())",
+     "f = deco",
+     "deco(f)"
     ],
     "correctIndex": 0,
     "optionFeedback": [
      "",
-     "Наоборот: функцию передают в декоратор, а не декоратор в функцию.",
-     "Результат декоратора должен заменить f — нужно присваивание.",
-     "Декоратор получает декорируемую функцию аргументом."
+     "Декоратору передают саму функцию, а не результат её вызова.",
+     "Декоратор нужно вызвать с функцией: иначе f станет самим декоратором.",
+     "Результат декоратора должен заменить f — нужно присваивание."
     ]
    }
   },
@@ -111,15 +111,15 @@
    "prompt": "Напишите, что выведет код",
    "topic": "deco_basics",
    "difficulty": 2,
-   "hint": "Декораторы применяются снизу вверх: text = bold(italic(text)).",
-   "explanation": "Сначала italic оборачивает text в <i>…</i>, затем bold оборачивает результат в <b>…</b>.",
-   "code": "def bold(f):\n    def w():\n        return \"<b>\" + f() + \"</b>\"\n    return w\n\ndef italic(f):\n    def w():\n        return \"<i>\" + f() + \"</i>\"\n    return w\n\n@bold\n@italic\ndef text():\n    return \"hi\"\n\nprint(text())",
+   "hint": "Декораторы применяются снизу вверх: text = square(round_(text)).",
+   "explanation": "Сначала round_ оборачивает text в круглые скобки, затем square оборачивает результат в квадратные.",
+   "code": "def square(f):\n    def w():\n        return \"[\" + f() + \"]\"\n    return w\n\ndef round_(f):\n    def w():\n        return \"(\" + f() + \")\"\n    return w\n\n@square\n@round_\ndef text():\n    return \"hi\"\n\nprint(text())",
    "payload": {
-    "expectedOutput": "<b><i>hi</i></b>"
+    "expectedOutput": "[(hi)]"
    },
    "solution": {
-    "code": "def bold(f):\n    def w():\n        return \"<b>\" + f() + \"</b>\"\n    return w\n\ndef italic(f):\n    def w():\n        return \"<i>\" + f() + \"</i>\"\n    return w\n\n@bold\n@italic\ndef text():\n    return \"hi\"\n\nprint(text())",
-    "output": "<b><i>hi</i></b>\n"
+    "code": "def square(f):\n    def w():\n        return \"[\" + f() + \"]\"\n    return w\n\ndef round_(f):\n    def w():\n        return \"(\" + f() + \")\"\n    return w\n\n@square\n@round_\ndef text():\n    return \"hi\"\n\nprint(text())",
+    "output": "[(hi)]\n"
    }
   },
   {
@@ -175,6 +175,37 @@
    }
   },
   {
+   "id": "py_deco_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Когда срабатывает декоратор",
+   "prompt": "Что выведет код?",
+   "topic": "deco_basics",
+   "difficulty": 2,
+   "hint": "@announce — это ping = announce(ping). Когда выполняется эта строка?",
+   "explanation": "Декоратор вызывается один раз — при объявлении функции, ещё до print(\"старт\"). Дальше вызывается уже то, что он вернул (здесь — сама функция).",
+   "code": "def announce(func):\n    print(\"декорирую\", func.__name__)\n    return func\n\n@announce\ndef ping():\n    print(\"ping\")\n\nprint(\"старт\")\nping()\nping()",
+   "payload": {
+    "options": [
+     "декорирую ping\nстарт\nping\nping",
+     "старт\nдекорирую ping\nping\nping",
+     "старт\nдекорирую ping\nping\nдекорирую ping\nping",
+     "старт\nping\nping"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Декоратор срабатывает при объявлении функции — раньше, чем print(\"старт\").",
+     "Декоратор вызывается один раз, а не при каждом вызове функции.",
+     "print внутри декоратора выполняется — при объявлении ping."
+    ]
+   },
+   "solution": {
+    "code": "def announce(func):\n    print(\"декорирую\", func.__name__)\n    return func\n\n@announce\ndef ping():\n    print(\"ping\")\n\nprint(\"старт\")\nping()\nping()",
+    "output": "декорирую ping\nстарт\nping\nping\n"
+   }
+  },
+  {
    "id": "py_deco_007",
    "type": "match_pairs",
    "role": "practice",
@@ -215,19 +246,19 @@
    "type": "multi_select",
    "role": "practice",
    "title": "Стандартные декораторы",
-   "prompt": "Какие из этих декораторов есть в Python и стандартной библиотеке?",
+   "prompt": "Какие из этих декораторов есть в стандартной библиотеке Python 3.12?",
    "topic": "deco_params",
    "difficulty": 2,
-   "hint": "Кэш в functools называется lru_cache (и cache).",
-   "explanation": "property и staticmethod — встроенные, lru_cache — из functools, dataclass — из dataclasses. functools.memoize и builtins.decorator не существуют.",
+   "hint": "Кэш в functools называется lru_cache (и cache), повтор при ошибке пишут сами.",
+   "explanation": "wraps и singledispatch — из functools, override — новинка typing в 3.12, contextmanager — из contextlib. functools.memoize и functools.retry не существуют: кэш — это lru_cache, а повтор пишут сами или берут из сторонних библиотек.",
    "payload": {
     "options": [
-     "property",
-     "staticmethod",
-     "functools.lru_cache",
-     "dataclasses.dataclass",
+     "functools.wraps",
+     "functools.singledispatch",
+     "typing.override",
+     "contextlib.contextmanager",
      "functools.memoize",
-     "builtins.decorator"
+     "functools.retry"
     ],
     "correctIndexes": [
      0,
@@ -241,7 +272,7 @@
      "",
      "",
      "Такого нет: кэш в functools — это lru_cache и cache.",
-     "Специального встроенного decorator нет — декоратором может быть любая функция."
+     "В стандартной библиотеке повтора при ошибке нет — его пишут сами (как в боссе этого модуля)."
     ]
    }
   },
@@ -255,7 +286,7 @@
    "difficulty": 4,
    "hint": "flaky падает два раза, а на третий вызов возвращает «успех».",
    "explanation": "Первые два вызова бросают ValueError — обёртка печатает сообщение и пробует снова. Третий вызов успешен, и return сразу возвращает «успех».",
-   "code": "def retry(times):\n    def deco(func):\n        def wrapper():\n            for attempt in range(1, times + 1):\n                try:\n                    return func()\n                except ValueError:\n                    print(\"попытка\", attempt, \"не удалась\")\n            return \"сдаюсь\"\n        return wrapper\n    return deco\n\ncalls = 0\n\n@retry(3)\ndef flaky():\n    global calls\n    calls += 1\n    if calls < 3:\n        raise ValueError\n    return \"успех\"\n\nprint(flaky())",
+   "code": "def retry(times):\n    def deco(func):\n        def wrapper(*args, **kwargs):\n            for attempt in range(1, times + 1):\n                try:\n                    return func(*args, **kwargs)\n                except ValueError:\n                    print(\"попытка\", attempt, \"не удалась\")\n            return \"сдаюсь\"\n        return wrapper\n    return deco\n\ncalls = 0\n\n@retry(3)\ndef flaky():\n    global calls\n    calls += 1\n    if calls < 3:\n        raise ValueError\n    return \"успех\"\n\nprint(flaky())",
    "payload": {
     "options": [
      "попытка 1 не удалась\nпопытка 2 не удалась\nпопытка 3 не удалась\nсдаюсь",
@@ -272,7 +303,7 @@
     ]
    },
    "solution": {
-    "code": "def retry(times):\n    def deco(func):\n        def wrapper():\n            for attempt in range(1, times + 1):\n                try:\n                    return func()\n                except ValueError:\n                    print(\"попытка\", attempt, \"не удалась\")\n            return \"сдаюсь\"\n        return wrapper\n    return deco\n\ncalls = 0\n\n@retry(3)\ndef flaky():\n    global calls\n    calls += 1\n    if calls < 3:\n        raise ValueError\n    return \"успех\"\n\nprint(flaky())",
+    "code": "def retry(times):\n    def deco(func):\n        def wrapper(*args, **kwargs):\n            for attempt in range(1, times + 1):\n                try:\n                    return func(*args, **kwargs)\n                except ValueError:\n                    print(\"попытка\", attempt, \"не удалась\")\n            return \"сдаюсь\"\n        return wrapper\n    return deco\n\ncalls = 0\n\n@retry(3)\ndef flaky():\n    global calls\n    calls += 1\n    if calls < 3:\n        raise ValueError\n    return \"успех\"\n\nprint(flaky())",
     "output": "попытка 1 не удалась\nпопытка 2 не удалась\nуспех\n"
    }
   }
