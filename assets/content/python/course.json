@@ -251,7 +251,7 @@
    "description": "O-большое, поиск, сортировка, графы",
    "icon": "🧮",
    "file": "modules/algorithms.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 830
   },
   {
    "id": "pythonic",
@@ -259,7 +259,7 @@
    "description": "match/case, :=, распаковка, EAFP",
    "icon": "🐍",
    "file": "modules/pythonic.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 900
   },
   {
    "id": "testing",
@@ -267,7 +267,39 @@
    "description": "assert, unittest, mock, logging",
    "icon": "🧪",
    "file": "modules/testing.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 830
+  },
+  {
+   "id": "async",
+   "title": "Асинхронность: asyncio",
+   "description": "async/await, задачи, gather, таймауты, очереди",
+   "icon": "⏳",
+   "file": "modules/async.json",
+   "timedRunSeconds": 830
+  },
+  {
+   "id": "concurrency",
+   "title": "Потоки и процессы",
+   "description": "threading, Lock, очереди, пулы, GIL",
+   "icon": "🧵",
+   "file": "modules/concurrency.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "performance",
+   "title": "Производительность",
+   "description": "Замеры, кэш, память, быстрые идиомы",
+   "icon": "🚀",
+   "file": "modules/performance.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "project",
+   "title": "Программа как проект",
+   "description": "__main__, argparse, logging, PEP 8, docstring",
+   "icon": "🏗️",
+   "file": "modules/project.json",
+   "timedRunSeconds": 760
   }
  ]
 }

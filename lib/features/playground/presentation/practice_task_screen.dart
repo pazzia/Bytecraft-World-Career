@@ -233,6 +233,16 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
   }
 }
 
+/// Big tests (tens of thousands of numbers) would freeze the screen: only
+/// the beginning and the end are shown.
+@visibleForTesting
+String shortenForDisplay(String text, {int limit = 300}) {
+  if (text.length <= limit) return text;
+  final half = limit ~/ 2;
+  final hidden = text.length - 2 * half;
+  return '${text.substring(0, half)} … (ещё $hidden симв.) … ${text.substring(text.length - half)}';
+}
+
 class _ExampleTest extends StatelessWidget {
   const _ExampleTest({required this.test});
 
@@ -252,11 +262,11 @@ class _ExampleTest extends StatelessWidget {
         children: [
           if (test.stdin.isNotEmpty) ...[
             Text('Ввод', style: label),
-            Text(test.stdin.trimRight(), style: style),
+            Text(shortenForDisplay(test.stdin.trimRight()), style: style),
             const SizedBox(height: Spacing.sm),
           ],
           Text('Ожидаемый вывод', style: label),
-          Text(test.expected.trimRight(), style: style),
+          Text(shortenForDisplay(test.expected.trimRight()), style: style),
         ],
       ),
     );
@@ -292,11 +302,11 @@ class _TestRow extends StatelessWidget {
             const SizedBox(height: Spacing.xs),
             if (outcome.test.stdin.isNotEmpty)
               Text(
-                'Ввод: ${outcome.test.stdin.trimRight().replaceAll('\n', ' ⏎ ')}',
+                'Ввод: ${shortenForDisplay(outcome.test.stdin.trimRight().replaceAll('\n', ' ⏎ '))}',
                 style: AppTypography.code(size: 13),
               ),
             Text(
-              'Ожидалось: ${outcome.test.expected.trimRight().replaceAll('\n', ' ⏎ ')}',
+              'Ожидалось: ${shortenForDisplay(outcome.test.expected.trimRight().replaceAll('\n', ' ⏎ '))}',
               style: AppTypography.code(size: 13, color: game.success),
             ),
             const SizedBox(height: Spacing.xs),

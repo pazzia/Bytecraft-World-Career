@@ -41,7 +41,7 @@
    "topic": "test_unittest",
    "difficulty": 1,
    "hint": "Нужно сравнить два значения на равенство.",
-   "explanation": "assertEqual(a, b) проходит, если a == b. Остальные проверки здесь не сходятся, и тест не проходит.",
+   "explanation": "assertEqual(a, b) проходит, если a == b. Остальные не проходят: assertNotEqual и assertIsNone дают failure, а assertIn(5, 5) — error (TypeError: в число нельзя искать вхождение).",
    "payload": {
     "template": "import io\nimport unittest\n\ndef add(a, b):\n    return a + b\n\nclass TestAdd(unittest.TestCase):\n    def test_sum(self):\n        self.{{0}}(add(2, 3), 5)\n\nsuite = unittest.defaultTestLoader.loadTestsFromTestCase(TestAdd)\nresult = unittest.TextTestRunner(stream=io.StringIO()).run(suite)\nprint(result.wasSuccessful(), result.testsRun)",
     "options": [
@@ -72,7 +72,7 @@
    "prompt": "Что выведет код?",
    "topic": "test_unittest",
    "difficulty": 3,
-   "hint": "round(2.5) в Python — 2 (округление к чётному). assertRaises ожидает ошибку.",
+   "hint": "Чем failure отличается от error? Вспомните, как round округляет половинки.",
    "explanation": "Тестов три. round(2.5) == 2, поэтому test_round — failure (проверка не сошлась). Деление на ноль ожидалось в assertRaises — это успех, а не error.",
    "code": "import io\nimport unittest\n\nclass T(unittest.TestCase):\n    def test_ok(self):\n        self.assertEqual(2 * 2, 4)\n    def test_round(self):\n        self.assertEqual(round(2.5), 3)\n    def test_error(self):\n        with self.assertRaises(ZeroDivisionError):\n            1 / 0\n\nsuite = unittest.defaultTestLoader.loadTestsFromTestCase(T)\nresult = unittest.TextTestRunner(stream=io.StringIO()).run(suite)\nprint(result.testsRun, len(result.failures), len(result.errors))",
    "payload": {
@@ -128,42 +128,96 @@
   },
   {
    "id": "py_test_005",
-   "type": "match_pairs",
+   "type": "predict_output",
    "role": "practice",
-   "title": "Уровни логирования",
-   "prompt": "Сопоставьте выражения и результаты",
-   "topic": "test_logging",
-   "difficulty": 2,
-   "hint": "Уровни — числа с шагом 10.",
-   "explanation": "Уровни — это числа: DEBUG 10, INFO 20, WARNING 30, ERROR 40, CRITICAL 50. Логгер показывает сообщения с уровнем не ниже настроенного.",
-   "code": "import logging",
+   "title": "Подмена через patch",
+   "prompt": "Что выведет код?",
+   "topic": "test_unittest",
+   "difficulty": 3,
+   "hint": "Внутри with randint всегда возвращает 4. Что в call_args — результат или аргументы вызова? И что происходит после блока?",
+   "explanation": "patch подменяет random.randint заглушкой, которая возвращает 4: roll() даёт 40, а call_args.args — аргументы вызова (1, 6). После with настоящий randint возвращается, и roll() снова даёт одно из 10, 20, …, 60.",
+   "code": "from unittest.mock import patch\nimport random\n\ndef roll():\n    return random.randint(1, 6) * 10\n\nwith patch(\"random.randint\", return_value=4) as fake:\n    print(roll(), fake.call_args.args)\nprint(roll() in range(10, 61, 10))",
    "payload": {
-    "pairs": [
-     {
-      "left": "logging.DEBUG",
-      "right": "10"
-     },
-     {
-      "left": "logging.INFO",
-      "right": "20"
-     },
-     {
-      "left": "logging.WARNING",
-      "right": "30"
-     },
-     {
-      "left": "logging.ERROR",
-      "right": "40"
-     },
-     {
-      "left": "logging.CRITICAL",
-      "right": "50"
-     }
+    "options": [
+     "40 (4,)\nTrue",
+     "40 (1, 6)\nTrue",
+     "40 (1, 6)\nFalse",
+     "4 (1, 6)\nTrue"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "call_args хранит аргументы, с которыми вызвали заглушку, а не её результат.",
+     "",
+     "После блока with подмена снимается: roll() снова работает по-настоящему.",
+     "roll умножает результат randint на 10."
     ]
    },
    "solution": {
-    "code": "import logging\nprint(logging.DEBUG)\nprint(logging.INFO)\nprint(logging.WARNING)\nprint(logging.ERROR)\nprint(logging.CRITICAL)",
-    "output": "10\n20\n30\n40\n50\n"
+    "code": "from unittest.mock import patch\nimport random\n\ndef roll():\n    return random.randint(1, 6) * 10\n\nwith patch(\"random.randint\", return_value=4) as fake:\n    print(roll(), fake.call_args.args)\nprint(roll() in range(10, 61, 10))",
+    "output": "40 (1, 6)\nTrue\n"
+   }
+  },
+  {
+   "id": "py_test_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "doctest",
+   "prompt": "Что выведет код?",
+   "topic": "test_assert",
+   "difficulty": 3,
+   "hint": "doctest сравнивает вывод с текстом буквально. Что напечатает mid(1, 2)?",
+   "explanation": "Примеров два. mid(2, 4) печатает 3.0 — совпадает. mid(1, 2) печатает 1.5, а в docstring написано 1 — пример не сошёлся. doctest не останавливается на первой ошибке: попыток 2, неудач 1.",
+   "code": "import doctest\n\ndef mid(a, b):\n    \"\"\"Середина отрезка.\n\n    >>> mid(2, 4)\n    3.0\n    >>> mid(1, 2)\n    1\n    \"\"\"\n    return (a + b) / 2\n\nrunner = doctest.DocTestRunner()\nfor test in doctest.DocTestFinder().find(mid, globs=globals()):\n    print(runner.run(test, out=lambda text: None))",
+   "payload": {
+    "options": [
+     "TestResults(failed=0, attempted=2)",
+     "TestResults(failed=1, attempted=2)",
+     "TestResults(failed=2, attempted=2)",
+     "TestResults(failed=1, attempted=1)"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "mid(1, 2) — это 1.5, а в docstring ожидается 1.",
+     "",
+     "mid(2, 4) печатает 3.0 — первый пример сходится.",
+     "doctest выполняет все примеры, даже после неудачи."
+    ]
+   },
+   "solution": {
+    "code": "import doctest\n\ndef mid(a, b):\n    \"\"\"Середина отрезка.\n\n    >>> mid(2, 4)\n    3.0\n    >>> mid(1, 2)\n    1\n    \"\"\"\n    return (a + b) / 2\n\nrunner = doctest.DocTestRunner()\nfor test in doctest.DocTestFinder().find(mid, globs=globals()):\n    print(runner.run(test, out=lambda text: None))",
+    "output": "TestResults(failed=1, attempted=2)\n"
+   }
+  },
+  {
+   "id": "py_test_011",
+   "type": "fill_code",
+   "role": "practice",
+   "title": "Дробные числа в тестах",
+   "prompt": "Сравните сумму с 0.3 так, чтобы тест прошёл",
+   "topic": "test_unittest",
+   "difficulty": 2,
+   "hint": "0.1 + 0.2 в двоичной арифметике — не ровно 0.3.",
+   "explanation": "0.1 + 0.2 = 0.30000000000000004, поэтому assertEqual и == дают «не равно». assertAlmostEqual сравнивает с точностью до 7 знаков после запятой (как и math.isclose — с допуском).",
+   "payload": {
+    "template": "import io\nimport unittest\n\nclass TestMoney(unittest.TestCase):\n    def test_sum(self):\n        self.{{0}}(0.1 + 0.2, 0.3)\n\nsuite = unittest.defaultTestLoader.loadTestsFromTestCase(TestMoney)\nresult = unittest.TextTestRunner(stream=io.StringIO()).run(suite)\nprint(result.wasSuccessful(), 0.1 + 0.2 == 0.3)",
+    "options": [
+     "assertAlmostEqual",
+     "assertEqual",
+     "assertIs",
+     "assertLess"
+    ],
+    "answers": [
+     "assertAlmostEqual"
+    ],
+    "variantResults": {
+     "assertEqual": "False False",
+     "assertIs": "False False",
+     "assertLess": "False False"
+    }
+   },
+   "solution": {
+    "code": "import io\nimport unittest\n\nclass TestMoney(unittest.TestCase):\n    def test_sum(self):\n        self.assertAlmostEqual(0.1 + 0.2, 0.3)\n\nsuite = unittest.defaultTestLoader.loadTestsFromTestCase(TestMoney)\nresult = unittest.TextTestRunner(stream=io.StringIO()).run(suite)\nprint(result.wasSuccessful(), 0.1 + 0.2 == 0.3)",
+    "output": "True False\n"
    }
   },
   {
@@ -206,7 +260,7 @@
    "prompt": "Что выведет код?",
    "topic": "test_assert",
    "difficulty": 2,
-   "hint": "split() без аргумента не оставляет пустых строк.",
+   "hint": "Что именно возвращает \"a b\".split()?",
    "explanation": "Первый тест проходит. split() без аргумента возвращает ['a', 'b'], без пустой строки, поэтому второй падает с AssertionError.",
    "code": "def test_upper():\n    assert \"ab\".upper() == \"AB\"\n\ndef test_split():\n    assert \"a b\".split() == [\"a\", \"b\", \"\"]\n\npassed = failed = 0\nfor test in [test_upper, test_split]:\n    try:\n        test()\n        passed += 1\n    except AssertionError:\n        failed += 1\nprint(passed, failed)",
    "payload": {

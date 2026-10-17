@@ -6,11 +6,11 @@
    "type": "multiple_choice",
    "role": "lesson",
    "title": "Сколько шагов",
-   "prompt": "Сколько сравнений в худшем случае сделает бинарный поиск в отсортированном списке из 1 000 000 элементов?",
+   "prompt": "Сколько раз в худшем случае бинарный поиск проверит середину в отсортированном списке из 1 000 000 элементов?",
    "topic": "algo_search_sort",
    "difficulty": 1,
-   "hint": "Каждое сравнение отбрасывает половину оставшихся элементов.",
-   "explanation": "Половин хватит log₂(1 000 000) ≈ 20: 2²⁰ = 1 048 576. Поэтому бинарный поиск — O(log n).",
+   "hint": "Каждая проверка отбрасывает половину оставшихся элементов.",
+   "explanation": "Делений пополам хватит log₂(1 000 000) ≈ 20: 2²⁰ = 1 048 576. Поэтому бинарный поиск — O(log n).",
    "payload": {
     "options": [
      "около 20",
@@ -21,7 +21,7 @@
     "correctIndex": 0,
     "optionFeedback": [
      "",
-     "Это √n. Бинарный поиск делит пополам: нужно около log₂ n сравнений.",
+     "Это √n. Бинарный поиск делит пополам: нужно около log₂ n проверок.",
      "Столько в среднем делает линейный поиск, а бинарный отбрасывает половину за шаг.",
      "Это худший случай линейного поиска."
     ]
@@ -193,20 +193,20 @@
    "type": "bug_finder",
    "role": "challenge",
    "title": "Потерянное окно",
-   "prompt": "Нужна наибольшая сумма трёх подряд идущих чисел (9). Найдите строку с ошибкой",
+   "prompt": "Нужна наибольшая сумма k подряд идущих чисел: 9 и 8. Найдите строку с ошибкой",
    "topic": "algo_patterns",
    "difficulty": 3,
    "hint": "Сколько окон длины k в списке из n элементов?",
    "explanation": "Окон длины k ровно n - k + 1. range(n - k) пропускает последнее окно [5, 1, 3] с суммой 9 — классическая ошибка на единицу.",
-   "code": "nums = [2, 1, 5, 1, 3]\nk = 3\nbest = 0\nfor i in range(len(nums) - k):\n    best = max(best, sum(nums[i:i + k]))\nprint(best)",
+   "code": "def best_window(nums, k):\n    best = 0\n    for i in range(len(nums) - k):\n        best = max(best, sum(nums[i:i + k]))\n    return best\n\nprint(best_window([2, 1, 5, 1, 3], 3), best_window([4, 4, 1, 1], 2))",
    "payload": {
     "buggyLines": [
-     3
+     2
     ]
    },
    "solution": {
-    "code": "nums = [2, 1, 5, 1, 3]\nk = 3\nbest = 0\nfor i in range(len(nums) - k + 1):\n    best = max(best, sum(nums[i:i + k]))\nprint(best)",
-    "output": "9\n"
+    "code": "def best_window(nums, k):\n    best = 0\n    for i in range(len(nums) - k + 1):\n        best = max(best, sum(nums[i:i + k]))\n    return best\n\nprint(best_window([2, 1, 5, 1, 3], 3), best_window([4, 4, 1, 1], 2))",
+    "output": "9 8\n"
    }
   },
   {
@@ -214,7 +214,7 @@
    "type": "multi_select",
    "role": "practice",
    "title": "O(1) в среднем",
-   "prompt": "Какие операции выполняются за O(1) (в среднем), независимо от размера коллекции?",
+   "prompt": "Какие операции выполняются за O(1) (в среднем или амортизированно), независимо от размера коллекции?",
    "topic": "algo_complexity",
    "difficulty": 2,
    "hint": "Хеш-таблицы и добавление в конец — быстро. Сдвиг всех элементов и просмотр всех — медленно.",
@@ -245,6 +245,59 @@
    }
   },
   {
+   "id": "py_algo_010",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Ничья в куче",
+   "prompt": "Программа падает при равных приоритетах. Отметьте все строки с ошибкой",
+   "topic": "algo_patterns",
+   "difficulty": 3,
+   "hint": "Как сравниваются два кортежа с одинаковым первым элементом? А можно ли сравнить два словаря через <?",
+   "explanation": "При равных приоритетах куча сравнивает вторые элементы кортежей — словари, а для них < не определён: TypeError. Номер из count() между приоритетом и данными делает каждый кортеж уникальным, и до словарей сравнение не доходит. Обе вставки должны иметь одинаковый вид.",
+   "code": "import heapq\nfrom itertools import count\n\norder = count()\nheap = []\nheapq.heappush(heap, (1, {\"name\": \"отчёт\"}))\nheapq.heappush(heap, (1, {\"name\": \"ревью\"}))\nprint(heapq.heappop(heap)[-1][\"name\"])",
+   "payload": {
+    "buggyLines": [
+     5,
+     6
+    ]
+   },
+   "solution": {
+    "code": "import heapq\nfrom itertools import count\n\norder = count()\nheap = []\nheapq.heappush(heap, (1, next(order), {\"name\": \"отчёт\"}))\nheapq.heappush(heap, (1, next(order), {\"name\": \"ревью\"}))\nprint(heapq.heappop(heap)[-1][\"name\"])",
+    "output": "отчёт\n"
+   }
+  },
+  {
+   "id": "py_algo_011",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Два указателя",
+   "prompt": "Что выведет код?",
+   "topic": "algo_patterns",
+   "difficulty": 3,
+   "hint": "Пройдите вручную: 1 + 11, затем сдвиг правого указателя, и так далее. Считайте каждую проверку суммы.",
+   "explanation": "1 + 11 = 12 — много, hi влево; 1 + 8 = 9 — мало, lo вправо; 3 + 8 = 11 — много; 3 + 6 = 9 — мало; 4 + 6 = 10 — нашли на пятом шаге. Каждый шаг сдвигает один указатель, поэтому проход — O(n).",
+   "code": "def pair_sum(nums, target):\n    lo, hi = 0, len(nums) - 1\n    steps = 0\n    while lo < hi:\n        steps += 1\n        s = nums[lo] + nums[hi]\n        if s == target:\n            return nums[lo], nums[hi], steps\n        if s < target:\n            lo += 1\n        else:\n            hi -= 1\n    return None\n\nprint(pair_sum([1, 3, 4, 6, 8, 11], 10))",
+   "payload": {
+    "options": [
+     "(4, 6, 3)",
+     "(1, 8, 2)",
+     "None",
+     "(4, 6, 5)"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Посчитайте шаги заново: пара находится на пятой проверке.",
+     "1 + 8 = 9, а нужно 10.",
+     "Пара 4 + 6 = 10 в списке есть.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "def pair_sum(nums, target):\n    lo, hi = 0, len(nums) - 1\n    steps = 0\n    while lo < hi:\n        steps += 1\n        s = nums[lo] + nums[hi]\n        if s == target:\n            return nums[lo], nums[hi], steps\n        if s < target:\n            lo += 1\n        else:\n            hi -= 1\n    return None\n\nprint(pair_sum([1, 3, 4, 6, 8, 11], 10))",
+    "output": "(4, 6, 5)\n"
+   }
+  },
+  {
    "id": "py_algo_009",
    "type": "predict_output",
    "role": "boss",
@@ -253,7 +306,7 @@
    "topic": "algo_patterns",
    "difficulty": 4,
    "hint": "BFS обрабатывает вершины слоями: сначала все на расстоянии 1, потом 2…",
-   "explanation": "Из A за шаг достижимы B и C, за два — D и E, за три — F. Очередь гарантирует, что первая найденная дорога — кратчайшая; словарь хранит вершины в порядке открытия.",
+   "explanation": "Из A за шаг достижимы B и C, за два — D и E, за три — F. Очередь гарантирует, что первая найденная дорога — кратчайшая по числу рёбер (в графе без весов); словарь хранит вершины в порядке открытия.",
    "code": "from collections import deque\n\ngraph = {\"A\": [\"B\", \"C\"], \"B\": [\"D\"], \"C\": [\"D\", \"E\"], \"D\": [\"F\"], \"E\": [\"F\"], \"F\": []}\n\ndef bfs(start):\n    dist = {start: 0}\n    queue = deque([start])\n    while queue:\n        node = queue.popleft()\n        for nxt in graph[node]:\n            if nxt not in dist:\n                dist[nxt] = dist[node] + 1\n                queue.append(nxt)\n    return dist\n\nprint(bfs(\"A\"))",
    "payload": {
     "options": [

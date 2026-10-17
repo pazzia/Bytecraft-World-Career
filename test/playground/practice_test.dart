@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:bytecraft/features/playground/data/practice_repository.dart';
 import 'package:bytecraft/features/playground/domain/practice_task.dart';
 import 'package:bytecraft/features/playground/domain/python_runner.dart';
+import 'package:bytecraft/features/playground/presentation/practice_task_screen.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/fake_python_runner.dart';
@@ -112,5 +113,13 @@ void main() {
       'Деление на ноль.',
     );
     expect(PythonErrorExplainer.explain('all good'), isNull);
+  });
+
+  test('huge test data is shortened for display', () {
+    expect(shortenForDisplay('short'), 'short');
+    final long = List.filled(1000, 'x').join() + 'END';
+    final shown = shortenForDisplay(long, limit: 20);
+    expect(shown, startsWith('xxxxxxxxxx … (ещё 983 симв.) … '));
+    expect(shown, endsWith('xxxxxxxEND'));
   });
 }

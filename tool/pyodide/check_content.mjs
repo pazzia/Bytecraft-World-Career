@@ -65,6 +65,8 @@ for (const task of practice.tasks) {
 
 const pyodide = await loadPyodide();
 pyodide.runPython(RUNNER);
+// The same blocking asyncio loop as in the app (assets/python_runner/worker.js).
+pyodide.runPython(readFileSync(new URL('../../assets/python_runner/sandbox_asyncio.py', import.meta.url), 'utf8'));
 const check = pyodide.globals.get('_bytecraft_check');
 console.log(`Pyodide ${pyodide.version}, Python ${pyodide.runPython('import sys; sys.version.split()[0]')}`);
 

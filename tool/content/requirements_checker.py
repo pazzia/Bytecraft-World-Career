@@ -23,6 +23,9 @@ Requirement keys (all optional):
   annotated:  functions whose parameters (except self/cls) and result are annotated
   decorated:  {function: decorator} — the function must carry that decorator
   returns_function: functions that must define a nested function and return it
+  no_in_operator: functions that must not use `in` / `not in` comparisons
+  calls_in:   {function: [names]} — names that must be called inside that function
+  asserts_in: {function: n} — the function must contain at least n assert statements
 """
 import ast
 import json
@@ -253,6 +256,22 @@ def check(code, requires):
     for name in requires.get("returns_function", []):
         if name in functions and not _returns_nested_function(functions[name]):
             problems.append(f"{name} должна объявлять внутри функцию-обёртку и возвращать её.")
+    for name in requires.get("no_in_operator", []):
+        if name in functions and any(
+                isinstance(node, ast.Compare) and any(isinstance(op, (ast.In, ast.NotIn)) for op in node.ops)
+                for node in ast.walk(functions[name])):
+            problems.append(f"В {name} нельзя использовать оператор in: найдите элемент сами.")
+    for name, needed in requires.get("calls_in", {}).items():
+        if name in functions:
+            inside = _called_names(functions[name])
+            for callee in needed:
+                if callee not in inside:
+                    problems.append(f"Внутри {name} нужно вызвать {callee}().")
+    for name, count in requires.get("asserts_in", {}).items():
+        if name in functions:
+            found = sum(isinstance(node, ast.Assert) for node in ast.walk(functions[name]))
+            if found < count:
+                problems.append(f"В {name} нужно не меньше {count} проверок assert (сейчас {found}).")
     called = _called_names(tree) | _decorator_names(tree)
     for name in requires.get("calls", []):
         if name not in called:
@@ -270,7 +289,8 @@ def check(code, requires):
 def validate_spec(requires):
     """For the generator: unknown keys or constructs are content bugs."""
     allowed = {"defines", "classes", "methods", "inherits", "recursive", "uses", "forbids",
-               "calls", "no_calls", "no_imports", "yields", "annotated", "decorated", "returns_function"}
+               "calls", "no_calls", "no_imports", "yields", "annotated", "decorated", "returns_function",
+               "no_in_operator", "calls_in", "asserts_in"}
     assert set(requires) <= allowed, ("unknown requirement", set(requires) - allowed)
     for key in requires.get("uses", []) + requires.get("forbids", []):
         assert key in USES, ("unknown construct", key)

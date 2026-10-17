@@ -1,0 +1,293 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_perf_001",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Кэш в цифрах",
+   "prompt": "Что выведет код?",
+   "topic": "perf_tricks",
+   "difficulty": 3,
+   "hint": "Промах (miss) — первый расчёт для нового n, попадание (hit) — ответ из кэша. Какие вызовы повторяются?",
+   "explanation": "Каждое n от 0 до 30 считается один раз — 31 промах. fib(n) сначала вызывает fib(n - 1), и тот по пути вычисляет fib(n - 2). Поэтому второй вызов, fib(n - 2), при n от 3 до 30 берётся из кэша — 28 попаданий. Экспоненциальный счёт стал линейным.",
+   "code": "from functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\nprint(fib(30))\ninfo = fib.cache_info()\nprint(info.misses, info.hits)",
+   "payload": {
+    "options": [
+     "832040\n1664079 0",
+     "832040\n30 30",
+     "832040\n31 30",
+     "832040\n31 28"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Это число вызовов без кэша. С кэшем каждое n считается один раз.",
+     "Значений n от 0 до 30 — 31, каждое даёт один промах.",
+     "Попаданий меньше: проверьте, какие вызовы реально повторяются.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "from functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\nprint(fib(30))\ninfo = fib.cache_info()\nprint(info.misses, info.hits)",
+    "output": "832040\n31 28\n"
+   }
+  },
+  {
+   "id": "py_perf_002",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Генератор экономит память",
+   "prompt": "Что выведет код?",
+   "topic": "perf_tricks",
+   "difficulty": 2,
+   "hint": "Генератор хранит только состояние, а не элементы. Но сколько раз его можно пройти?",
+   "explanation": "Генератор занимает сотню-другую байт при любом n, список — сотни килобайт. Первый max проходит генератор до конца, второй получает пустую последовательность и возвращает default.",
+   "code": "import sys\n\nnums = [n for n in range(100_000)]\nlazy = (n for n in range(100_000))\nprint(sys.getsizeof(lazy) < sys.getsizeof(nums))\nprint(max(lazy), max(lazy, default=\"пусто\"))",
+   "payload": {
+    "options": [
+     "False\n99999 99999",
+     "True\n99999 99999",
+     "True\n99999 None",
+     "True\n99999 пусто"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Генератор не хранит элементы — он меньше списка.",
+     "Генератор одноразовый: второй max получает пустоту.",
+     "Для пустой последовательности max возвращает значение default.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "import sys\n\nnums = [n for n in range(100_000)]\nlazy = (n for n in range(100_000))\nprint(sys.getsizeof(lazy) < sys.getsizeof(nums))\nprint(max(lazy), max(lazy, default=\"пусто\"))",
+    "output": "True\n99999 пусто\n"
+   }
+  },
+  {
+   "id": "py_perf_003",
+   "type": "multiple_choice",
+   "role": "lesson",
+   "title": "Быстрая проверка",
+   "prompt": "Нужно много раз проверять x in banned. Какую структуру выбрать для banned?",
+   "topic": "perf_tricks",
+   "difficulty": 1,
+   "hint": "Какая структура находит элемент по хешу?",
+   "explanation": "Множество (как и словарь) ищет по хешу за O(1) в среднем. list и tuple просматривают все элементы — O(n). В строке in ищет подстроку: «ad» найдётся внутри «ads» — это ещё и ошибка.",
+   "payload": {
+    "options": [
+     "set",
+     "list",
+     "tuple",
+     "str со словами через пробел"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "x in list просматривает элементы по одному — O(n).",
+     "Кортеж ищет так же, как список, — O(n).",
+     "in по строке ищет подстроку: найдёт «ad» внутри «ads»."
+    ]
+   }
+  },
+  {
+   "id": "py_perf_004",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Кэш и список",
+   "prompt": "Найдите строку с ошибкой",
+   "topic": "perf_tricks",
+   "difficulty": 2,
+   "hint": "Кэш — это словарь, где ключ — аргументы. Каким должен быть ключ словаря?",
+   "explanation": "lru_cache хранит результаты в словаре по аргументам, а список нехешируем: TypeError: unhashable type: 'list'. Передайте кортеж.",
+   "code": "from functools import lru_cache\n\n@lru_cache\ndef total(prices):\n    return sum(prices)\n\nprint(total([10, 20, 30]))\nprint(total.cache_info().misses)",
+   "payload": {
+    "buggyLines": [
+     6
+    ]
+   },
+   "solution": {
+    "code": "from functools import lru_cache\n\n@lru_cache\ndef total(prices):\n    return sum(prices)\n\nprint(total((10, 20, 30)))\nprint(total.cache_info().misses)",
+    "output": "60\n1\n"
+   }
+  },
+  {
+   "id": "py_perf_005",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "__slots__",
+   "prompt": "Что выведет код?",
+   "topic": "perf_tricks",
+   "difficulty": 3,
+   "hint": "__slots__ заменяет словарь атрибутов фиксированным набором ячеек.",
+   "explanation": "С __slots__ у объекта нет __dict__ — только ячейки x и y. Новый атрибут z добавить нельзя: AttributeError. Зато каждый объект занимает меньше памяти.",
+   "code": "class Point:\n    __slots__ = (\"x\", \"y\")\n\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n\np = Point(1, 2)\ntry:\n    p.z = 3\nexcept AttributeError:\n    print(\"нельзя добавить z\")\nprint(hasattr(p, \"__dict__\"), p.x + p.y)",
+   "payload": {
+    "options": [
+     "False 3",
+     "True 3",
+     "нельзя добавить z\nFalse 3",
+     "нельзя добавить z\nTrue 3"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Присваивание p.z падает с AttributeError — его ловит except.",
+     "__slots__ убирает __dict__, и новый атрибут добавить нельзя.",
+     "",
+     "У объекта со __slots__ нет __dict__."
+    ]
+   },
+   "solution": {
+    "code": "class Point:\n    __slots__ = (\"x\", \"y\")\n\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n\np = Point(1, 2)\ntry:\n    p.z = 3\nexcept AttributeError:\n    print(\"нельзя добавить z\")\nprint(hasattr(p, \"__dict__\"), p.x + p.y)",
+    "output": "нельзя добавить z\nFalse 3\n"
+   }
+  },
+  {
+   "id": "py_perf_006",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Что ускорит программу",
+   "prompt": "Какие изменения обычно ускоряют программу на CPython, не меняя результат?",
+   "topic": "perf_tricks",
+   "difficulty": 2,
+   "hint": "Ищите изменения, которые убирают лишнюю работу или переносят её в C.",
+   "explanation": "Множество ищет за O(1), join собирает строку за один проход, вынос из цикла убирает повторные вычисления. while не быстрее for, а встроенная sum (на C) быстрее ручного цикла.",
+   "payload": {
+    "options": [
+     "Заменить x in список на x in множество, если проверок много",
+     "Собирать строку через \"\".join(части) вместо += в цикле",
+     "Вынести неизменное вычисление из тела цикла",
+     "Заменить цикл for на while",
+     "Переписать sum(nums) ручным циклом for"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     2
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "",
+     "while обычно медленнее: счётчик приходится менять вручную на Python.",
+     "sum написана на C — ручной цикл медленнее."
+    ]
+   }
+  },
+  {
+   "id": "py_perf_007",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Инструменты замера",
+   "prompt": "Сопоставьте инструмент и назначение",
+   "topic": "perf_measure",
+   "difficulty": 2,
+   "hint": "cProfile — профилировщик, tracemalloc — память (malloc).",
+   "explanation": "perf_counter — часы, timeit — повторные замеры, cProfile — профиль по функциям, tracemalloc — память, lru_cache — не замер, а ускорение повторных вызовов.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "time.perf_counter",
+      "right": "Точные часы для разового замера"
+     },
+     {
+      "left": "timeit",
+      "right": "Многократный запуск маленького фрагмента"
+     },
+     {
+      "left": "cProfile",
+      "right": "Время и число вызовов каждой функции"
+     },
+     {
+      "left": "tracemalloc",
+      "right": "Отслеживает выделение памяти"
+     },
+     {
+      "left": "functools.lru_cache",
+      "right": "Запоминает результаты вызовов"
+     }
+    ]
+   }
+  },
+  {
+   "id": "py_perf_008",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "timeit считает запуски",
+   "prompt": "Что выведет код?",
+   "topic": "perf_measure",
+   "difficulty": 1,
+   "hint": "number — сколько раз вызвать функцию. Что добавляется на последнем вызове?",
+   "explanation": "timeit вызвал функцию 500 раз и вернул общее время в секундах (положительное число). На последнем вызове длина была 499.",
+   "code": "import timeit\n\ncalls = []\nseconds = timeit.timeit(lambda: calls.append(len(calls)), number=500)\nprint(len(calls), calls[-1], seconds > 0)",
+   "payload": {
+    "options": [
+     "1 0 True",
+     "500 499 True",
+     "500 500 True",
+     "500 499 False"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "number=500 — функция вызвана 500 раз.",
+     "",
+     "Последний вызов добавил len(calls) до добавления — 499.",
+     "timeit возвращает затраченное время — оно больше нуля."
+    ]
+   },
+   "solution": {
+    "code": "import timeit\n\ncalls = []\nseconds = timeit.timeit(lambda: calls.append(len(calls)), number=500)\nprint(len(calls), calls[-1], seconds > 0)",
+    "output": "500 499 True\n"
+   }
+  },
+  {
+   "id": "py_perf_009",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Скрытый вложенный цикл",
+   "prompt": "Напишите, что выведет код",
+   "topic": "perf_measure",
+   "difficulty": 3,
+   "hint": "Цикл по banned_list — это то, что делает x in список. Множество отвечает за одну проверку.",
+   "explanation": "Поиск в списке из 1000 элементов для 3000 чисел — около миллиона сравнений (≈ n·m). Множество делает одну проверку на число — 3000. Вот почему x in список внутри цикла опасен.",
+   "code": "banned_list = list(range(0, 3000, 3))\nbanned_set = set(banned_list)\nchecks_list = checks_set = 0\n\nfor x in range(3000):\n    for item in banned_list:\n        checks_list += 1\n        if item == x:\n            break\n    checks_set += 1\n\nprint(len(banned_list), checks_list > 400_000, checks_set)",
+   "payload": {
+    "expectedOutput": "1000 True 3000"
+   },
+   "solution": {
+    "code": "banned_list = list(range(0, 3000, 3))\nbanned_set = set(banned_list)\nchecks_list = checks_set = 0\n\nfor x in range(3000):\n    for item in banned_list:\n        checks_list += 1\n        if item == x:\n            break\n    checks_set += 1\n\nprint(len(banned_list), checks_list > 400_000, checks_set)",
+    "output": "1000 True 3000\n"
+   }
+  },
+  {
+   "id": "py_perf_010",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: найти дубликат",
+   "prompt": "Что выведет код?",
+   "topic": "perf_measure",
+   "difficulty": 4,
+   "hint": "Медленная версия перебирает пары: для первых i элементов — сколько пар до пары (999, 999)? Сумма 1000 + 999 + … + 1.",
+   "explanation": "Дубликат — последний элемент, поэтому медленная версия перебирает почти все пары: 1000 + 999 + … + 1 = 500 500 шагов (O(n²)). Быстрая проходит список один раз и находит повтор на 1001-м элементе (O(n)).",
+   "code": "def has_dup_slow(items):\n    steps = 0\n    for i in range(len(items)):\n        for j in range(i + 1, len(items)):\n            steps += 1\n            if items[i] == items[j]:\n                return True, steps\n    return False, steps\n\ndef has_dup_fast(items):\n    seen = set()\n    for steps, x in enumerate(items, 1):\n        if x in seen:\n            return True, steps\n        seen.add(x)\n    return False, len(items)\n\ndata = list(range(1000)) + [999]\nprint(has_dup_slow(data))\nprint(has_dup_fast(data))",
+   "payload": {
+    "options": [
+     "(True, 1001)\n(True, 1001)",
+     "(True, 1000000)\n(True, 1001)",
+     "(True, 500500)\n(True, 1001)",
+     "(True, 500500)\n(True, 1000)"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Вложенные циклы проверяют пары — шагов гораздо больше.",
+     "Пары без повторов: j начинается с i + 1, это сумма 1000 + 999 + … + 1.",
+     "",
+     "enumerate(items, 1) нумерует с единицы: повтор — 1001-й элемент."
+    ]
+   },
+   "solution": {
+    "code": "def has_dup_slow(items):\n    steps = 0\n    for i in range(len(items)):\n        for j in range(i + 1, len(items)):\n            steps += 1\n            if items[i] == items[j]:\n                return True, steps\n    return False, steps\n\ndef has_dup_fast(items):\n    seen = set()\n    for steps, x in enumerate(items, 1):\n        if x in seen:\n            return True, steps\n        seen.add(x)\n    return False, len(items)\n\ndata = list(range(1000)) + [999]\nprint(has_dup_slow(data))\nprint(has_dup_fast(data))",
+    "output": "(True, 500500)\n(True, 1001)\n"
+   }
+  }
+ ]
+}

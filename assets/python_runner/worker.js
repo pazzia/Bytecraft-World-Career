@@ -71,6 +71,13 @@ async function init(interruptBuffer) {
     pyodide = await loadPyodide({ indexURL: base + 'pyodide/' });
     if (interruptBuffer) pyodide.setInterruptBuffer(interruptBuffer);
     pyodide.runPython(RUNNER_PY);
+    // A blocking event loop, so that asyncio.run() works (see the file).
+    try {
+      const asyncioSource = await (await fetch(base + 'python_runner/sandbox_asyncio.py')).text();
+      pyodide.runPython(asyncioSource);
+    } catch (error) {
+      // Everything except asyncio.run() still works.
+    }
     const version = pyodide.runPython('import sys; sys.version.split()[0]');
     self.postMessage({ type: 'ready', version: version });
   } catch (error) {

@@ -1,0 +1,333 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_proj_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Кто такой __main__",
+   "prompt": "Что выведет код?",
+   "topic": "proj_structure",
+   "difficulty": 1,
+   "hint": "Какое имя получает файл, который запустили напрямую?",
+   "explanation": "Запущенный файл всегда называется \"__main__\", поэтому условие истинно и main() вызывается — после печати имени.",
+   "code": "def main():\n    print(\"запуск main\")\n\nprint(\"имя модуля:\", __name__)\nif __name__ == \"__main__\":\n    main()",
+   "payload": {
+    "options": [
+     "запуск main\nимя модуля: __main__",
+     "имя модуля: __main__\nзапуск main",
+     "имя модуля: main",
+     "имя модуля: main.py\nзапуск main"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Код выполняется сверху вниз: сначала печать имени, потом проверка.",
+     "",
+     "Имя запущенного модуля — \"__main__\" с подчёркиваниями.",
+     "__name__ — не имя файла, а \"__main__\"."
+    ]
+   },
+   "solution": {
+    "code": "def main():\n    print(\"запуск main\")\n\nprint(\"имя модуля:\", __name__)\nif __name__ == \"__main__\":\n    main()",
+    "output": "имя модуля: __main__\nзапуск main\n"
+   }
+  },
+  {
+   "id": "py_proj_002",
+   "type": "bug_finder",
+   "role": "practice",
+   "title": "Тихая программа",
+   "prompt": "Программа ничего не печатает. Найдите строку с ошибкой",
+   "topic": "proj_structure",
+   "difficulty": 1,
+   "hint": "Сравните строку в условии с настоящим значением __name__ запущенного файла.",
+   "explanation": "У запущенного файла __name__ равен \"__main__\" — с двумя подчёркиваниями с каждой стороны. С \"main\" условие ложно, и программа молча ничего не делает.",
+   "code": "def main():\n    print(\"программа работает\")\n\nif __name__ == \"main\":\n    main()",
+   "payload": {
+    "buggyLines": [
+     3
+    ]
+   },
+   "solution": {
+    "code": "def main():\n    print(\"программа работает\")\n\nif __name__ == \"__main__\":\n    main()",
+    "output": "программа работает\n"
+   }
+  },
+  {
+   "id": "py_proj_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Аргументы с типом",
+   "prompt": "Сделайте так, чтобы программа напечатала «ойойой»",
+   "topic": "proj_cli_logging",
+   "difficulty": 1,
+   "hint": "argparse по умолчанию возвращает строки. Что получится из «ой» * \"3\"?",
+   "explanation": "type=int превращает \"3\" в число 3, а default задаёт значение --word, если флаг не передан. Со строкой \"3\" умножение строки на строку — TypeError.",
+   "payload": {
+    "template": "import argparse\n\nparser = argparse.ArgumentParser()\nparser.add_argument(\"count\", type={{0}})\nparser.add_argument(\"--word\", default={{1}})\nargs = parser.parse_args([\"3\"])\nprint(args.word * args.count)",
+    "options": [
+     "int",
+     "str",
+     "\"ой\"",
+     "None"
+    ],
+    "answers": [
+     "int",
+     "\"ой\""
+    ],
+    "variantResults": {
+     "int\u0001int": "TypeError: unsupported operand type(s) for *: 'type' and 'int'",
+     "int\u0001str": "TypeError: unsupported operand type(s) for *: 'type' and 'int'",
+     "int\u0001None": "TypeError: unsupported operand type(s) for *: 'NoneType' and 'int'",
+     "str\u0001int": "TypeError: can't multiply sequence by non-int of type 'type'",
+     "str\u0001str": "TypeError: can't multiply sequence by non-int of type 'type'",
+     "str\u0001\"ой\"": "TypeError: can't multiply sequence by non-int of type 'str'",
+     "str\u0001None": "TypeError: can't multiply sequence by non-int of type 'NoneType'",
+     "\"ой\"\u0001int": "ValueError: 'ой' is not callable",
+     "\"ой\"\u0001str": "ValueError: 'ой' is not callable",
+     "\"ой\"\u0001\"ой\"": "ValueError: 'ой' is not callable",
+     "\"ой\"\u0001None": "ValueError: 'ой' is not callable",
+     "None\u0001int": "TypeError: can't multiply sequence by non-int of type 'type'",
+     "None\u0001str": "TypeError: can't multiply sequence by non-int of type 'type'",
+     "None\u0001\"ой\"": "TypeError: can't multiply sequence by non-int of type 'str'",
+     "None\u0001None": "TypeError: can't multiply sequence by non-int of type 'NoneType'"
+    }
+   },
+   "solution": {
+    "code": "import argparse\n\nparser = argparse.ArgumentParser()\nparser.add_argument(\"count\", type=int)\nparser.add_argument(\"--word\", default=\"ой\")\nargs = parser.parse_args([\"3\"])\nprint(args.word * args.count)",
+    "output": "ойойой\n"
+   }
+  },
+  {
+   "id": "py_proj_004",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Разбор аргументов",
+   "prompt": "Что выведет код?",
+   "topic": "proj_cli_logging",
+   "difficulty": 2,
+   "hint": "nargs=\"+\" собирает список. Что даёт store_true, если флага нет? И что делает type=int?",
+   "explanation": "files — список из двух имён, флага -v нет — store_true даёт False, --limit превращён в число 5.",
+   "code": "import argparse\n\nparser = argparse.ArgumentParser(prog=\"tool\")\nparser.add_argument(\"files\", nargs=\"+\")\nparser.add_argument(\"-v\", \"--verbose\", action=\"store_true\")\nparser.add_argument(\"--limit\", type=int, default=10)\nargs = parser.parse_args([\"a.txt\", \"b.txt\", \"--limit\", \"5\"])\nprint(args.files, args.verbose, args.limit)",
+   "payload": {
+    "options": [
+     "a.txt False 5",
+     "['a.txt', 'b.txt'] False 5",
+     "['a.txt', 'b.txt'] None '5'",
+     "['a.txt', 'b.txt'] True 5"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "nargs=\"+\" собирает все позиционные значения в список.",
+     "",
+     "store_true по умолчанию даёт False, а type=int — число.",
+     "Флага -v в списке нет — verbose равен False."
+    ]
+   },
+   "solution": {
+    "code": "import argparse\n\nparser = argparse.ArgumentParser(prog=\"tool\")\nparser.add_argument(\"files\", nargs=\"+\")\nparser.add_argument(\"-v\", \"--verbose\", action=\"store_true\")\nparser.add_argument(\"--limit\", type=int, default=10)\nargs = parser.parse_args([\"a.txt\", \"b.txt\", \"--limit\", \"5\"])\nprint(args.files, args.verbose, args.limit)",
+    "output": "['a.txt', 'b.txt'] False 5\n"
+   }
+  },
+  {
+   "id": "py_proj_005",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Логгеры модулей",
+   "prompt": "Что выведет код?",
+   "topic": "proj_cli_logging",
+   "difficulty": 3,
+   "hint": "У логгера app.db свой порог. А что возвращает getLogger при повторном вызове с тем же именем?",
+   "explanation": "Для app.db порог поднят до WARNING — его info отсекается. app.api наследует порог INFO от корня. getLogger с тем же именем возвращает тот же объект — поэтому в каждом модуле пишут getLogger(__name__) и настраивают уровни по именам.",
+   "code": "import logging\nimport sys\n\nlogging.basicConfig(stream=sys.stdout, level=logging.INFO,\n                    format=\"%(name)s|%(levelname)s|%(message)s\", force=True)\ndb = logging.getLogger(\"app.db\")\ndb.setLevel(logging.WARNING)\napi = logging.getLogger(\"app.api\")\ndb.info(\"подключение\")\ndb.warning(\"медленный запрос\")\napi.info(\"GET /users\")\nprint(logging.getLogger(\"app.db\") is db)",
+   "payload": {
+    "options": [
+     "app.db|INFO|подключение\napp.db|WARNING|медленный запрос\napp.api|INFO|GET /users\nTrue",
+     "app.db|WARNING|медленный запрос\nTrue",
+     "app.db|WARNING|медленный запрос\napp.api|INFO|GET /users\nFalse",
+     "app.db|WARNING|медленный запрос\napp.api|INFO|GET /users\nTrue"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "db.setLevel(WARNING) отсекает info этого логгера.",
+     "Порог WARNING задан только для app.db, app.api пишет INFO.",
+     "getLogger с одним именем всегда возвращает один и тот же логгер.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "import logging\nimport sys\n\nlogging.basicConfig(stream=sys.stdout, level=logging.INFO,\n                    format=\"%(name)s|%(levelname)s|%(message)s\", force=True)\ndb = logging.getLogger(\"app.db\")\ndb.setLevel(logging.WARNING)\napi = logging.getLogger(\"app.api\")\ndb.info(\"подключение\")\ndb.warning(\"медленный запрос\")\napi.info(\"GET /users\")\nprint(logging.getLogger(\"app.db\") is db)",
+    "output": "app.db|WARNING|медленный запрос\napp.api|INFO|GET /users\nTrue\n"
+   }
+  },
+  {
+   "id": "py_proj_006",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Имена по PEP 8",
+   "prompt": "Какие имена записаны по PEP 8?",
+   "topic": "proj_structure",
+   "difficulty": 2,
+   "hint": "Функции и переменные — snake_case, классы — CamelCase, константы — ВЕРХНИЙ_РЕГИСТР.",
+   "explanation": "snake_case для переменных и функций, CapWords для классов, UPPER_CASE для констант, ведущее подчёркивание — для внутренних имён. getUserName и Calculate_Total нарушают стиль функций.",
+   "payload": {
+    "options": [
+     "total_price — переменная",
+     "MAX_RETRIES — константа модуля",
+     "UserAccount — класс",
+     "getUserName — функция",
+     "Calculate_Total — функция",
+     "_cache — внутренний атрибут"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     2,
+     5
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "",
+     "camelCase — стиль Java/JS. В Python: get_user_name.",
+     "Функции пишут строчными: calculate_total.",
+     ""
+    ]
+   }
+  },
+  {
+   "id": "py_proj_007",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Docstring",
+   "prompt": "Что выведет код?",
+   "topic": "proj_structure",
+   "difficulty": 1,
+   "hint": "Строка сразу после def попадает в __doc__.",
+   "explanation": "Первая строка в теле функции — docstring: она хранится в __doc__ (без кавычек). Её первая строка — краткое описание.",
+   "code": "def area(width, height):\n    \"\"\"Возвращает площадь прямоугольника.\n\n    width и height — длины сторон.\n    \"\"\"\n    return width * height\n\nprint(area.__doc__.splitlines()[0])\nprint(area(3, 4))",
+   "payload": {
+    "options": [
+     "None\n12",
+     "Возвращает площадь прямоугольника.\n12",
+     "width и height — длины сторон.\n12",
+     "\"\"\"Возвращает площадь прямоугольника.\n12"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Строка сразу после def — это docstring, она сохраняется в __doc__.",
+     "",
+     "splitlines()[0] — первая строка, краткое описание.",
+     "Кавычки — синтаксис, в __doc__ хранится только текст."
+    ]
+   },
+   "solution": {
+    "code": "def area(width, height):\n    \"\"\"Возвращает площадь прямоугольника.\n\n    width и height — длины сторон.\n    \"\"\"\n    return width * height\n\nprint(area.__doc__.splitlines()[0])\nprint(area(3, 4))",
+    "output": "Возвращает площадь прямоугольника.\n12\n"
+   }
+  },
+  {
+   "id": "py_proj_008",
+   "type": "code_ordering",
+   "role": "practice",
+   "title": "Точка входа",
+   "prompt": "Расставьте строки: программа должна напечатать «Привет, Ада!»",
+   "topic": "proj_structure",
+   "difficulty": 2,
+   "hint": "Тело функции — после def, запуск — в самом конце, под проверкой __name__.",
+   "explanation": "Импорт, затем функция main с телом, и последней — точка входа: sys.exit(main(...)) завершает программу с кодом, который вернула main (0 — успех).",
+   "payload": {
+    "lines": [
+     "import sys",
+     "def main(argv):",
+     "    name = argv[0] if argv else \"мир\"",
+     "    print(f\"Привет, {name}!\")",
+     "    return 0",
+     "if __name__ == \"__main__\":",
+     "    sys.exit(main([\"Ада\"]))"
+    ],
+    "alternativeOrders": [
+     [
+      1,
+      2,
+      3,
+      4,
+      0,
+      5,
+      6
+     ]
+    ]
+   },
+   "solution": {
+    "code": "import sys\ndef main(argv):\n    name = argv[0] if argv else \"мир\"\n    print(f\"Привет, {name}!\")\n    return 0\nif __name__ == \"__main__\":\n    sys.exit(main([\"Ада\"]))",
+    "output": "Привет, Ада!\n"
+   }
+  },
+  {
+   "id": "py_proj_009",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Параметры add_argument",
+   "prompt": "Сопоставьте параметр и что он делает",
+   "topic": "proj_cli_logging",
+   "difficulty": 2,
+   "hint": "Все значения из командной строки — строки. Какой параметр это меняет?",
+   "explanation": "nargs управляет количеством значений, store_true делает флаг, type преобразует строку, choices ограничивает значения, required делает опцию обязательной (по умолчанию опции с -- необязательны).",
+   "payload": {
+    "pairs": [
+     {
+      "left": "nargs=\"+\"",
+      "right": "Один или больше значений — в список"
+     },
+     {
+      "left": "action=\"store_true\"",
+      "right": "Флаг без значения: есть — True, нет — False"
+     },
+     {
+      "left": "type=int",
+      "right": "Превращает строку из командной строки в число"
+     },
+     {
+      "left": "choices=[1, 2, 3]",
+      "right": "Разрешает только перечисленные значения"
+     },
+     {
+      "left": "required=True",
+      "right": "Делает опцию с -- обязательной"
+     }
+    ]
+   }
+  },
+  {
+   "id": "py_proj_010",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: мини-CLI",
+   "prompt": "Что выведет код?",
+   "topic": "proj_cli_logging",
+   "difficulty": 4,
+   "hint": "Видны ли DEBUG-сообщения при уровне INFO? Какой приоритет у «сыр» и как сортируются кортежи?",
+   "explanation": "Подкоманда add кладёт (приоритет, название); у «сыр» --priority не указан — default 2. DEBUG ниже INFO и не печатается. list сортирует кортежи по первому элементу — приоритету.",
+   "code": "import argparse\nimport logging\nimport sys\n\ndef build_parser():\n    parser = argparse.ArgumentParser(prog=\"todo\")\n    sub = parser.add_subparsers(dest=\"command\", required=True)\n    add = sub.add_parser(\"add\")\n    add.add_argument(\"title\")\n    add.add_argument(\"--priority\", type=int, choices=[1, 2, 3], default=2)\n    sub.add_parser(\"list\")\n    return parser\n\ndef main(commands):\n    logging.basicConfig(stream=sys.stdout, level=logging.INFO,\n                        format=\"%(levelname)s %(message)s\", force=True)\n    tasks = []\n    for line in commands:\n        args = build_parser().parse_args(line.split())\n        if args.command == \"add\":\n            tasks.append((args.priority, args.title))\n            logging.debug(\"добавлено: %s\", args.title)\n        else:\n            for priority, title in sorted(tasks):\n                print(priority, title)\n\nmain([\"add молоко --priority 3\", \"add хлеб --priority 1\", \"add сыр\", \"list\"])",
+   "payload": {
+    "options": [
+     "DEBUG добавлено: молоко\nDEBUG добавлено: хлеб\nDEBUG добавлено: сыр\n1 хлеб\n2 сыр\n3 молоко",
+     "1 хлеб\n2 сыр\n3 молоко",
+     "3 молоко\n1 хлеб\n2 сыр",
+     "1 хлеб\n3 молоко\n2 сыр"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Уровень INFO отсекает DEBUG-сообщения.",
+     "",
+     "list печатает sorted(tasks) — по приоритету.",
+     "У «сыр» приоритет по умолчанию 2 — он между 1 и 3."
+    ]
+   },
+   "solution": {
+    "code": "import argparse\nimport logging\nimport sys\n\ndef build_parser():\n    parser = argparse.ArgumentParser(prog=\"todo\")\n    sub = parser.add_subparsers(dest=\"command\", required=True)\n    add = sub.add_parser(\"add\")\n    add.add_argument(\"title\")\n    add.add_argument(\"--priority\", type=int, choices=[1, 2, 3], default=2)\n    sub.add_parser(\"list\")\n    return parser\n\ndef main(commands):\n    logging.basicConfig(stream=sys.stdout, level=logging.INFO,\n                        format=\"%(levelname)s %(message)s\", force=True)\n    tasks = []\n    for line in commands:\n        args = build_parser().parse_args(line.split())\n        if args.command == \"add\":\n            tasks.append((args.priority, args.title))\n            logging.debug(\"добавлено: %s\", args.title)\n        else:\n            for priority, title in sorted(tasks):\n                print(priority, title)\n\nmain([\"add молоко --priority 3\", \"add хлеб --priority 1\", \"add сыр\", \"list\"])",
+    "output": "1 хлеб\n2 сыр\n3 молоко\n"
+   }
+  }
+ ]
+}

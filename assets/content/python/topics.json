@@ -1681,12 +1681,12 @@
    "id": "algo_complexity",
    "title": "Сложность алгоритма",
    "summary": "O-большое показывает, как растёт время работы с ростом данных: O(1) — не зависит от n, O(log n) — бинарный поиск, O(n) — один проход, O(n log n) — сортировка, O(n²) — вложенные циклы.",
-   "body": "Важен не точный счёт операций, а порядок роста. Для n = 1 000 000 разница между O(n) и O(n²) — это миллион операций против триллиона.\n\nЦена операций Python: x in list — O(n) (просмотр всех элементов), x in set и d[key] — O(1) в среднем (хеш-таблица), list.append — O(1), list.insert(0, x) и list.pop(0) — O(n) (сдвиг всех элементов), deque.appendleft/popleft — O(1), sorted — O(n log n).\n\nЧастый приём ускорения — заменить поиск в списке на множество или словарь: вложенный цикл O(n²) превращается в один проход O(n).",
+   "body": "Важен не точный счёт операций, а порядок роста. Для n = 1 000 000 разница между O(n) и O(n²) — это миллион операций против триллиона.\n\nЦена операций Python: x in list — O(n) (просмотр всех элементов), x in set и d[key] — O(1) в среднем (хеш-таблица), list.append — O(1) амортизированно (изредка список расширяется с копированием), list.insert(0, x) и list.pop(0) — O(n) (сдвиг всех элементов), deque.appendleft/popleft — O(1), sorted — O(n log n).\n\nЧастый приём ускорения — заменить поиск в списке на множество или словарь: вложенный цикл O(n²) превращается в один проход O(n).",
    "examples": [
     {
      "code": "ops = 0\nfor a in range(100):\n    for b in range(100):\n        ops += 1\nprint(\"вложенные циклы:\", ops)\n\nseen = set(range(100))\nops = 0\nfor a in range(100):\n    ops += 1\n    found = (99 - a) in seen\nprint(\"один проход с множеством:\", ops)",
      "output": "вложенные циклы: 10000\nодин проход с множеством: 100\n",
-     "note": "Одна и та же задача: 10 000 шагов против 100."
+     "note": "Сравнение числа шагов: n² против n (плюс O(n) на построение множества)."
     }
    ],
    "pitfalls": [
@@ -1699,7 +1699,7 @@
    "id": "algo_search_sort",
    "title": "Поиск и сортировка",
    "summary": "Бинарный поиск находит элемент в отсортированном списке за O(log n). Модуль bisect делает это готово; sorted и sort — устойчивая сортировка O(n log n).",
-   "body": "Бинарный поиск каждый раз сравнивает с серединой и отбрасывает половину: для миллиона элементов хватает около 20 сравнений. Работает только на отсортированных данных.\n\nbisect.bisect_left(a, x) — позиция, куда вставить x слева от равных, bisect_right — справа от равных, insort — вставка с сохранением порядка.\n\nСортировка в Python устойчивая: элементы с равным ключом сохраняют исходный порядок. Поэтому сложную сортировку можно делать в несколько проходов или ключом-кортежем.",
+   "body": "Бинарный поиск каждый раз сравнивает с серединой и отбрасывает половину: для миллиона элементов хватает около 20 шагов (проверок середины). Работает только на отсортированных данных.\n\nbisect.bisect_left(a, x) — позиция, куда вставить x слева от равных, bisect_right — справа от равных, insort — вставка с сохранением порядка.\n\nСортировка в Python устойчивая: элементы с равным ключом сохраняют исходный порядок. Поэтому сложную сортировку можно делать в несколько проходов или ключом-кортежем.",
    "examples": [
     {
      "code": "import bisect\n\nscores = [10, 20, 30, 40]\nprint(bisect.bisect_left(scores, 25), bisect.bisect_left(scores, 30), bisect.bisect_right(scores, 30))\nbisect.insort(scores, 25)\nprint(scores)",
@@ -1707,7 +1707,7 @@
     }
    ],
    "pitfalls": [
-    "Запускать бинарный поиск по неотсортированному списку — результат будет случайным.",
+    "Запускать бинарный поиск по неотсортированному списку — результат будет неверным, причём без всякой ошибки.",
     "Ошибка на единицу в границах: lo = mid вместо mid + 1 зацикливает поиск."
    ],
    "module": "algorithms"
@@ -1716,16 +1716,16 @@
    "id": "algo_patterns",
    "title": "Приёмы: куча, очередь, окно, два указателя",
    "summary": "heapq — быстрый доступ к минимуму, deque — очередь для обхода в ширину (BFS), скользящее окно и два указателя — проход за O(n) вместо перебора пар.",
-   "body": "heapq хранит список как кучу: heappush/heappop за O(log n), минимум всегда в heap[0]. nlargest(k, data) — k наибольших.\n\nОбход в ширину (BFS) на очереди deque находит кратчайшее число шагов в графе: соседи вершины обрабатываются раньше соседей соседей.\n\nСкользящее окно: сумму окна не пересчитывают заново, а прибавляют новый элемент и вычитают ушедший. Два указателя идут навстречу по отсортированному списку.",
+   "body": "heapq хранит список как кучу: heappush/heappop за O(log n), минимум всегда в heap[0]. heapify(список) превращает готовый список в кучу за O(n). nlargest(k, data) — k наибольших. Кортежи в куче сравниваются поэлементно: при равных приоритетах сравнение дойдёт до второго элемента — если он несравним (словари), будет TypeError. Поэтому добавляют счётчик: (приоритет, номер, данные).\n\nОбход в ширину (BFS) на очереди deque находит кратчайшее число шагов в графе: соседи вершины обрабатываются раньше соседей соседей.\n\nСкользящее окно: сумму окна не пересчитывают заново, а прибавляют новый элемент и вычитают ушедший. Два указателя идут навстречу по отсортированному списку: если сумма мала — двигаем левый, велика — правый. Так пара с нужной суммой находится за один проход.",
    "examples": [
     {
      "code": "import heapq\n\ntasks = [(3, \"тесты\"), (1, \"баг в проде\"), (2, \"ревью\")]\nheapq.heapify(tasks)\nwhile tasks:\n    priority, name = heapq.heappop(tasks)\n    print(priority, name)",
      "output": "1 баг в проде\n2 ревью\n3 тесты\n",
-     "note": "Самый важный (наименьший приоритет) выходит первым."
+     "note": "Задача с наименьшим числом приоритета выходит первой."
     },
     {
-     "code": "nums = [2, 1, 5, 1, 3, 2]\nk = 3\nwindow = sum(nums[:k])\nbest = window\nfor i in range(k, len(nums)):\n    window += nums[i] - nums[i - k]\n    best = max(best, window)\nprint(best)",
-     "output": "9\n",
+     "code": "nums = [4, 2, 7, 1, 8, 3]\nk = 2\nwindow = sum(nums[:k])\nbest = window\nfor i in range(k, len(nums)):\n    window += nums[i] - nums[i - k]\n    best = max(best, window)\nprint(best)",
+     "output": "11\n",
      "note": "Скользящее окно: каждая сумма за O(1)."
     }
    ],
@@ -1738,16 +1738,16 @@
    "id": "idiom_match",
    "title": "match / case",
    "summary": "Структурное сопоставление: match значение: case шаблон: — проверяет форму данных (литералы, последовательности, словари, классы) и сразу достаёт из них части.",
-   "body": "case 0: — литерал. case [x, y]: — список из двух элементов (x и y получают значения). case [\"take\", *items]: — первый элемент «take», остальные в items. case {\"type\": \"click\", \"x\": x}: — словарь с такими ключами (лишние ключи допускаются). case Point(x=0, y=y): — объект класса с полями. case _: — всё остальное.\n\nПосле шаблона можно добавить условие: case int() if x < 0:. Срабатывает первый подходящий case.\n\nГолое имя в case — это захват, а не сравнение: case RED: поймает что угодно и запишет в RED (Python не даст поставить такой case не последним — SyntaxError). Для сравнения с константой нужно имя с точкой: case Color.RED:.",
+   "body": "case 0: — литерал. case [x, y]: — список из двух элементов (x и y получают значения). case [\"take\", *items]: — первый элемент «take», остальные в items. case {\"type\": \"click\", \"x\": x}: — словарь с такими ключами (лишние ключи допускаются). case Point(x=0, y=y): — объект класса с полями (позиционно, case Point(0, y):, — если у класса есть __match_args__; у dataclass он создаётся сам). case str(): — проверка типа. case _: — всё остальное. Строка не подходит под шаблон последовательности [a, b], хотя её и можно перебирать.\n\nПосле шаблона можно добавить условие: case int() if x < 0:. Срабатывает первый подходящий case.\n\nГолое имя в case — это захват, а не сравнение: case RED: поймает что угодно и запишет в RED (Python не даст поставить такой case не последним — SyntaxError). Для сравнения с константой нужно имя с точкой: case Color.RED:.",
    "examples": [
     {
-     "code": "def parse(cmd):\n    match cmd.split():\n        case [\"go\", direction]:\n            return f\"идём {direction}\"\n        case [\"take\", *items]:\n            return f\"берём {len(items)}\"\n        case []:\n            return \"пусто\"\n        case _:\n            return \"непонятно\"\n\nprint(parse(\"go north\"), \"|\", parse(\"take a b\"), \"|\", parse(\"\"), \"|\", parse(\"go\"))",
-     "output": "идём north | берём 2 | пусто | непонятно\n"
+     "code": "def command(text):\n    match text.split():\n        case [\"move\", x, y]:\n            return f\"перемещение на ({x}, {y})\"\n        case [\"say\", *words]:\n            return \" \".join(words) or \"(молчание)\"\n        case [\"quit\"]:\n            return \"выход\"\n        case _:\n            return \"неизвестная команда\"\n\nprint(command(\"move 3 4\"), \"|\", command(\"say всем привет\"), \"|\", command(\"quit\"), \"|\", command(\"jump\"))",
+     "output": "перемещение на (3, 4) | всем привет | выход | неизвестная команда\n"
     }
    ],
    "pitfalls": [
     "Писать case RED: для сравнения с переменной: это захват любого значения.",
-    "Ждать, что match работает как switch в других языках «с проваливанием»: срабатывает ровно один case."
+    "Ждать, что match работает как switch в других языках «с проваливанием»: срабатывает не больше одного case, а если ни один не подошёл — ничего не происходит, ошибки нет."
    ],
    "module": "pythonic"
   },
@@ -1755,15 +1755,16 @@
    "id": "idiom_walrus",
    "title": "Моржовый оператор и распаковка",
    "summary": ":= присваивает значение внутри выражения. Звёздочка при распаковке собирает «всё остальное»: first, *rest = items.",
-   "body": "if (n := len(data)) > 10: — вычисляет длину один раз, сохраняет в n и сразу сравнивает. Удобно в while: while (line := f.readline()):.\n\nfirst, *middle, last = [1, 2, 3, 4, 5] — звёздочка собирает середину в список. a, b = b, a — обмен без временной переменной.\n\nf\"{x + y = }\" — f-строка с = печатает и выражение, и его значение: удобно для отладки.",
+   "body": "if (n := len(data)) > 10: — вычисляет длину один раз, сохраняет в n и сразу сравнивает. Удобно в while: while (line := f.readline()):.\n\nhead, *body, tail = \"питон\" — звёздочка собирает середину в список. a, b = b, a — обмен без временной переменной.\n\nf\"{x + y = }\" — f-строка с = печатает и выражение, и его значение: удобно для отладки.",
    "examples": [
     {
-     "code": "data = [3, 8, 1, 9]\nif (n := len(data)) > 3:\n    print(f\"длинный список: {n}\")\nfirst, *rest = data\nprint(first, rest)\nx, y = 3, 4\nprint(f\"{x + y = }\")",
-     "output": "длинный список: 4\n3 [8, 1, 9]\nx + y = 7\n"
+     "code": "words = [\"лес\", \"река\", \"гора\"]\nwhile (word := words.pop()) != \"лес\":\n    print(\"обрабатываю\", word)\nhead, *rest = \"питон\"\nprint(head, rest)\na, b = 2, 5\nprint(f\"{a * b = }\")",
+     "output": "обрабатываю гора\nобрабатываю река\nп ['и', 'т', 'о', 'н']\na * b = 10\n"
     }
    ],
    "pitfalls": [
-    "Писать if n = len(data): — в условии = недопустим, нужен :=."
+    "Писать if n = len(data): — в условии = недопустим, нужен :=.",
+    "Забыть скобки: if n := len(data) > 3: присвоит n результат сравнения (True), а не длину."
    ],
    "module": "pythonic"
   },
@@ -1787,10 +1788,10 @@
    "id": "test_assert",
    "title": "assert и тесты-функции",
    "summary": "assert условие, \"сообщение\" — проверка, которая падает с AssertionError, если условие ложно. Тест — функция, которая вызывает код и проверяет результат через assert.",
-   "body": "В стиле pytest тест — обычная функция test_...() с assert внутри; pytest находит их сам и показывает, где проверка не сошлась.\n\nХороший тест проверяет один сценарий, включая крайние случаи: пустой ввод, ноль, отрицательные числа, повторы.\n\nassert — не для проверки пользовательского ввода: с флагом python -O все assert отключаются. Для данных пользователя — if и raise ValueError.\n\nЛовушка: assert (условие, \"сообщение\") с скобками проверяет непустой кортеж — он всегда истинен, и тест никогда не падает (Python 3.12 даже выдаёт SyntaxWarning).",
+   "body": "В стиле pytest тест — обычная функция test_...() с assert внутри; pytest находит их сам и показывает, где проверка не сошлась. pytest — сторонний пакет (pip install pytest), в стандартной библиотеке его нет; встроенные инструменты — unittest и doctest.\n\ndoctest проверяет примеры прямо в docstring: строки >>> выполняются, и их вывод сравнивается с текстом ниже. Так документация не устаревает.\n\nДробные числа сравнивают с допуском: math.isclose(a, b) или assertAlmostEqual, потому что 0.1 + 0.2 != 0.3.\n\nХороший тест проверяет один сценарий, включая крайние случаи: пустой ввод, ноль, отрицательные числа, повторы.\n\nassert — не для проверки пользовательского ввода: с флагом python -O все assert отключаются. Для данных пользователя — if и raise ValueError.\n\nЛовушка: assert (условие, \"сообщение\") со скобками проверяет непустой кортеж — он всегда истинен, и тест никогда не падает (Python выдаёт SyntaxWarning).",
    "examples": [
     {
-     "code": "def median(nums):\n    s = sorted(nums)\n    mid = len(s) // 2\n    return s[mid] if len(s) % 2 else (s[mid - 1] + s[mid]) / 2\n\ndef test_median():\n    assert median([3, 1, 2]) == 2\n    assert median([4, 1, 3, 2]) == 2.5\n    assert median([5]) == 5\n\ntest_median()\nprint(\"тесты прошли\")",
+     "code": "def clamp(x, lo, hi):\n    return max(lo, min(x, hi))\n\ndef test_clamp():\n    assert clamp(5, 0, 10) == 5\n    assert clamp(-3, 0, 10) == 0, \"ниже нижней границы\"\n    assert clamp(99, 0, 10) == 10\n\ntest_clamp()\nprint(\"тесты прошли\")",
      "output": "тесты прошли\n"
     }
    ],
@@ -1804,7 +1805,7 @@
    "id": "test_unittest",
    "title": "unittest и mock",
    "summary": "unittest — встроенный фреймворк: класс-наследник TestCase, методы test_*, проверки assertEqual, assertRaises… unittest.mock подменяет зависимости.",
-   "body": "setUp() выполняется перед каждым тестом — там готовят данные. assertEqual(a, b), assertTrue(x), assertIn(item, container), with self.assertRaises(Error): ... — проверки с понятными сообщениями.\n\nТесты запускают командой python -m unittest или pytest. Результат: число тестов, failures (проверка не сошлась) и errors (тест упал с исключением).\n\nMock() — объект-заглушка: принимает любые вызовы и запоминает их. mock.method.call_count, call_args — чем и сколько раз его вызывали. Так тестируют код, который отправляет письма или ходит в сеть, не делая этого на самом деле.",
+   "body": "setUp() выполняется перед каждым тестом — там готовят данные. assertEqual(a, b), assertTrue(x), assertIn(item, container), with self.assertRaises(Error): ... — проверки с понятными сообщениями.\n\nТесты запускают командой python -m unittest или pytest. Результат: число тестов, failures (проверка не сошлась) и errors (тест упал с исключением).\n\nresult.wasSuccessful() — True, если нет ни failures, ни errors.\n\nMock() — объект-заглушка: принимает любые вызовы и запоминает их. mock.method.call_count — сколько раз вызывали, call_args.args — кортеж позиционных аргументов последнего вызова. Так тестируют код, который отправляет письма или ходит в сеть, не делая этого на самом деле.\n\nwith patch(\"модуль.имя\", return_value=...): временно подменяет функцию там, где её ищут при вызове, и возвращает всё обратно после блока.",
    "examples": [
     {
      "code": "import io\nimport unittest\n\nclass TestDivide(unittest.TestCase):\n    def test_half(self):\n        self.assertEqual(10 / 4, 2.5)\n\n    def test_zero(self):\n        with self.assertRaises(ZeroDivisionError):\n            1 / 0\n\nsuite = unittest.defaultTestLoader.loadTestsFromTestCase(TestDivide)\nresult = unittest.TextTestRunner(stream=io.StringIO()).run(suite)\nprint(result.testsRun, len(result.failures), len(result.errors))",
@@ -1821,7 +1822,7 @@
   {
    "id": "test_logging",
    "title": "logging вместо print",
-   "summary": "logging пишет сообщения с уровнем важности (DEBUG < INFO < WARNING < ERROR < CRITICAL), временем и источником; уровень и формат настраиваются в одном месте.",
+   "summary": "logging пишет сообщения с уровнем важности (DEBUG < INFO < WARNING < ERROR < CRITICAL); формат можно дополнить временем и источником (%(asctime)s, %(name)s), а уровень и формат настраиваются в одном месте.",
    "body": "logging.basicConfig(level=logging.INFO, format=\"%(levelname)s:%(name)s:%(message)s\") — настройка один раз в начале программы. logging.getLogger(__name__) — свой логгер для модуля.\n\nПо умолчанию видно WARNING и выше, а вывод идёт в stderr. В отличие от print, отладочные сообщения не нужно удалять: достаточно поднять уровень.\n\nlogging.exception(\"текст\") внутри except пишет сообщение уровня ERROR вместе с трассировкой.",
    "examples": [
     {
@@ -1834,6 +1835,155 @@
     "Оставлять отладочные print в коде вместо logging.debug."
    ],
    "module": "testing"
+  },
+  {
+   "id": "async_basics",
+   "title": "Корутины и цикл событий",
+   "summary": "async def создаёт корутину. Она выполняется, только когда её ждут через await или запускают asyncio.run(main()). Пока корутина ждёт (await asyncio.sleep, сеть), цикл событий выполняет другие.",
+   "body": "Асинхронность — способ делать много ожиданий одновременно в одном потоке: скачивать страницы, ждать базу данных, обслуживать тысячи соединений. Пока одна задача ждёт ответа, работают другие.\n\nasync def f(): ... — объявление корутинной функции. Вызов f() ничего не выполняет: он возвращает объект-корутину. Выполнить её можно двумя способами: await f() внутри другой корутины или asyncio.run(f()) на верхнем уровне программы (обычно один раз — для main()).\n\nawait можно писать только внутри async def. В точке await корутина отдаёт управление циклу событий, и тот запускает другие готовые задачи.\n\nasyncio.sleep(секунды) — неблокирующая пауза: ждёт только эта корутина. time.sleep останавливает весь поток вместе с циклом событий — в асинхронном коде его не используют. То же с любой долгой синхронной работой: тяжёлые вычисления в корутине «замораживают» все остальные.\n\nАсинхронность не ускоряет вычисления: она выигрывает только на ожиданиях (ввод-вывод).",
+   "examples": [
+    {
+     "code": "import asyncio\n\nasync def greet(name):\n    await asyncio.sleep(0.01)\n    return f\"привет, {name}\"\n\nasync def main():\n    text = await greet(\"Ада\")\n    print(text)\n\ncoro = main()\nprint(type(coro).__name__)\nasyncio.run(coro)",
+     "output": "coroutine\nпривет, Ада\n",
+     "note": "Вызов main() только создаёт корутину; работает она в asyncio.run."
+    }
+   ],
+   "pitfalls": [
+    "Забыть await: f() без await не выполняется, Python лишь предупредит «coroutine was never awaited».",
+    "Вызывать time.sleep или долгий цикл внутри корутины — это блокирует все задачи сразу.",
+    "Вызывать asyncio.run изнутри уже работающей корутины — RuntimeError: внутри используют await."
+   ],
+   "module": "async"
+  },
+  {
+   "id": "async_tasks",
+   "title": "Задачи: gather, create_task, таймауты",
+   "summary": "asyncio.gather запускает корутины одновременно и возвращает результаты в порядке аргументов. create_task ставит корутину в работу сразу, а await задачи ждёт её результат. wait_for и asyncio.timeout ограничивают время.",
+   "body": "await f(); await g() — последовательно: g начнётся только после f. Чтобы ждать одновременно, корутины превращают в задачи.\n\nasyncio.gather(f(), g(), h()) — ждёт все и возвращает список результатов в порядке аргументов, а не в порядке завершения. Если одна упала, исключение долетает до await gather.\n\nasyncio.create_task(f()) — задача начинает выполняться при ближайшей паузе текущей корутины; результат забирают через await task. Ссылку на задачу нужно хранить, иначе её может собрать сборщик мусора.\n\nasync with asyncio.TaskGroup() as tg: tg.create_task(...) (Python 3.11+) — современная замена gather: выход из блока ждёт все задачи, а при ошибке в одной остальные отменяются.\n\nawait asyncio.wait_for(f(), timeout=1) или async with asyncio.timeout(1): — если не успели, корутина отменяется (внутри неё летит CancelledError, срабатывают finally), а снаружи — TimeoutError.\n\nasyncio.Queue — очередь между корутинами: await queue.put(x) и await queue.get(). С maxsize производитель ждёт, пока потребитель освободит место.",
+   "examples": [
+    {
+     "code": "import asyncio\n\nasync def download(name, delay):\n    await asyncio.sleep(delay)\n    return name\n\nasync def main():\n    async with asyncio.TaskGroup() as tg:\n        slow = tg.create_task(download(\"медленный\", 0.03))\n        fast = tg.create_task(download(\"быстрый\", 0.01))\n    print(slow.result(), fast.result())\n    try:\n        async with asyncio.timeout(0.01):\n            await download(\"вечный\", 1)\n    except TimeoutError:\n        print(\"не дождались\")\n\nasyncio.run(main())",
+     "output": "медленный быстрый\nне дождались\n"
+    }
+   ],
+   "pitfalls": [
+    "Ждать задачи по одной в цикле for вместо gather/TaskGroup, если их можно ждать одновременно.",
+    "Ловить голый except Exception вокруг await и глотать CancelledError: в 3.8+ это BaseException, но except BaseException или «пустой» except его поймают и сломают отмену."
+   ],
+   "module": "async"
+  },
+  {
+   "id": "conc_threads",
+   "title": "Потоки и GIL",
+   "summary": "Поток — ещё одна линия выполнения в той же программе. Thread(target=f).start() запускает f параллельно, join() ждёт её конца. Общие данные защищают Lock. Из-за GIL потоки ускоряют ожидание (сеть, диск), но не вычисления на чистом Python.",
+   "body": "threading.Thread(target=функция, args=(аргументы,)) создаёт поток, start() запускает его, join() ждёт завершения. Без join главный поток не ждёт результатов.\n\nGIL (глобальная блокировка интерпретатора) в обычном CPython позволяет выполнять байт-код только одному потоку за раз. Пока поток ждёт ввода-вывода, GIL отпускается — поэтому потоки хороши для сетевых запросов и файлов, но не ускоряют вычисления на чистом Python. (С Python 3.13 есть экспериментальная сборка без GIL.)\n\nГонка данных: два потока читают и меняют одно значение, и обновления теряются. Решение — threading.Lock: with lock: ... пускает в блок только один поток. Lock должен быть общим для всех потоков, а не создаваться заново при каждом вызове.\n\nqueue.Queue — потокобезопасная очередь: put/get уже защищены. task_done() и join() позволяют дождаться обработки всех элементов.\n\nconcurrent.futures.ThreadPoolExecutor — пул потоков: pool.map(f, данные) возвращает результаты в исходном порядке, pool.submit(f, x) — объект Future, а as_completed(futures) выдаёт их по мере готовности.",
+   "examples": [
+    {
+     "code": "import threading\n\ncounter = 0\nlock = threading.Lock()\n\ndef add(times):\n    global counter\n    for _ in range(times):\n        with lock:\n            counter += 1\n\nthreads = [threading.Thread(target=add, args=(10_000,)) for _ in range(4)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\nprint(counter)",
+     "output": "40000\n",
+     "note": "С общим Lock ни одно увеличение не теряется.",
+     "nativeOnly": true
+    }
+   ],
+   "pitfalls": [
+    "Забыть join: главный поток напечатает результат раньше, чем потоки его посчитают.",
+    "Создавать Lock внутри функции потока: у каждого вызова свой замок, и он ничего не защищает.",
+    "Ждать ускорения вычислений от потоков в обычном CPython: GIL выполняет байт-код по очереди."
+   ],
+   "module": "concurrency"
+  },
+  {
+   "id": "conc_processes",
+   "title": "Процессы и выбор инструмента",
+   "summary": "Для вычислений на всех ядрах — процессы: ProcessPoolExecutor или multiprocessing. Для ожиданий — потоки или asyncio. Код запуска пулов процессов держат под if __name__ == \"__main__\".",
+   "body": "Процесс — отдельная копия интерпретатора со своей памятью и своим GIL. Поэтому процессы ускоряют вычисления на нескольких ядрах. Цена — данные передаются между процессами через сериализацию (pickle), а запуск процесса дороже потока.\n\nProcessPoolExecutor имеет тот же интерфейс, что ThreadPoolExecutor: map, submit, as_completed. Функция и аргументы должны сериализоваться: lambda и функции, объявленные внутри других функций, не подойдут.\n\nНовые процессы на Windows и macOS запускаются «с нуля» и импортируют главный модуль. Поэтому запуск пула обязательно прячут под if __name__ == \"__main__\": — иначе каждый процесс запустит пул снова.\n\nКак выбрать: много ожиданий в сети — asyncio (тысячи соединений) или потоки (проще с синхронными библиотеками); тяжёлые вычисления на чистом Python — процессы; вычисления в numpy и других C-библиотеках часто отпускают GIL и работают и в потоках.\n\nВо встроенном интерпретаторе приложения нет потоков и процессов — эти примеры работают в обычном Python на компьютере.",
+   "examples": [
+    {
+     "code": "from concurrent.futures import ProcessPoolExecutor\n\nif __name__ == \"__main__\":\n    with ProcessPoolExecutor(max_workers=2) as pool:\n        print(list(pool.map(pow, [2, 3, 4], [10, 2, 3])))",
+     "output": "[1024, 9, 64]\n",
+     "note": "pow — встроенная функция, она сериализуется и выполняется в процессах пула.",
+     "nativeOnly": true
+    }
+   ],
+   "pitfalls": [
+    "Передавать в ProcessPoolExecutor lambda — её нельзя сериализовать (PicklingError).",
+    "Запускать пул процессов без if __name__ == \"__main__\" — на Windows и macOS это бесконечный запуск процессов."
+   ],
+   "module": "concurrency"
+  },
+  {
+   "id": "perf_measure",
+   "title": "Сначала измерь",
+   "summary": "Оптимизируют то, что измерили. time.perf_counter — для разового замера, timeit — для маленьких фрагментов, cProfile — чтобы найти, какие функции тратят время.",
+   "body": "Интуиция о «медленных местах» часто ошибается. Порядок работы: убедиться, что программа правильная, измерить, найти узкое место, ускорить его, измерить снова.\n\ntime.perf_counter() — самые точные часы для замеров: засекают до и после, разница — секунды.\n\ntimeit.timeit(функция, number=N) запускает фрагмент N раз и возвращает общее время — так сглаживаются случайные колебания. В терминале: python -m timeit \"выражение\".\n\ncProfile показывает, сколько раз вызвана каждая функция и сколько времени в ней проведено: python -m cProfile -s cumtime программа.py. tracemalloc отслеживает выделения памяти.\n\nГлавный выигрыш почти всегда даёт алгоритм (O(n) вместо O(n²)), а не мелкие приёмы.",
+   "examples": [
+    {
+     "code": "import time\nimport timeit\n\nstart = time.perf_counter()\ntotal = sum(range(100_000))\nelapsed = time.perf_counter() - start\nprint(total, elapsed > 0)\n\ncalls = []\ntimeit.timeit(lambda: calls.append(1), number=1000)\nprint(len(calls))",
+     "output": "4999950000 True\n1000\n",
+     "note": "timeit вызвал функцию ровно number раз."
+    }
+   ],
+   "pitfalls": [
+    "Сравнивать скорость по одному запуску — шум ОС и кэшей легко перекрывает разницу.",
+    "Оптимизировать код, который выполняется редко, вместо найденного профилировщиком узкого места."
+   ],
+   "module": "performance"
+  },
+  {
+   "id": "perf_tricks",
+   "title": "Быстрые идиомы и память",
+   "summary": "Множества и словари вместо поиска в списке, join вместо += для строк, встроенные функции вместо ручных циклов, генераторы вместо огромных списков, functools.cache для повторных вычислений, __slots__ для миллионов объектов.",
+   "body": "Встроенные функции (sum, max, sorted, map, any) и методы написаны на C и обычно быстрее ручного цикла на Python.\n\nСтроки неизменяемы: s += часть в цикле может каждый раз копировать всю строку. \"\".join(список_частей) собирает результат за один проход.\n\nГенератор вместо списка не хранит все элементы сразу: sum(x * x for x in данные) работает с памятью O(1). Но генератор одноразовый.\n\nfunctools.cache и lru_cache(maxsize=N) запоминают результаты по аргументам — аргументы должны быть хешируемыми (кортеж, а не список). cache_info() показывает попадания (hits) и промахи (misses).\n\n__slots__ = (\"x\", \"y\") в классе убирает словарь __dict__ у каждого объекта: меньше памяти, но новые атрибуты добавлять нельзя.\n\ncollections.Counter, deque, defaultdict, bisect, heapq — готовые быстрые структуры; не изобретайте их заново.",
+   "examples": [
+    {
+     "code": "import sys\n\nsquares_list = [n * n for n in range(10_000)]\nsquares_gen = (n * n for n in range(10_000))\nprint(sys.getsizeof(squares_gen) < 1000 < sys.getsizeof(squares_list))\nprint(sum(squares_list) == sum(squares_gen))\nprint(sum(squares_gen))",
+     "output": "True\nTrue\n0\n",
+     "note": "Генератор крошечный, но одноразовый: второй sum получает пустоту."
+    }
+   ],
+   "pitfalls": [
+    "Передавать список в функцию с @cache — TypeError: unhashable type: 'list'.",
+    "Кэшировать функции с побочными эффектами (print, запись в файл): при попадании в кэш они не выполнятся.",
+    "Жертвовать читаемостью ради микроускорений, которых не видно в замерах."
+   ],
+   "module": "performance"
+  },
+  {
+   "id": "proj_structure",
+   "title": "Структура программы",
+   "summary": "Код программы держат в функциях, точка входа — main(), а запуск — под if __name__ == \"__main__\":. Имена — по PEP 8, у функций — docstring.",
+   "body": "Каждый файл .py — модуль. При запуске файла его __name__ равен \"__main__\", а при импорте — имени модуля. Поэтому if __name__ == \"__main__\": main() выполняет программу при запуске, но не при импорте: функции модуля можно переиспользовать и тестировать.\n\nТипичная структура: импорты сверху (стандартная библиотека, сторонние, свои — группами), константы, функции и классы, main(argv) возвращает код выхода, внизу — sys.exit(main(sys.argv[1:])). Код выхода 0 — успех, не 0 — ошибка: так программу встраивают в скрипты.\n\nPEP 8 — стиль кода Python: отступ 4 пробела, имена_функций_и_переменных, ИменаКлассов, КОНСТАНТЫ, _внутренние_имена, пробелы вокруг операторов, строки до 79–99 символов. Форматировщики (black, ruff format) и линтеры (ruff, flake8) проверяют это автоматически.\n\nDocstring — строка сразу после def/class: первая строка — кратко что делает, дальше подробности. Её видно в help(функция) и в атрибуте __doc__.\n\nПапка с модулями и файлом __init__.py — пакет: from shop.cart import Cart. Зависимости проекта описывают в pyproject.toml, а ставят в виртуальное окружение (python -m venv .venv).",
+   "examples": [
+    {
+     "code": "\"\"\"Мини-утилита: приветствует пользователя.\"\"\"\nimport sys\n\nGREETING = \"Привет\"\n\n\ndef greet(name: str) -> str:\n    \"\"\"Возвращает приветствие для name.\"\"\"\n    return f\"{GREETING}, {name}!\"\n\n\ndef main(argv: list[str]) -> int:\n    print(greet(argv[0] if argv else \"мир\"))\n    return 0\n\n\nif __name__ == \"__main__\":\n    code = main([\"Ада\"])\n    print(\"код выхода:\", code)",
+     "output": "Привет, Ада!\nкод выхода: 0\n",
+     "note": "При запуске __name__ == \"__main__\", при импорте — нет."
+    }
+   ],
+   "pitfalls": [
+    "Писать логику на верхнем уровне модуля: при импорте она выполнится, а протестировать её трудно.",
+    "Опечатка в проверке: __name__ == \"main\" — условие всегда ложно, программа молча ничего не делает."
+   ],
+   "module": "project"
+  },
+  {
+   "id": "proj_cli_logging",
+   "title": "argparse и logging",
+   "summary": "argparse разбирает аргументы командной строки и сам пишет справку и ошибки. logging пишет сообщения с уровнями важности, которые можно включать и выключать без правки кода.",
+   "body": "parser = argparse.ArgumentParser(description=...) — парсер. add_argument(\"file\") — обязательный позиционный аргумент, add_argument(\"--limit\", type=int, default=10) — необязательный с преобразованием типа, add_argument(\"-v\", \"--verbose\", action=\"store_true\") — флаг True/False, nargs=\"+\" — один или больше значений, choices=[...] — допустимые значения. args = parser.parse_args() читает sys.argv; в тестах передают список: parse_args([\"a.txt\", \"--limit\", \"5\"]).\n\nПри ошибке (нет обязательного аргумента, не то значение) argparse печатает подсказку в stderr и завершает программу с кодом 2. --help генерируется сам.\n\nlogging: уровни DEBUG < INFO < WARNING < ERROR < CRITICAL. logging.basicConfig(level=logging.INFO, format=\"%(levelname)s %(message)s\") настраивает вывод один раз в начале программы (force=True — перенастроить заново). В модулях берут свой логгер: log = logging.getLogger(__name__).\n\nСообщения ниже установленного уровня не печатаются. По умолчанию уровень WARNING, а вывод идёт в stderr. Аргументы передают отдельно: log.info(\"файл %s\", name) — строка форматируется, только если сообщение реально пишется.\n\nprint — для результата программы, logging — для диагностики.",
+   "examples": [
+    {
+     "code": "import argparse\nimport logging\nimport sys\n\nparser = argparse.ArgumentParser(prog=\"resize\")\nparser.add_argument(\"image\")\nparser.add_argument(\"--width\", type=int, default=800)\nparser.add_argument(\"-q\", \"--quiet\", action=\"store_true\")\nargs = parser.parse_args([\"cat.png\", \"--width\", \"320\"])\n\nlogging.basicConfig(stream=sys.stdout, level=logging.INFO, format=\"%(levelname)s %(message)s\", force=True)\nlog = logging.getLogger(\"resize\")\nlog.debug(\"не видно: уровень ниже INFO\")\nlog.info(\"сжимаю %s до %d px\", args.image, args.width)\nprint(args.quiet)",
+     "output": "INFO сжимаю cat.png до 320 px\nFalse\n",
+     "note": "stream=sys.stdout — чтобы сообщения шли в обычный вывод (по умолчанию — stderr)."
+    }
+   ],
+   "pitfalls": [
+    "Строить строку для лога заранее: log.debug(f\"...{дорогой_расчёт()}\") считает, даже когда DEBUG выключен.",
+    "Забыть type=int: argparse возвращает строки, и \"3\" * 2 даст \"33\".",
+    "Вызывать basicConfig в каждом модуле: настраивают один раз в точке входа."
+   ],
+   "module": "project"
   }
  ]
 }
