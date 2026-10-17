@@ -180,7 +180,7 @@ class ReviewDots extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final game = context.gameColors;
-    const total = ReviewScheduler.intervalDays.length;
+    final total = ReviewScheduler.intervalDays.length;
     return Semantics(
       label: 'Освоено на $box из $total',
       excludeSemantics: true,

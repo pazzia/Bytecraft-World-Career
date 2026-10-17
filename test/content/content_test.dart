@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:bytecraft/core/errors/app_exception.dart';
@@ -8,7 +9,9 @@ import 'package:bytecraft/features/courses/data/content_sources.dart';
 import 'package:bytecraft/features/courses/data/default_content_repository.dart';
 import 'package:bytecraft/features/courses/domain/level_payload.dart';
 import 'package:bytecraft/features/courses/domain/level_type.dart';
+import 'package:bytecraft/features/journal/data/topic_repository.dart';
 import 'package:bytecraft/features/level/engine/answer_validator.dart';
+import 'package:bytecraft/features/playground/data/practice_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/test_env.dart';
@@ -29,20 +32,45 @@ void main() {
   group('bundled Python course', () {
     const bundled = BundledContentSource(readAsset);
 
-    test('has 5 modules with at least 4 playable levels each', () async {
+    test('starts with the basics, every module has a boss', () async {
       final course =
           ContentParser().parseCourse(await bundled.fetchCourse('python'));
-      expect(course.modules.map((module) => module.id), [
-        'variables',
-        'types',
-        'operators',
-        'conditions',
-        'loops',
-      ]);
+      expect(
+        course.modules.take(6).map((module) => module.id),
+        ['variables', 'types', 'operators', 'strings', 'io', 'conditions'],
+      );
+      expect(course.modules.length, greaterThanOrEqualTo(12));
       for (final module in course.modules) {
-        expect(module.levels.length, greaterThanOrEqualTo(4), reason: module.id);
+        expect(module.levels.length, greaterThanOrEqualTo(6), reason: module.id);
+        expect(module.levels.last.role, LevelRole.boss, reason: module.id);
       }
-      expect(course.levels.length, greaterThanOrEqualTo(20));
+    });
+
+    test('every level links to a topic of the journal catalog', () async {
+      final course =
+          ContentParser().parseCourse(await bundled.fetchCourse('python'));
+      final catalog = TopicRepository.parseTopics(
+        jsonDecode(await readAsset('assets/content/python/topics.json'))
+            as Map<String, dynamic>,
+      );
+      for (final level in course.levels) {
+        expect(catalog.byId(level.topicId), isNotNull, reason: level.id);
+      }
+      for (final topic in catalog.topics) {
+        expect(topic.examples, isNotEmpty, reason: topic.id);
+        expect(topic.body.trim(), isNotEmpty, reason: topic.id);
+      }
+    });
+
+    test('practice tasks parse and have tests', () async {
+      final tasks = PracticeRepository.parseTasks(
+        jsonDecode(await readAsset('assets/content/python/practice.json'))
+            as Map<String, dynamic>,
+      );
+      expect(tasks, isNotEmpty);
+      for (final task in tasks) {
+        expect(task.tests.length, greaterThanOrEqualTo(3), reason: task.id);
+      }
     });
 
     test('every level is valid and supported by the engine', () async {
@@ -132,7 +160,7 @@ void main() {
         ),
         cache: cache,
       );
-      expect((await bundledRepo.loadCourse('python')).version, 1);
+      expect((await bundledRepo.loadCourse('python')).version, 2);
       expect(await bundledRepo.refreshCourse('python'), isTrue);
       expect((await bundledRepo.loadCourse('python')).version, 999);
       expect(await cache.read('python'), isNotNull);
@@ -145,7 +173,7 @@ void main() {
         cache: cache,
       );
       expect(await bundledRepo.refreshCourse('python'), isFalse);
-      expect((await bundledRepo.loadCourse('python')).version, 1);
+      expect((await bundledRepo.loadCourse('python')).version, 2);
     });
 
     test('missing bundled asset surfaces as ContentNotFoundException', () async {

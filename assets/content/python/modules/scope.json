@@ -1,0 +1,265 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_scope_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Две переменные x",
+   "prompt": "Что выведет код?",
+   "topic": "scope_legb",
+   "difficulty": 1,
+   "hint": "Присваивание внутри функции создаёт новую, локальную переменную.",
+   "explanation": "x = 5 внутри show — локальная переменная. Глобальная x остаётся 10.",
+   "code": "x = 10\n\ndef show():\n    x = 5\n    print(x)\n\nshow()\nprint(x)",
+   "payload": {
+    "options": [
+     "5\n5",
+     "5\n10",
+     "10\n10",
+     "10\n5"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Локальная x не меняет глобальную.",
+     "",
+     "Внутри функции печатается локальная x = 5.",
+     "Сначала вызывается show (печатает 5), потом печатается глобальная x."
+    ]
+   },
+   "solution": {
+    "code": "x = 10\n\ndef show():\n    x = 5\n    print(x)\n\nshow()\nprint(x)",
+    "output": "5\n10\n"
+   }
+  },
+  {
+   "id": "py_scope_002",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Глобальный счётчик",
+   "prompt": "Сделайте так, чтобы функция меняла глобальную переменную count",
+   "topic": "scope_global",
+   "difficulty": 1,
+   "hint": "Нужна переменная уровня модуля.",
+   "explanation": "global count разрешает функции присваивать переменной модуля. nonlocal работает только с переменными внешней функции.",
+   "payload": {
+    "template": "count = 0\n\ndef inc():\n    {{0}} count\n    count += 1\n\ninc()\ninc()\nprint(count)",
+    "options": [
+     "global",
+     "nonlocal",
+     "local",
+     "static"
+    ],
+    "answers": [
+     "global"
+    ],
+    "variantResults": {
+     "nonlocal": "SyntaxError: no binding for nonlocal 'count' found",
+     "local": "SyntaxError: invalid syntax",
+     "static": "SyntaxError: invalid syntax"
+    }
+   },
+   "solution": {
+    "code": "count = 0\n\ndef inc():\n    global count\n    count += 1\n\ninc()\ninc()\nprint(count)",
+    "output": "2\n"
+   }
+  },
+  {
+   "id": "py_scope_003",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Снятие со счёта",
+   "prompt": "Функция должна вернуть остаток 70, не меняя глобальную переменную. Найдите строку, из-за которой возникает ошибка",
+   "topic": "scope_legb",
+   "difficulty": 3,
+   "hint": "Python падает на строке с if, но причина ниже: что делает присваивание внутри функции?",
+   "explanation": "Из-за присваивания balance = ... имя balance становится локальным во всей функции. Тогда уже в if читается локальная переменная, которой ещё нет: UnboundLocalError. Достаточно вернуть balance - amount.",
+   "code": "balance = 100\n\ndef withdraw(amount):\n    if amount > balance:\n        return \"мало средств\"\n    balance = balance - amount\n    return balance\n\nprint(withdraw(30))",
+   "payload": {
+    "buggyLines": [
+     5
+    ]
+   },
+   "solution": {
+    "code": "balance = 100\n\ndef withdraw(amount):\n    if amount > balance:\n        return \"мало средств\"\n    return balance - amount\n    return balance\n\nprint(withdraw(30))",
+    "output": "70\n"
+   }
+  },
+  {
+   "id": "py_scope_004",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Счётчик-замыкание",
+   "prompt": "Сделайте так, чтобы step увеличивал счётчик внешней функции",
+   "topic": "scope_closure",
+   "difficulty": 1,
+   "hint": "count живёт во внешней функции, а не в модуле.",
+   "explanation": "nonlocal count связывает имя с переменной make_counter. global искал бы count в модуле, где её нет.",
+   "payload": {
+    "template": "def make_counter():\n    count = 0\n    def step():\n        {{0}} count\n        count += 1\n        return count\n    return step\n\nc = make_counter()\nc()\nprint(c())",
+    "options": [
+     "nonlocal",
+     "global",
+     "return",
+     "del"
+    ],
+    "answers": [
+     "nonlocal"
+    ],
+    "variantResults": {
+     "global": "NameError: name 'count' is not defined",
+     "return": "UnboundLocalError: cannot access local variable 'count' where it is not associated with a value",
+     "del": "UnboundLocalError: cannot access local variable 'count' where it is not associated with a value"
+    }
+   },
+   "solution": {
+    "code": "def make_counter():\n    count = 0\n    def step():\n        nonlocal count\n        count += 1\n        return count\n    return step\n\nc = make_counter()\nc()\nprint(c())",
+    "output": "2\n"
+   }
+  },
+  {
+   "id": "py_scope_005",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Фабрика функций",
+   "prompt": "Напишите, что выведет код",
+   "topic": "scope_closure",
+   "difficulty": 2,
+   "hint": "Каждая функция mul помнит своё k.",
+   "explanation": "double умножает на 2, triple — на 3: 10 и 15. multiplier(10) сразу вызывается с 4: 40.",
+   "code": "def multiplier(k):\n    def mul(x):\n        return x * k\n    return mul\n\ndouble = multiplier(2)\ntriple = multiplier(3)\nprint(double(5), triple(5))\nprint(multiplier(10)(4))",
+   "payload": {
+    "expectedOutput": "10 15\n40"
+   },
+   "solution": {
+    "code": "def multiplier(k):\n    def mul(x):\n        return x * k\n    return mul\n\ndouble = multiplier(2)\ntriple = multiplier(3)\nprint(double(5), triple(5))\nprint(multiplier(10)(4))",
+    "output": "10 15\n40\n"
+   }
+  },
+  {
+   "id": "py_scope_006",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "LEGB",
+   "prompt": "Сопоставьте область видимости и где живёт имя",
+   "topic": "scope_legb",
+   "difficulty": 2,
+   "hint": "Порядок поиска имени — от ближнего к дальнему.",
+   "explanation": "Python ищет имя сначала в текущей функции, затем во внешних функциях, затем в модуле и в конце среди встроенных имён.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "Local",
+      "right": "Внутри текущей функции"
+     },
+     {
+      "left": "Enclosing",
+      "right": "Во внешней функции"
+     },
+     {
+      "left": "Global",
+      "right": "На уровне модуля"
+     },
+     {
+      "left": "Built-in",
+      "right": "Встроенные имена: len, print"
+     }
+    ]
+   }
+  },
+  {
+   "id": "py_scope_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Верные утверждения",
+   "prompt": "Какие утверждения верны?",
+   "topic": "scope_global",
+   "difficulty": 2,
+   "hint": "Чтение и присваивание работают по-разному.",
+   "explanation": "Читать глобальную переменную можно свободно, global нужен только для присваивания. nonlocal работает лишь с переменными внешней функции.",
+   "payload": {
+    "options": [
+     "Функция может читать глобальную переменную без global",
+     "Присваивание внутри функции создаёт локальную переменную",
+     "nonlocal можно применить к переменной модуля",
+     "Замыкание помнит переменные внешней функции после её завершения",
+     "global нужен, чтобы прочитать глобальную переменную"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     3
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "Для переменной модуля nonlocal даёт SyntaxError: нужен global.",
+     "",
+     "Для чтения global не нужен — только для присваивания."
+    ]
+   }
+  },
+  {
+   "id": "py_scope_008",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Функции в цикле",
+   "prompt": "Что выведет код?",
+   "topic": "scope_closure",
+   "difficulty": 3,
+   "hint": "Функция читает i в момент вызова, а не в момент создания.",
+   "explanation": "Все три функции читают одну и ту же переменную i. К моменту вызова цикл закончился и i = 2.",
+   "code": "funcs = []\nfor i in range(3):\n    def f():\n        return i\n    funcs.append(f)\n\nprint([f() for f in funcs])",
+   "payload": {
+    "options": [
+     "[0, 1, 2]",
+     "[0, 0, 0]",
+     "[3, 3, 3]",
+     "[2, 2, 2]"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Функции не запоминают значение i при создании, они читают переменную при вызове.",
+     "i меняется в цикле, и все функции видят последнее значение.",
+     "range(3) заканчивается на 2: после цикла i = 2.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "funcs = []\nfor i in range(3):\n    def f():\n        return i\n    funcs.append(f)\n\nprint([f() for f in funcs])",
+    "output": "[2, 2, 2]\n"
+   }
+  },
+  {
+   "id": "py_scope_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: nonlocal",
+   "prompt": "Что выведет код?",
+   "topic": "scope_global",
+   "difficulty": 3,
+   "hint": "nonlocal меняет переменную outer, но не глобальную.",
+   "explanation": "inner меняет x из outer на «changed», и outer возвращает его. Глобальная x не тронута.",
+   "code": "x = \"global\"\n\ndef outer():\n    x = \"enclosing\"\n    def inner():\n        nonlocal x\n        x = \"changed\"\n    inner()\n    return x\n\nprint(outer(), x)",
+   "payload": {
+    "options": [
+     "enclosing global",
+     "changed changed",
+     "global global",
+     "changed global"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "nonlocal x позволяет inner изменить x из outer.",
+     "nonlocal не трогает глобальную переменную.",
+     "outer возвращает свою x, а не глобальную.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "x = \"global\"\n\ndef outer():\n    x = \"enclosing\"\n    def inner():\n        nonlocal x\n        x = \"changed\"\n    inner()\n    return x\n\nprint(outer(), x)",
+    "output": "changed global\n"
+   }
+  }
+ ]
+}

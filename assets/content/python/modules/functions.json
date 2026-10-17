@@ -1,0 +1,260 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_func_001",
+   "type": "multiple_choice",
+   "role": "lesson",
+   "title": "Зачем return",
+   "prompt": "Что делает return внутри функции?",
+   "topic": "func_def",
+   "difficulty": 1,
+   "hint": "Результат return можно сохранить в переменную.",
+   "explanation": "return отдаёт значение туда, где функцию вызвали, и сразу завершает её. Печатает на экран print.",
+   "payload": {
+    "options": [
+     "Печатает значение на экран",
+     "Возвращает значение в место вызова и завершает функцию",
+     "Объявляет новую функцию",
+     "Повторяет функцию заново"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Печатает print. return ничего не показывает, он отдаёт значение.",
+     "",
+     "Функцию объявляет def.",
+     "Повторяют циклы. return, наоборот, завершает функцию."
+    ]
+   }
+  },
+  {
+   "id": "py_func_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "print или return",
+   "prompt": "Что выведет код?",
+   "topic": "func_def",
+   "difficulty": 1,
+   "hint": "Что возвращает функция, в которой нет return?",
+   "explanation": "add печатает 5, но ничего не возвращает. Поэтому result равен None, и второй print выводит None.",
+   "code": "def add(a, b):\n    print(a + b)\n\nresult = add(2, 3)\nprint(result)",
+   "payload": {
+    "options": [
+     "5\n5",
+     "5\nNone",
+     "5",
+     "None"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "В add нет return, значит result — None, а не 5.",
+     "",
+     "Второй print тоже выводит строку: значение result.",
+     "Первым срабатывает print внутри add: он выводит 5."
+    ]
+   },
+   "solution": {
+    "code": "def add(a, b):\n    print(a + b)\n\nresult = add(2, 3)\nprint(result)",
+    "output": "5\nNone\n"
+   }
+  },
+  {
+   "id": "py_func_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Вернуть квадрат",
+   "prompt": "Сделайте так, чтобы функция возвращала квадрат числа",
+   "topic": "func_def",
+   "difficulty": 1,
+   "hint": "Значение из функции отдаёт одно ключевое слово.",
+   "explanation": "return x * x возвращает 16 в место вызова, и print(square(4)) выводит его.",
+   "payload": {
+    "template": "def square(x):\n    {{0}} x * x\n\nprint(square(4))",
+    "options": [
+     "return",
+     "print",
+     "pass",
+     "def"
+    ],
+    "answers": [
+     "return"
+    ],
+    "variantResults": {
+     "print": "SyntaxError: Missing parentheses in call to 'print'. Did you mean print(...)?",
+     "pass": "SyntaxError: invalid syntax",
+     "def": "SyntaxError: expected '('"
+    }
+   },
+   "solution": {
+    "code": "def square(x):\n    return x * x\n\nprint(square(4))",
+    "output": "16\n"
+   }
+  },
+  {
+   "id": "py_func_004",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Значения по умолчанию",
+   "prompt": "Напишите, что выведет код",
+   "topic": "func_params",
+   "difficulty": 2,
+   "hint": "Если exp не передан, он равен 2. Именованные аргументы можно передавать в любом порядке.",
+   "explanation": "power(3) = 3² = 9, power(2, 5) = 2⁵ = 32, power(exp=3, base=2) = 2³ = 8.",
+   "code": "def power(base, exp=2):\n    return base ** exp\n\nprint(power(3))\nprint(power(2, 5))\nprint(power(exp=3, base=2))",
+   "payload": {
+    "expectedOutput": "9\n32\n8"
+   },
+   "solution": {
+    "code": "def power(base, exp=2):\n    return base ** exp\n\nprint(power(3))\nprint(power(2, 5))\nprint(power(exp=3, base=2))",
+    "output": "9\n32\n8\n"
+   }
+  },
+  {
+   "id": "py_func_005",
+   "type": "code_ordering",
+   "role": "practice",
+   "title": "Собери функцию",
+   "prompt": "Расставьте строки так, чтобы программа вывела 12",
+   "topic": "func_def",
+   "difficulty": 2,
+   "hint": "Сначала объявление функции и её тело, затем вызов.",
+   "explanation": "Тело функции идёт под def с отступом: обнуляем сумму, в цикле прибавляем, после цикла возвращаем. Вызов — в самом конце.",
+   "payload": {
+    "lines": [
+     "def total(prices):",
+     "    s = 0",
+     "    for p in prices:",
+     "        s += p",
+     "    return s",
+     "print(total([3, 4, 5]))"
+    ]
+   },
+   "solution": {
+    "code": "def total(prices):\n    s = 0\n    for p in prices:\n        s += p\n    return s\nprint(total([3, 4, 5]))",
+    "output": "12\n"
+   }
+  },
+  {
+   "id": "py_func_006",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Вызовы функции",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "func_params",
+   "difficulty": 2,
+   "hint": "Если y не передан, он равен 10. + для строк склеивает.",
+   "explanation": "f(1) = 1 + 10, f(1, 2) = 3, f(y=1, x=5) = 5 + 1, а для строк + склеивает их: ab.",
+   "code": "def f(x, y=10):\n    return x + y",
+   "payload": {
+    "pairs": [
+     {
+      "left": "f(1)",
+      "right": "11"
+     },
+     {
+      "left": "f(1, 2)",
+      "right": "3"
+     },
+     {
+      "left": "f(y=1, x=5)",
+      "right": "6"
+     },
+     {
+      "left": "f('a', 'b')",
+      "right": "ab"
+     }
+    ]
+   },
+   "solution": {
+    "code": "def f(x, y=10):\n    return x + y\nprint(f(1))\nprint(f(1, 2))\nprint(f(y=1, x=5))\nprint(f('a', 'b'))",
+    "output": "11\n3\n6\nab\n"
+   }
+  },
+  {
+   "id": "py_func_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Корректные вызовы",
+   "prompt": "Функция объявлена как def f(a, b=0). Какие вызовы сработают без ошибки?",
+   "topic": "func_params",
+   "difficulty": 2,
+   "hint": "a обязателен, позиционные аргументы идут раньше именованных.",
+   "explanation": "f(1), f(1, 2) и f(b=2, a=1) корректны. f() не передаёт обязательный a, f(a=1, 2) ставит позиционный после именованного, f(1, a=2) передаёт a дважды.",
+   "payload": {
+    "options": [
+     "f(1)",
+     "f(1, 2)",
+     "f(b=2, a=1)",
+     "f()",
+     "f(a=1, 2)",
+     "f(1, a=2)"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     2
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "",
+     "Параметр a обязательный: TypeError missing argument.",
+     "Позиционный аргумент не может идти после именованного: SyntaxError.",
+     "1 уже попал в a, а потом a передан ещё раз: TypeError multiple values."
+    ]
+   }
+  },
+  {
+   "id": "py_func_008",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Пропавший результат",
+   "prompt": "Программа должна вывести 7. Найдите строку с ошибкой",
+   "topic": "func_def",
+   "difficulty": 2,
+   "hint": "Что вернёт функция, если в ней нет return?",
+   "explanation": "Выражение w * h вычисляется и пропадает. Функция возвращает None, а None + 1 — это TypeError. Нужно return w * h.",
+   "code": "def area(w, h):\n    w * h\n\nprint(area(2, 3) + 1)",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "def area(w, h):\n    return w * h\n\nprint(area(2, 3) + 1)",
+    "output": "7\n"
+   }
+  },
+  {
+   "id": "py_func_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: забытая ветка",
+   "prompt": "Что выведет код?",
+   "topic": "func_def",
+   "difficulty": 3,
+   "hint": "Какая ветка сработает для 0 и что вернёт функция, если ни один return не выполнился?",
+   "explanation": "Для 0 не подходит ни одно условие, return не выполняется, и функция возвращает None.",
+   "code": "def sign(n):\n    if n > 0:\n        return \"+\"\n    elif n < 0:\n        return \"-\"\n\nprint(sign(5), sign(-2), sign(0))",
+   "payload": {
+    "options": [
+     "+ - 0",
+     "+ - +",
+     "+ - None",
+     "Ошибка"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Функция не возвращает 0: для n = 0 не срабатывает ни один return.",
+     "0 > 0 — ложь, ветка с \"+\" не выполняется.",
+     "",
+     "Ошибки нет: функция без сработавшего return просто возвращает None."
+    ]
+   },
+   "solution": {
+    "code": "def sign(n):\n    if n > 0:\n        return \"+\"\n    elif n < 0:\n        return \"-\"\n\nprint(sign(5), sign(-2), sign(0))",
+    "output": "+ - None\n"
+   }
+  }
+ ]
+}

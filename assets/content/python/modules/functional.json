@@ -1,0 +1,282 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_fn_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Короткая функция",
+   "prompt": "Что выведет код?",
+   "topic": "fn_lambda_key",
+   "difficulty": 1,
+   "hint": "lambda x: x * x — функция, которая возвращает x * x.",
+   "explanation": "square(5) вызывает лямбду с x = 5 и возвращает 25.",
+   "code": "square = lambda x: x * x\nprint(square(5))",
+   "payload": {
+    "options": [
+     "10",
+     "25",
+     "x * x",
+     "lambda"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "x * x — умножение на себя: 5 * 5.",
+     "",
+     "Вызов функции возвращает значение выражения, а не его текст.",
+     "square(5) — вызов, результат — число."
+    ]
+   },
+   "solution": {
+    "code": "square = lambda x: x * x\nprint(square(5))",
+    "output": "25\n"
+   }
+  },
+  {
+   "id": "py_fn_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Сортировка по длине",
+   "prompt": "Что выведет код?",
+   "topic": "fn_lambda_key",
+   "difficulty": 1,
+   "hint": "key=len сравнивает длины слов.",
+   "explanation": "Длины: kiwi — 4, apple — 5, banana — 6. sorted возвращает сами слова в порядке возрастания ключа.",
+   "code": "words = [\"banana\", \"kiwi\", \"apple\"]\nprint(sorted(words, key=len))",
+   "payload": {
+    "options": [
+     "['apple', 'banana', 'kiwi']",
+     "['kiwi', 'apple', 'banana']",
+     "['banana', 'apple', 'kiwi']",
+     "[4, 5, 6]"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Так сортирует sorted без key — по алфавиту.",
+     "",
+     "Это сортировка по убыванию длины, а sorted по умолчанию сортирует по возрастанию.",
+     "key влияет только на порядок: возвращаются сами слова."
+    ]
+   },
+   "solution": {
+    "code": "words = [\"banana\", \"kiwi\", \"apple\"]\nprint(sorted(words, key=len))",
+    "output": "['kiwi', 'apple', 'banana']\n"
+   }
+  },
+  {
+   "id": "py_fn_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Самый старший",
+   "prompt": "Найдите самого старшего: возраст — второй элемент кортежа",
+   "topic": "fn_lambda_key",
+   "difficulty": 1,
+   "hint": "Индексация с нуля: имя — p[0].",
+   "explanation": "key=lambda p: p[1] сравнивает возрасты, и max находит («Ann», 40).",
+   "payload": {
+    "template": "people = [(\"Zoe\", 31), (\"Bob\", 25), (\"Ann\", 40)]\noldest = max(people, key=lambda p: p[{{0}}])\nprint(oldest[0])",
+    "options": [
+     "1",
+     "0",
+     "-2",
+     "2"
+    ],
+    "answers": [
+     "1"
+    ],
+    "variantResults": {
+     "0": "Zoe",
+     "-2": "Zoe",
+     "2": "IndexError: tuple index out of range"
+    }
+   },
+   "solution": {
+    "code": "people = [(\"Zoe\", 31), (\"Bob\", 25), (\"Ann\", 40)]\noldest = max(people, key=lambda p: p[1])\nprint(oldest[0])",
+    "output": "Ann\n"
+   }
+  },
+  {
+   "id": "py_fn_004",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Встроенные помощники",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "fn_builtins",
+   "difficulty": 2,
+   "hint": "filter(None, ...) убирает ложные значения. zip останавливается на короткой последовательности.",
+   "explanation": "map превращает числа в строки, filter(None) убирает 0, any находит 8 > 7, all ложно из-за 0, zip берёт две пары.",
+   "code": "nums = [3, 0, 8, 5]",
+   "payload": {
+    "pairs": [
+     {
+      "left": "list(map(str, nums))",
+      "right": "['3', '0', '8', '5']"
+     },
+     {
+      "left": "list(filter(None, nums))",
+      "right": "[3, 8, 5]"
+     },
+     {
+      "left": "any(n > 7 for n in nums)",
+      "right": "True"
+     },
+     {
+      "left": "all(nums)",
+      "right": "False"
+     },
+     {
+      "left": "list(zip(nums, 'ab'))",
+      "right": "[(3, 'a'), (0, 'b')]"
+     }
+    ]
+   },
+   "solution": {
+    "code": "nums = [3, 0, 8, 5]\nprint(list(map(str, nums)))\nprint(list(filter(None, nums)))\nprint(any(n > 7 for n in nums))\nprint(all(nums))\nprint(list(zip(nums, 'ab')))",
+    "output": "['3', '0', '8', '5']\n[3, 8, 5]\nTrue\nFalse\n[(3, 'a'), (0, 'b')]\n"
+   }
+  },
+  {
+   "id": "py_fn_005",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Номера и пары",
+   "prompt": "Напишите, что выведет код",
+   "topic": "fn_builtins",
+   "difficulty": 2,
+   "hint": "zip даёт пары (имя, год), enumerate нумерует их с 1.",
+   "explanation": "zip соединяет списки попарно, enumerate(start=1) добавляет номер, а распаковка (name, year) разбирает пару.",
+   "code": "names = [\"Ada\", \"Linus\"]\nyears = [1815, 1969]\nfor i, (name, year) in enumerate(zip(names, years), start=1):\n    print(f\"{i}. {name} - {year}\")",
+   "payload": {
+    "expectedOutput": "1. Ada - 1815\n2. Linus - 1969"
+   },
+   "solution": {
+    "code": "names = [\"Ada\", \"Linus\"]\nyears = [1815, 1969]\nfor i, (name, year) in enumerate(zip(names, years), start=1):\n    print(f\"{i}. {name} - {year}\")",
+    "output": "1. Ada - 1815\n2. Linus - 1969\n"
+   }
+  },
+  {
+   "id": "py_fn_006",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Пропавшая сортировка",
+   "prompt": "Нужно вывести наибольший балл. Найдите строку с ошибкой",
+   "topic": "fn_lambda_key",
+   "difficulty": 2,
+   "hint": "Что возвращает метод sort?",
+   "explanation": "list.sort() сортирует список на месте и возвращает None, поэтому top[0] — TypeError. sorted возвращает новый список.",
+   "code": "scores = [70, 95, 82]\ntop = scores.sort(reverse=True)\nprint(top[0])",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "scores = [70, 95, 82]\ntop = sorted(scores, reverse=True)\nprint(top[0])",
+    "output": "95\n"
+   }
+  },
+  {
+   "id": "py_fn_007",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "reduce и partial",
+   "prompt": "Что выведет код?",
+   "topic": "fn_functools",
+   "difficulty": 2,
+   "hint": "reduce здесь перемножает. int с base=2 читает двоичную запись.",
+   "explanation": "1·2·3·4 = 24. partial фиксирует base=2, и «1010» читается как двоичное 10.",
+   "code": "from functools import reduce, partial\n\nprint(reduce(lambda acc, x: acc * x, [1, 2, 3, 4]))\nfrom_binary = partial(int, base=2)\nprint(from_binary(\"1010\"))",
+   "payload": {
+    "options": [
+     "10\n1010",
+     "24\n10",
+     "24\n1010",
+     "10\n10"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Лямбда умножает, а не складывает. И int читает строку в двоичной системе.",
+     "",
+     "from_binary возвращает число: двоичное 1010 — это 10.",
+     "acc * x — умножение: результат 24."
+    ]
+   },
+   "solution": {
+    "code": "from functools import reduce, partial\n\nprint(reduce(lambda acc, x: acc * x, [1, 2, 3, 4]))\nfrom_binary = partial(int, base=2)\nprint(from_binary(\"1010\"))",
+    "output": "24\n10\n"
+   }
+  },
+  {
+   "id": "py_fn_008",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Отбор больших",
+   "prompt": "nums = [1, 5, 2, 7]. Какие выражения дают список [5, 7]?",
+   "topic": "fn_builtins",
+   "difficulty": 2,
+   "hint": "Нужен именно список чисел.",
+   "explanation": "Включение, list(filter(...)) и sorted(...) дают [5, 7]. Голый filter — ленивый объект, а map с условием даёт список True/False.",
+   "payload": {
+    "options": [
+     "[n for n in nums if n > 2]",
+     "list(filter(lambda n: n > 2, nums))",
+     "filter(lambda n: n > 2, nums)",
+     "list(map(lambda n: n > 2, nums))",
+     "sorted(n for n in nums if n > 2)"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     4
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "filter возвращает ленивый объект, а не список.",
+     "map применяет условие к каждому: [False, True, False, True].",
+     ""
+    ]
+   }
+  },
+  {
+   "id": "py_fn_009",
+   "type": "code_ordering",
+   "role": "boss",
+   "title": "Босс: конвейер заказов",
+   "prompt": "Расставьте строки так, чтобы вывелось tea, coffee",
+   "topic": "fn_lambda_key",
+   "difficulty": 3,
+   "hint": "Данные → фильтр → сортировка → имена → вывод.",
+   "explanation": "Сначала отбрасываем товары с нулевым остатком, затем сортируем по остатку по убыванию и берём имена.",
+   "payload": {
+    "lines": [
+     "orders = [(\"tea\", 3), (\"cake\", 0), (\"coffee\", 2)]",
+     "in_stock = [o for o in orders if o[1] > 0]",
+     "in_stock.sort(key=lambda o: o[1], reverse=True)",
+     "names = [name for name, _ in in_stock]",
+     "print(\", \".join(names))"
+    ],
+    "alternativeOrders": [
+     [
+      0,
+      1,
+      3,
+      2,
+      4
+     ],
+     [
+      0,
+      1,
+      3,
+      4,
+      2
+     ]
+    ]
+   },
+   "solution": {
+    "code": "orders = [(\"tea\", 3), (\"cake\", 0), (\"coffee\", 2)]\nin_stock = [o for o in orders if o[1] > 0]\nin_stock.sort(key=lambda o: o[1], reverse=True)\nnames = [name for name, _ in in_stock]\nprint(\", \".join(names))",
+    "output": "tea, coffee\n"
+   }
+  }
+ ]
+}

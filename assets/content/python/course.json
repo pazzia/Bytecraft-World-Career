@@ -100,6 +100,46 @@
    "icon": "⚡",
    "file": "modules/comprehensions.json",
    "timedRunSeconds": 620
+  },
+  {
+   "id": "functions",
+   "title": "Функции",
+   "description": "def, параметры и return",
+   "icon": "🧩",
+   "file": "modules/functions.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "args",
+   "title": "Гибкие аргументы",
+   "description": "*args, **kwargs и распаковка",
+   "icon": "🎛️",
+   "file": "modules/args.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "scope",
+   "title": "Области видимости",
+   "description": "LEGB, global, nonlocal, замыкания",
+   "icon": "🔭",
+   "file": "modules/scope.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "functional",
+   "title": "Функциональный стиль",
+   "description": "lambda, sorted, map, filter, functools",
+   "icon": "λ",
+   "file": "modules/functional.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "recursion",
+   "title": "Рекурсия",
+   "description": "Функция вызывает саму себя",
+   "icon": "🪆",
+   "file": "modules/recursion.json",
+   "timedRunSeconds": 690
   }
  ]
 }

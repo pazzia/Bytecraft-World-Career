@@ -428,6 +428,190 @@
    "difficulty": 2,
    "hint": "Включение + ' '.join(str(...)).",
    "module": "comprehensions"
+  },
+  {
+   "id": "t_func_clamp",
+   "title": "Ограничить число",
+   "prompt": "Напишите функцию clamp(x, lo, hi), которая возвращает x, но не меньше lo и не больше hi. Прочитайте три целых числа x lo hi из одной строки и выведите clamp(x, lo, hi).",
+   "starter": "def clamp(x, lo, hi):\n    pass\n\nx, lo, hi = map(int, input().split())\nprint(clamp(x, lo, hi))",
+   "solution": "def clamp(x, lo, hi):\n    return max(lo, min(x, hi))\n\nx, lo, hi = map(int, input().split())\nprint(clamp(x, lo, hi))",
+   "tests": [
+    {
+     "stdin": "5 0 10\n",
+     "expected": "5\n"
+    },
+    {
+     "stdin": "-3 0 10\n",
+     "expected": "0\n"
+    },
+    {
+     "stdin": "42 0 10\n",
+     "expected": "10\n"
+    },
+    {
+     "stdin": "7 7 7\n",
+     "expected": "7\n"
+    }
+   ],
+   "difficulty": 1,
+   "hint": "min(x, hi) срезает сверху, max(lo, ...) — снизу.",
+   "module": "functions"
+  },
+  {
+   "id": "t_func_palindrome",
+   "title": "Палиндром",
+   "prompt": "Напишите функцию is_palindrome(word), которая возвращает True, если слово читается одинаково в обе стороны (без учёта регистра). Прочитайте слово и выведите «да» или «нет».",
+   "starter": "def is_palindrome(word):\n    return False\n\nprint(\"да\" if is_palindrome(input().strip()) else \"нет\")",
+   "solution": "def is_palindrome(word):\n    word = word.lower()\n    return word == word[::-1]\n\nprint(\"да\" if is_palindrome(input().strip()) else \"нет\")",
+   "tests": [
+    {
+     "stdin": "Шалаш\n",
+     "expected": "да\n"
+    },
+    {
+     "stdin": "python\n",
+     "expected": "нет\n"
+    },
+    {
+     "stdin": "Anna\n",
+     "expected": "да\n"
+    },
+    {
+     "stdin": "a\n",
+     "expected": "да\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Срез [::-1] разворачивает строку.",
+   "module": "functions"
+  },
+  {
+   "id": "t_args_average",
+   "title": "Среднее любого количества",
+   "prompt": "Напишите функцию average(*nums), которая возвращает среднее арифметическое аргументов, а для пустого вызова — 0. Прочитайте числа из строки (через пробел, строка может быть пустой) и выведите average(*числа), округлив до 2 знаков.",
+   "starter": "def average(*nums):\n    return sum(nums)\n\nnumbers = [float(x) for x in input().split()]\nprint(round(average(*numbers), 2))",
+   "solution": "def average(*nums):\n    if not nums:\n        return 0\n    return sum(nums) / len(nums)\n\nnumbers = [float(x) for x in input().split()]\nprint(round(average(*numbers), 2))",
+   "tests": [
+    {
+     "stdin": "1 2 3 4\n",
+     "expected": "2.5\n"
+    },
+    {
+     "stdin": "10\n",
+     "expected": "10.0\n"
+    },
+    {
+     "stdin": "\n",
+     "expected": "0\n"
+    },
+    {
+     "stdin": "2.5 3.5\n",
+     "expected": "3.0\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Пустой кортеж — это ложь: if not nums.",
+   "module": "args"
+  },
+  {
+   "id": "t_scope_running_total",
+   "title": "Накопитель",
+   "prompt": "Напишите функцию make_acc(), которая возвращает функцию add(x): add прибавляет x к накопленной сумме и возвращает новую сумму. Прочитайте числа через пробел и выведите накопленную сумму после каждого числа, через пробел.",
+   "starter": "def make_acc():\n    def add(x):\n        return x\n    return add\n\nadd = make_acc()\nprint(\" \".join(str(add(int(x))) for x in input().split()))",
+   "solution": "def make_acc():\n    total = 0\n    def add(x):\n        nonlocal total\n        total += x\n        return total\n    return add\n\nadd = make_acc()\nprint(\" \".join(str(add(int(x))) for x in input().split()))",
+   "tests": [
+    {
+     "stdin": "1 2 3\n",
+     "expected": "1 3 6\n"
+    },
+    {
+     "stdin": "5\n",
+     "expected": "5\n"
+    },
+    {
+     "stdin": "10 -4 7 1\n",
+     "expected": "10 6 13 14\n"
+    }
+   ],
+   "difficulty": 3,
+   "hint": "Сумму храните в переменной make_acc и меняйте её через nonlocal.",
+   "module": "scope"
+  },
+  {
+   "id": "t_fn_rank",
+   "title": "Таблица результатов",
+   "prompt": "В первой строке — число n, далее n строк «имя баллы». Выведите имена по убыванию баллов, а при равных баллах — по алфавиту, каждое с новой строки.",
+   "starter": "n = int(input())\nrows = []\nfor _ in range(n):\n    name, score = input().split()\n    rows.append((name, int(score)))\nfor name, _ in rows:\n    print(name)",
+   "solution": "n = int(input())\nrows = []\nfor _ in range(n):\n    name, score = input().split()\n    rows.append((name, int(score)))\nfor name, _ in sorted(rows, key=lambda r: (-r[1], r[0])):\n    print(name)",
+   "tests": [
+    {
+     "stdin": "3\nann 5\nbob 9\ncid 7\n",
+     "expected": "bob\ncid\nann\n"
+    },
+    {
+     "stdin": "3\nzoe 5\namy 5\nbob 1\n",
+     "expected": "amy\nzoe\nbob\n"
+    },
+    {
+     "stdin": "1\nsolo 3\n",
+     "expected": "solo\n"
+    }
+   ],
+   "difficulty": 3,
+   "hint": "Ключ сортировки может быть кортежем: (-баллы, имя).",
+   "module": "functional"
+  },
+  {
+   "id": "t_rec_digits",
+   "title": "Сумма цифр",
+   "prompt": "Напишите рекурсивную функцию digit_sum(n), которая возвращает сумму цифр неотрицательного числа (без циклов и строк). Прочитайте n и выведите digit_sum(n).",
+   "starter": "def digit_sum(n):\n    return n % 10\n\nprint(digit_sum(int(input())))",
+   "solution": "def digit_sum(n):\n    if n < 10:\n        return n\n    return n % 10 + digit_sum(n // 10)\n\nprint(digit_sum(int(input())))",
+   "tests": [
+    {
+     "stdin": "12345\n",
+     "expected": "15\n"
+    },
+    {
+     "stdin": "7\n",
+     "expected": "7\n"
+    },
+    {
+     "stdin": "0\n",
+     "expected": "0\n"
+    },
+    {
+     "stdin": "909\n",
+     "expected": "18\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Последняя цифра — n % 10, остальные — n // 10.",
+   "module": "recursion"
+  },
+  {
+   "id": "t_rec_hanoi",
+   "title": "Ханойская башня",
+   "prompt": "Выведите ходы для переноса n дисков со стержня A на стержень C через B. Каждый ход — строка вида «A -> C».",
+   "starter": "def hanoi(n, src, via, dst):\n    print(f\"{src} -> {dst}\")\n\nhanoi(int(input()), \"A\", \"B\", \"C\")",
+   "solution": "def hanoi(n, src, via, dst):\n    if n == 0:\n        return\n    hanoi(n - 1, src, dst, via)\n    print(f\"{src} -> {dst}\")\n    hanoi(n - 1, via, src, dst)\n\nhanoi(int(input()), \"A\", \"B\", \"C\")",
+   "tests": [
+    {
+     "stdin": "1\n",
+     "expected": "A -> C\n"
+    },
+    {
+     "stdin": "2\n",
+     "expected": "A -> B\nA -> C\nB -> C\n"
+    },
+    {
+     "stdin": "3\n",
+     "expected": "A -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\n"
+    }
+   ],
+   "difficulty": 3,
+   "hint": "Перенесите n - 1 дисков на вспомогательный стержень, самый большой — на цель, затем n - 1 дисков сверху.",
+   "module": "recursion"
   }
  ]
 }

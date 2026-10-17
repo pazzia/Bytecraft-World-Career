@@ -202,11 +202,11 @@ class _TaskList extends ConsumerWidget {
       data: (tasks) {
         final modules = course?.modules ?? const [];
         final titles = {for (final module in modules) module.id: module.title};
-        final order = [
+        final order = <String>{
           for (final module in modules) module.id,
           for (final task in tasks)
             if (!titles.containsKey(task.moduleId)) task.moduleId,
-        ].toSet().toList();
+        }.toList();
         return ListView(
           padding: const EdgeInsets.fromLTRB(
             Spacing.page,

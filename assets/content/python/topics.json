@@ -717,6 +717,291 @@
     "(x for x in ...) — это не кортеж, а генератор."
    ],
    "module": "comprehensions"
+  },
+  {
+   "id": "func_def",
+   "title": "Объявление функции и return",
+   "summary": "def имя(параметры): — объявляет функцию; return возвращает результат в место вызова.",
+   "body": "Функция — именованный блок кода. Тело пишется с отступом под строкой def и выполняется только при вызове: имя(аргументы).\n\nreturn завершает функцию и отдаёт значение туда, откуда её вызвали. Его можно сохранить в переменную или сразу использовать в выражении.\n\nЕсли return не выполнился (его нет или он без значения), функция возвращает None. print внутри функции только показывает текст на экране и ничего не возвращает.",
+   "examples": [
+    {
+     "code": "def square(x):\n    return x * x\n\narea = square(4) + 1\nprint(area)",
+     "output": "17\n",
+     "note": "Результат return участвует в выражении."
+    },
+    {
+     "code": "def shout(text):\n    print(text.upper())\n\nresult = shout(\"привет\")\nprint(result)",
+     "output": "ПРИВЕТ\nNone\n",
+     "note": "Функция без return возвращает None."
+    }
+   ],
+   "pitfalls": [
+    "Путать print и return: напечатанное значение нельзя использовать дальше в программе.",
+    "Забыть скобки при вызове: square вместо square(4) — это сама функция, а не результат."
+   ],
+   "module": "functions"
+  },
+  {
+   "id": "func_params",
+   "title": "Параметры и аргументы",
+   "summary": "Параметры — имена в объявлении, аргументы — значения при вызове. Бывают позиционные, именованные и со значением по умолчанию.",
+   "body": "def power(base, exp=2) — у exp есть значение по умолчанию: power(3) — это 3 ** 2.\n\nАргументы можно передать по позиции power(2, 5) или по имени power(exp=5, base=2). Именованные аргументы идут после позиционных.\n\nКоличество аргументов должно подходить к параметрам, иначе TypeError: missing ... argument или takes ... positional arguments but ... were given.",
+   "examples": [
+    {
+     "code": "def power(base, exp=2):\n    return base ** exp\n\nprint(power(3), power(2, 5), power(exp=3, base=2))",
+     "output": "9 32 8\n"
+    }
+   ],
+   "pitfalls": [
+    "Ставить именованный аргумент перед позиционным: f(a=1, 2) — SyntaxError.",
+    "Передавать одно значение дважды: f(1, a=2) — TypeError: multiple values."
+   ],
+   "module": "functions"
+  },
+  {
+   "id": "args_star",
+   "title": "*args и **kwargs",
+   "summary": "*args собирает лишние позиционные аргументы в кортеж, **kwargs — лишние именованные в словарь.",
+   "body": "def total(*nums) принимает любое количество чисел: внутри nums — кортеж. total() тоже работает: nums будет пустым кортежем.\n\ndef info(**options) принимает любые именованные аргументы: внутри options — словарь {имя: значение}.\n\nИмена args и kwargs — соглашение. Важны звёздочки: одна — кортеж позиционных, две — словарь именованных. Порядок в объявлении: обычные, *args, именованные, **kwargs.",
+   "examples": [
+    {
+     "code": "def total(*nums):\n    return sum(nums)\n\nprint(total(1, 2, 3), total())",
+     "output": "6 0\n"
+    },
+    {
+     "code": "def info(**options):\n    for key, value in options.items():\n        print(key, \"=\", value)\n\ninfo(color=\"red\", size=3)",
+     "output": "color = red\nsize = 3\n",
+     "note": "Порядок ключей совпадает с порядком аргументов."
+    }
+   ],
+   "pitfalls": [
+    "Ждать в *args список: это кортеж.",
+    "Ставить **kwargs раньше *args в объявлении: SyntaxError."
+   ],
+   "module": "args"
+  },
+  {
+   "id": "args_unpack",
+   "title": "Распаковка при вызове",
+   "summary": "f(*список) раскладывает элементы по позиционным параметрам, f(**словарь) — по именованным.",
+   "body": "Звёздочка при вызове делает обратное сбору: f(*[1, 2]) — то же, что f(1, 2), а f(**{\"x\": 1}) — то же, что f(x=1).\n\nКлючи словаря должны совпадать с именами параметров, иначе TypeError: unexpected keyword argument.\n\nРаспаковку можно сочетать: f(*coords, **options).",
+   "examples": [
+    {
+     "code": "def point(x, y, z=0):\n    return (x, y, z)\n\ncoords = [1, 2]\nprint(point(*coords), point(*coords, **{\"z\": 5}))",
+     "output": "(1, 2, 0) (1, 2, 5)\n"
+    }
+   ],
+   "pitfalls": [
+    "Передать список без звёздочки: f([1, 2]) — это один аргумент, а не два."
+   ],
+   "module": "args"
+  },
+  {
+   "id": "args_kwonly",
+   "title": "Только именованные и только позиционные",
+   "summary": "Параметры после * передаются только по имени; параметры до / — только по позиции.",
+   "body": "def connect(host, *, timeout=5): timeout можно передать только как timeout=10. Это защищает от ошибок: в вызове сразу видно, что значит число.\n\ndef div(a, b, /): a и b нельзя передать по имени. Так сделаны многие встроенные функции: len(obj=[1]) не сработает.\n\nМожно сочетать: def f(a, /, b, *, c).",
+   "examples": [
+    {
+     "code": "def connect(host, *, timeout=5):\n    return f\"{host}:{timeout}\"\n\nprint(connect(\"db\", timeout=10))",
+     "output": "db:10\n"
+    }
+   ],
+   "pitfalls": [
+    "Передавать параметр после * позиционно: TypeError takes 1 positional argument."
+   ],
+   "module": "args"
+  },
+  {
+   "id": "args_mutable_default",
+   "title": "Изменяемое значение по умолчанию",
+   "summary": "Значение по умолчанию вычисляется один раз при объявлении функции. Список по умолчанию общий для всех вызовов.",
+   "body": "def add(item, items=[]) создаёт один список в момент def. Каждый вызов без items берёт этот же список и продолжает его заполнять.\n\nПравильный приём — None по умолчанию и новый список внутри:\nif items is None: items = []\n\nЭто касается любых изменяемых значений: списков, словарей, множеств.",
+   "examples": [
+    {
+     "code": "def add(item, items=None):\n    if items is None:\n        items = []\n    items.append(item)\n    return items\n\nprint(add(\"a\"), add(\"b\"))",
+     "output": "['a'] ['b']\n",
+     "note": "Каждый вызов получает новый список."
+    }
+   ],
+   "pitfalls": [
+    "items=[] или options={} в объявлении: данные «перетекают» между вызовами."
+   ],
+   "module": "args"
+  },
+  {
+   "id": "scope_legb",
+   "title": "Правило LEGB",
+   "summary": "Имя ищется по очереди: Local → Enclosing → Global → Built-in. Присваивание внутри функции делает имя локальным.",
+   "body": "Local — переменные текущей функции. Enclosing — переменные внешней функции (если функция вложенная). Global — переменные модуля. Built-in — встроенные имена вроде len и print.\n\nЧитать глобальную переменную внутри функции можно без объявлений. Но если внутри функции этому имени что-то присваивается (даже ниже по тексту), имя считается локальным во всей функции. Тогда чтение до присваивания даёт UnboundLocalError.",
+   "examples": [
+    {
+     "code": "x = 10\n\ndef show():\n    x = 5\n    print(\"внутри\", x)\n\nshow()\nprint(\"снаружи\", x)",
+     "output": "внутри 5\nснаружи 10\n",
+     "note": "Локальная x не меняет глобальную."
+    },
+    {
+     "code": "rate = 2\n\ndef apply(n):\n    return n * rate\n\nprint(apply(21))",
+     "output": "42\n",
+     "note": "Чтение глобальной переменной работает без global."
+    }
+   ],
+   "pitfalls": [
+    "count += 1 внутри функции без global: UnboundLocalError.",
+    "Называть переменные именами встроенных функций (list, sum): они перекрывают встроенные."
+   ],
+   "module": "scope"
+  },
+  {
+   "id": "scope_global",
+   "title": "global и nonlocal",
+   "summary": "global имя — присваивать глобальной переменной; nonlocal имя — переменной внешней функции.",
+   "body": "global count внутри функции говорит: count — это переменная модуля, присваивание меняет её.\n\nnonlocal count во вложенной функции говорит: count — переменная из объемлющей функции. На уровне модуля nonlocal не работает (SyntaxError).\n\nГлобальное состояние усложняет программы. Чаще лучше вернуть значение из функции или использовать замыкание или класс.",
+   "examples": [
+    {
+     "code": "count = 0\n\ndef inc():\n    global count\n    count += 1\n\ninc()\ninc()\nprint(count)",
+     "output": "2\n"
+    }
+   ],
+   "pitfalls": [
+    "nonlocal для переменной модуля: SyntaxError no binding for nonlocal."
+   ],
+   "module": "scope"
+  },
+  {
+   "id": "scope_closure",
+   "title": "Замыкания",
+   "summary": "Вложенная функция запоминает переменные внешней функции, даже когда внешняя уже завершилась.",
+   "body": "def multiplier(k): def mul(x): return x * k; return mul — функция mul «замыкает» k. multiplier(3) возвращает функцию, которая умножает на 3.\n\nЗамыкание хранит ссылку на переменную, а не её значение на момент создания. Поэтому функции, созданные в цикле, видят последнее значение переменной цикла. Решение: передать значение параметром по умолчанию (def f(i=i)) или создать функцию через фабрику.",
+   "examples": [
+    {
+     "code": "def multiplier(k):\n    def mul(x):\n        return x * k\n    return mul\n\ntriple = multiplier(3)\nprint(triple(5), multiplier(10)(4))",
+     "output": "15 40\n"
+    },
+    {
+     "code": "def make_counter():\n    count = 0\n    def step():\n        nonlocal count\n        count += 1\n        return count\n    return step\n\nc = make_counter()\nprint(c(), c(), c())",
+     "output": "1 2 3\n",
+     "note": "У каждого счётчика своя переменная count."
+    }
+   ],
+   "pitfalls": [
+    "Ждать, что функции из цикла запомнят разные значения переменной цикла."
+   ],
+   "module": "scope"
+  },
+  {
+   "id": "fn_lambda_key",
+   "title": "lambda и параметр key",
+   "summary": "lambda x: выражение — короткая безымянная функция. Часто передаётся в key у sorted, min, max.",
+   "body": "lambda x: x * x — то же, что def f(x): return x * x, но в одну строку и без имени. Внутри lambda только одно выражение, без return.\n\nkey — функция, которая для каждого элемента вычисляет ключ сравнения. sorted(words, key=len) сортирует по длине, max(people, key=lambda p: p[1]) ищет человека с наибольшим вторым полем.\n\nsorted возвращает новый список, list.sort() сортирует на месте и возвращает None. Сортировка устойчивая: равные по ключу элементы сохраняют исходный порядок.",
+   "examples": [
+    {
+     "code": "words = [\"banana\", \"kiwi\", \"apple\"]\nprint(sorted(words, key=len))\nprint(max(words, key=lambda w: w[-1]))",
+     "output": "['kiwi', 'apple', 'banana']\nkiwi\n",
+     "note": "max по последней букве: a, i, e — наибольшая i."
+    },
+    {
+     "code": "people = [(\"Ann\", 31), (\"Bob\", 25)]\npeople.sort(key=lambda p: p[1])\nprint(people)",
+     "output": "[('Bob', 25), ('Ann', 31)]\n",
+     "note": "sort меняет сам список."
+    }
+   ],
+   "pitfalls": [
+    "x = items.sort() — в x окажется None.",
+    "Писать key=len() со скобками: нужно передать функцию, а не результат её вызова."
+   ],
+   "module": "functional"
+  },
+  {
+   "id": "fn_builtins",
+   "title": "map, filter, zip, enumerate, any, all",
+   "summary": "Встроенные функции для работы с последовательностями. Многие возвращают ленивые объекты, которые превращают в список через list().",
+   "body": "map(f, seq) применяет f к каждому элементу. filter(f, seq) оставляет элементы, для которых f истинна (filter(None, seq) убирает «ложные»).\n\nzip(a, b) идёт по двум последовательностям параллельно и останавливается на самой короткой. enumerate(seq, start=1) добавляет номер.\n\nany(seq) — есть ли хоть одно истинное значение, all(seq) — все ли истинны. all([]) — True.\n\nmap, filter и zip возвращают итераторы: их можно пройти один раз.",
+   "examples": [
+    {
+     "code": "nums = [3, 0, 8]\nprint(list(map(str, nums)), list(filter(None, nums)))\nprint(any(n > 7 for n in nums), all(nums))",
+     "output": "['3', '0', '8'] [3, 8]\nTrue False\n"
+    },
+    {
+     "code": "for i, (name, year) in enumerate(zip([\"Ада\", \"Линус\"], [1815, 1969]), start=1):\n    print(i, name, year)",
+     "output": "1 Ада 1815\n2 Линус 1969\n"
+    }
+   ],
+   "pitfalls": [
+    "print(map(...)) показывает объект map, а не значения: нужен list().",
+    "Второй проход по одному и тому же map или zip ничего не даёт: итератор исчерпан."
+   ],
+   "module": "functional"
+  },
+  {
+   "id": "fn_functools",
+   "title": "functools: reduce и partial",
+   "summary": "reduce сворачивает последовательность в одно значение; partial фиксирует часть аргументов функции.",
+   "body": "reduce(f, seq, start) вызывает f(acc, x) для каждого элемента, накапливая результат: reduce(lambda a, x: a * x, [1, 2, 3, 4]) = 24.\n\npartial(int, base=2) создаёт новую функцию, похожую на int, но с уже заданным base. Удобно для колбэков и настройки функций.\n\nДля простых сумм и произведений есть sum и math.prod — они понятнее reduce.",
+   "examples": [
+    {
+     "code": "from functools import reduce, partial\n\nprint(reduce(lambda acc, x: acc * x, [1, 2, 3, 4]))\nfrom_binary = partial(int, base=2)\nprint(from_binary(\"1010\"))",
+     "output": "24\n10\n"
+    }
+   ],
+   "pitfalls": [
+    "reduce без начального значения на пустом списке — TypeError."
+   ],
+   "module": "functional"
+  },
+  {
+   "id": "rec_basics",
+   "title": "Базовый случай и шаг рекурсии",
+   "summary": "Рекурсивная функция вызывает саму себя для задачи поменьше и останавливается на базовом случае.",
+   "body": "Две обязательные части: базовый случай (ответ известен сразу, например factorial(0) = 1) и рекурсивный шаг, который приближает к базовому случаю (factorial(n) = n * factorial(n - 1)).\n\nКаждый вызов ждёт результата следующего — они складываются в стек вызовов. Код после рекурсивного вызова выполняется на обратном пути, в обратном порядке.\n\nБез базового случая (или если шаг к нему не приближает) вызовы не кончаются, и Python останавливает программу: RecursionError (глубина около 1000 вызовов).",
+   "examples": [
+    {
+     "code": "def factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n - 1)\n\nprint(factorial(5))",
+     "output": "120\n"
+    },
+    {
+     "code": "def show(n):\n    if n == 0:\n        return\n    print(\"вход\", n)\n    show(n - 1)\n    print(\"выход\", n)\n\nshow(2)",
+     "output": "вход 2\nвход 1\nвыход 1\nвыход 2\n",
+     "note": "После рекурсивного вызова код выполняется в обратном порядке."
+    }
+   ],
+   "pitfalls": [
+    "Шаг, который пропускает базовый случай: countdown(n - 2) при нечётном n никогда не даст 0."
+   ],
+   "module": "recursion"
+  },
+  {
+   "id": "rec_structures",
+   "title": "Рекурсия по вложенным структурам",
+   "summary": "Рекурсия естественна для вложенных данных: списков в списках, деревьев, папок.",
+   "body": "Если элемент сам является списком — обрабатываем его той же функцией. Иначе это «лист», и с ним работаем напрямую.\n\nТак считают глубину вложенности, «расплющивают» списки, обходят дерево каталогов или JSON.",
+   "examples": [
+    {
+     "code": "def flatten(items):\n    result = []\n    for x in items:\n        if isinstance(x, list):\n            result.extend(flatten(x))\n        else:\n            result.append(x)\n    return result\n\nprint(flatten([1, [2, [3, 4]], 5]))",
+     "output": "[1, 2, 3, 4, 5]\n"
+    }
+   ],
+   "pitfalls": [
+    "append вместо extend для результата рекурсии: вложенность сохранится."
+   ],
+   "module": "recursion"
+  },
+  {
+   "id": "rec_memo",
+   "title": "Мемоизация",
+   "summary": "functools.lru_cache (или cache) запоминает результаты вызовов. Повторные вызовы с теми же аргументами не пересчитываются.",
+   "body": "Наивный fib(n) = fib(n - 1) + fib(n - 2) вызывает одни и те же значения экспоненциально много раз: fib(35) считается секунды, fib(50) — часы.\n\nСтрока @lru_cache(maxsize=None) над функцией (это декоратор, о них — в отдельной теме) кэширует результаты: каждое fib(k) вычисляется один раз, и время становится линейным.\n\nАргументы кэшируемой функции должны быть хешируемыми (числа, строки, кортежи).",
+   "examples": [
+    {
+     "code": "from functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\nprint(fib(80))",
+     "output": "23416728348467685\n",
+     "note": "Без кэша такой вызов не закончился бы."
+    }
+   ],
+   "pitfalls": [
+    "Кэшировать функцию со списком в аргументах: TypeError unhashable type."
+   ],
+   "module": "recursion"
   }
  ]
 }
