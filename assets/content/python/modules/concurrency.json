@@ -29,8 +29,7 @@
    },
    "solution": {
     "code": "import threading\n\nresults = []\n\ndef work(n):\n    results.append(n * n)\n\nthreads = [threading.Thread(target=work, args=(n,)) for n in range(4)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\nprint(sorted(results), threading.active_count())",
-    "output": "[0, 1, 4, 9] 1\n",
-    "nativeOnly": true
+    "output": "[0, 1, 4, 9] 1\n"
    }
   },
   {
@@ -62,8 +61,7 @@
    },
    "solution": {
     "code": "import threading\n\ndef greet(name):\n    print(\"привет,\", name)\n\nt = threading.Thread(target=greet, args=(\"Ада\",))\nt.start()\nt.join()\nprint(\"поток завершён:\", not t.is_alive())",
-    "output": "привет, Ада\nпоток завершён: True\n",
-    "nativeOnly": true
+    "output": "привет, Ада\nпоток завершён: True\n"
    }
   },
   {
@@ -84,8 +82,7 @@
    },
    "solution": {
     "code": "import threading\nimport time\n\nbalance = 100\nlock = threading.Lock()\n\ndef withdraw(amount):\n    global balance\n    with lock:\n        current = balance\n        time.sleep(0.1)\n        balance = current - amount\n\nthreads = [threading.Thread(target=withdraw, args=(a,)) for a in (30, 20)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\nprint(balance)",
-    "output": "50\n",
-    "nativeOnly": true
+    "output": "50\n"
    }
   },
   {
@@ -114,8 +111,7 @@
    },
    "solution": {
     "code": "from concurrent.futures import ThreadPoolExecutor\nimport time\n\ndef slow_square(n):\n    time.sleep(0.05 * (3 - n))\n    return n * n\n\nwith ThreadPoolExecutor(max_workers=3) as pool:\n    print(list(pool.map(slow_square, [0, 1, 2])))",
-    "output": "[0, 1, 4]\n",
-    "nativeOnly": true
+    "output": "[0, 1, 4]\n"
    }
   },
   {
@@ -144,8 +140,7 @@
    },
    "solution": {
     "code": "from concurrent.futures import ThreadPoolExecutor, as_completed\nimport time\n\ndef job(name, delay):\n    time.sleep(delay)\n    return name\n\nwith ThreadPoolExecutor() as pool:\n    futures = [pool.submit(job, n, d) for n, d in [(\"a\", 0.3), (\"b\", 0.1), (\"c\", 0.2)]]\n    print([f.result() for f in as_completed(futures)])\n    print([f.result() for f in futures])",
-    "output": "['b', 'c', 'a']\n['a', 'b', 'c']\n",
-    "nativeOnly": true
+    "output": "['b', 'c', 'a']\n['a', 'b', 'c']\n"
    }
   },
   {
@@ -231,8 +226,7 @@
    },
    "solution": {
     "code": "import threading\n\ncounter = 0\nlock = threading.Lock()\n\ndef add():\n    global counter\n    for _ in range(5000):\n        with lock:\n            counter += 1\n\nthreads = [threading.Thread(target=add) for _ in range(3)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\nprint(counter, len(threads))",
-    "output": "15000 3\n",
-    "nativeOnly": true
+    "output": "15000 3\n"
    }
   },
   {
@@ -289,8 +283,7 @@
    },
    "solution": {
     "code": "import queue\nimport threading\n\nq = queue.Queue()\nresults = []\n\ndef worker():\n    while True:\n        item = q.get()\n        if item is None:\n            break\n        results.append(item * 10)\n        q.task_done()\n\nt = threading.Thread(target=worker)\nt.start()\nfor i in range(3):\n    q.put(i)\nq.join()\nprint(results)\nq.put(None)\nt.join()\nprint(t.is_alive())",
-    "output": "[0, 10, 20]\nFalse\n",
-    "nativeOnly": true
+    "output": "[0, 10, 20]\nFalse\n"
    }
   }
  ]

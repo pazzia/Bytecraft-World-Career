@@ -22,7 +22,9 @@ def _bytecraft_check(code, stdin):
     error = None
     try:
         with contextlib.redirect_stdout(out):
-            exec(compile(code, "main.py", "exec"), {"__name__": "__main__"})
+            _bytecraft_threads_reset()
+            exec(_bytecraft_compile(code), {"__name__": "__main__"})
+            _bytecraft_threads_finish()
     except SystemExit as e:
         if e.code not in (None, 0):
             error = f"SystemExit: {e.code}"
@@ -65,8 +67,12 @@ for (const task of practice.tasks) {
 
 const pyodide = await loadPyodide();
 pyodide.runPython(RUNNER);
-// The same blocking asyncio loop as in the app (assets/python_runner/worker.js).
-pyodide.runPython(readFileSync(new URL('../../assets/python_runner/sandbox_asyncio.py', import.meta.url), 'utf8'));
+// The same blocking asyncio loop and emulated threads as in the app
+// (assets/python_runner/worker.js).
+for (const name of ['sandbox_asyncio.py', 'sandbox_threads.py']) {
+  const source = readFileSync(new URL(`../../assets/python_runner/${name}`, import.meta.url), 'utf8');
+  pyodide.runPython(source, { globals: pyodide.toPy({ __name__: name.replace('.py', '') }) });
+}
 const check = pyodide.globals.get('_bytecraft_check');
 console.log(`Pyodide ${pyodide.version}, Python ${pyodide.runPython('import sys; sys.version.split()[0]')}`);
 
