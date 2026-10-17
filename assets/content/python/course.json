@@ -1,49 +1,305 @@
 {
-  "schemaVersion": 1,
-  "id": "python",
-  "title": "Python Basics",
-  "language": "python",
-  "version": 1,
-  "modules": [
-    {
-      "id": "variables",
-      "title": "Переменные",
-      "description": "Как хранить данные",
-      "icon": "📦",
-      "file": "modules/variables.json",
-      "timedRunSeconds": 300
-    },
-    {
-      "id": "types",
-      "title": "Типы данных",
-      "description": "Числа, строки и логика",
-      "icon": "🔢",
-      "file": "modules/types.json",
-      "timedRunSeconds": 360
-    },
-    {
-      "id": "operators",
-      "title": "Операторы",
-      "description": "Считаем и сравниваем",
-      "icon": "➗",
-      "file": "modules/operators.json",
-      "timedRunSeconds": 420
-    },
-    {
-      "id": "conditions",
-      "title": "Условия",
-      "description": "if, elif, else",
-      "icon": "🔀",
-      "file": "modules/conditions.json",
-      "timedRunSeconds": 480
-    },
-    {
-      "id": "loops",
-      "title": "Циклы",
-      "description": "for и while",
-      "icon": "🔁",
-      "file": "modules/loops.json",
-      "timedRunSeconds": 600
-    }
-  ]
+ "schemaVersion": 1,
+ "id": "python",
+ "title": "Python: от основ до профи",
+ "language": "python",
+ "version": 2,
+ "modules": [
+  {
+   "id": "variables",
+   "title": "Переменные",
+   "description": "Как хранить данные",
+   "icon": "📦",
+   "file": "modules/variables.json",
+   "timedRunSeconds": 620
+  },
+  {
+   "id": "types",
+   "title": "Типы данных",
+   "description": "Числа, строки и логика",
+   "icon": "🔢",
+   "file": "modules/types.json",
+   "timedRunSeconds": 620
+  },
+  {
+   "id": "operators",
+   "title": "Операторы",
+   "description": "Считаем и сравниваем",
+   "icon": "➗",
+   "file": "modules/operators.json",
+   "timedRunSeconds": 620
+  },
+  {
+   "id": "strings",
+   "title": "Строки",
+   "description": "Индексы, срезы, методы",
+   "icon": "🔤",
+   "file": "modules/strings.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "io",
+   "title": "Ввод и вывод",
+   "description": "print, input и форматирование",
+   "icon": "⌨️",
+   "file": "modules/io.json",
+   "timedRunSeconds": 550
+  },
+  {
+   "id": "conditions",
+   "title": "Условия",
+   "description": "if, elif, else",
+   "icon": "🔀",
+   "file": "modules/conditions.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "loops",
+   "title": "Циклы",
+   "description": "for и while",
+   "icon": "🔁",
+   "file": "modules/loops.json",
+   "timedRunSeconds": 620
+  },
+  {
+   "id": "loops_control",
+   "title": "Управление циклами",
+   "description": "break, continue, else, вложенные циклы",
+   "icon": "🎛️",
+   "file": "modules/loops_control.json",
+   "timedRunSeconds": 830
+  },
+  {
+   "id": "lists",
+   "title": "Списки",
+   "description": "Изменяемые последовательности",
+   "icon": "📋",
+   "file": "modules/lists.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "tuples_sets",
+   "title": "Кортежи и множества",
+   "description": "Неизменяемые пары и уникальные значения",
+   "icon": "🧩",
+   "file": "modules/tuples_sets.json",
+   "timedRunSeconds": 620
+  },
+  {
+   "id": "dicts",
+   "title": "Словари",
+   "description": "Ключ → значение",
+   "icon": "📒",
+   "file": "modules/dicts.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "comprehensions",
+   "title": "Включения",
+   "description": "Списки, словари и множества в одну строку (comprehensions)",
+   "icon": "⚡",
+   "file": "modules/comprehensions.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "functions",
+   "title": "Функции",
+   "description": "def, параметры и return",
+   "icon": "🧩",
+   "file": "modules/functions.json",
+   "timedRunSeconds": 830
+  },
+  {
+   "id": "args",
+   "title": "Гибкие аргументы",
+   "description": "*args, **kwargs и распаковка",
+   "icon": "🎛️",
+   "file": "modules/args.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "scope",
+   "title": "Области видимости",
+   "description": "LEGB, global, nonlocal, замыкания",
+   "icon": "🔭",
+   "file": "modules/scope.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "functional",
+   "title": "Функциональный стиль",
+   "description": "lambda, sorted, map, filter, functools",
+   "icon": "λ",
+   "file": "modules/functional.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "recursion",
+   "title": "Рекурсия",
+   "description": "Функция вызывает саму себя",
+   "icon": "🪆",
+   "file": "modules/recursion.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "exceptions",
+   "title": "Исключения",
+   "description": "try, except, raise",
+   "icon": "🛟",
+   "file": "modules/exceptions.json",
+   "timedRunSeconds": 830
+  },
+  {
+   "id": "files",
+   "title": "Файлы",
+   "description": "open, with, pathlib",
+   "icon": "📄",
+   "file": "modules/files.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "stdlib",
+   "title": "Стандартная библиотека",
+   "description": "import, collections, itertools",
+   "icon": "🧰",
+   "file": "modules/stdlib.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "textdata",
+   "title": "Текст и данные",
+   "description": "json, регулярные выражения, даты",
+   "icon": "🗂️",
+   "file": "modules/textdata.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "classes",
+   "title": "Классы и объекты",
+   "description": "class, __init__, self",
+   "icon": "🏗️",
+   "file": "modules/classes.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "inheritance",
+   "title": "Наследование",
+   "description": "super, полиморфизм, ABC",
+   "icon": "🌳",
+   "file": "modules/inheritance.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "dunder",
+   "title": "Магические методы",
+   "description": "__str__, __eq__, __add__, __len__",
+   "icon": "✨",
+   "file": "modules/dunder.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "properties",
+   "title": "Свойства и методы класса",
+   "description": "@property, @classmethod, @staticmethod",
+   "icon": "🔐",
+   "file": "modules/properties.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "dataclasses",
+   "title": "Dataclasses и Enum",
+   "description": "Классы данных и перечисления",
+   "icon": "🗃️",
+   "file": "modules/dataclasses.json",
+   "timedRunSeconds": 830
+  },
+  {
+   "id": "generators",
+   "title": "Итераторы и генераторы",
+   "description": "iter, next, yield, ленивые вычисления",
+   "icon": "🌀",
+   "file": "modules/generators.json",
+   "timedRunSeconds": 830
+  },
+  {
+   "id": "decorators",
+   "title": "Декораторы",
+   "description": "Функции, которые меняют функции",
+   "icon": "🎀",
+   "file": "modules/decorators.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "contexts",
+   "title": "Контекстные менеджеры",
+   "description": "with, __enter__, __exit__, contextlib",
+   "icon": "🚪",
+   "file": "modules/contexts.json",
+   "timedRunSeconds": 830
+  },
+  {
+   "id": "typing",
+   "title": "Аннотации типов",
+   "description": "Подсказки типов, Protocol, дженерики",
+   "icon": "🏷️",
+   "file": "modules/typing.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "algorithms",
+   "title": "Алгоритмы и сложность",
+   "description": "O-большое, поиск, сортировка, графы",
+   "icon": "🧮",
+   "file": "modules/algorithms.json",
+   "timedRunSeconds": 830
+  },
+  {
+   "id": "pythonic",
+   "title": "Идиомы Python",
+   "description": "match/case, :=, распаковка, EAFP",
+   "icon": "🐍",
+   "file": "modules/pythonic.json",
+   "timedRunSeconds": 900
+  },
+  {
+   "id": "testing",
+   "title": "Тестирование и отладка",
+   "description": "assert, unittest, mock, logging",
+   "icon": "🧪",
+   "file": "modules/testing.json",
+   "timedRunSeconds": 830
+  },
+  {
+   "id": "async",
+   "title": "Асинхронность: asyncio",
+   "description": "async/await, задачи, gather, таймауты, очереди",
+   "icon": "⏳",
+   "file": "modules/async.json",
+   "timedRunSeconds": 1040
+  },
+  {
+   "id": "concurrency",
+   "title": "Потоки и процессы",
+   "description": "threading, Lock, очереди, пулы, GIL",
+   "icon": "🧵",
+   "file": "modules/concurrency.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "performance",
+   "title": "Производительность",
+   "description": "Замеры, кэш, память, быстрые идиомы",
+   "icon": "🚀",
+   "file": "modules/performance.json",
+   "timedRunSeconds": 760
+  },
+  {
+   "id": "project",
+   "title": "Программа как проект",
+   "description": "__main__, argparse, logging, PEP 8, docstring",
+   "icon": "🏗️",
+   "file": "modules/project.json",
+   "timedRunSeconds": 830
+  }
+ ]
 }

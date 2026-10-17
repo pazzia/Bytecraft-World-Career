@@ -8,6 +8,9 @@ enum LevelType {
   codeOrdering('code_ordering'),
   bugFinder('bug_finder'),
   predictOutput('predict_output'),
+  typeOutput('type_output'),
+  matchPairs('match_pairs'),
+  multiSelect('multi_select'),
   robotPuzzle('robot_puzzle'),
   optimization('optimization'),
   unknown('unknown');

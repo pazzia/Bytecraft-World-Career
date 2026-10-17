@@ -1,0 +1,302 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_typing_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Аннотация — не проверка",
+   "prompt": "Что выведет код?",
+   "topic": "typing_basics",
+   "difficulty": 1,
+   "hint": "Проверяет ли Python аннотации во время выполнения?",
+   "explanation": "Аннотации не проверяются при выполнении. Строки складываются как обычно: «4» + «2» = «42».",
+   "code": "def add(a: int, b: int) -> int:\n    return a + b\n\nprint(add(\"4\", \"2\"))",
+   "payload": {
+    "options": [
+     "6",
+     "TypeError",
+     "None",
+     "42"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Строки «4» и «2» склеиваются, а не складываются как числа.",
+     "Python не проверяет аннотации при вызове — это делают инструменты вроде mypy.",
+     "Функция возвращает a + b.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "def add(a: int, b: int) -> int:\n    return a + b\n\nprint(add(\"4\", \"2\"))",
+    "output": "42\n"
+   }
+  },
+  {
+   "id": "py_typing_002",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Где хранятся аннотации",
+   "prompt": "Что выведет код?",
+   "topic": "typing_basics",
+   "difficulty": 2,
+   "hint": "Аннотации хранятся в словаре __annotations__. Что в нём лежит и как это печатается?",
+   "explanation": "__annotations__ — словарь «параметр → тип», результат хранится под ключом 'return'. Значения — объекты-классы, поэтому печатаются как <class 'str'>.",
+   "code": "def greet(name: str, times: int = 1) -> str:\n    return name * times\n\nprint(greet.__annotations__)",
+   "payload": {
+    "options": [
+     "{'name': <class 'str'>, 'times': <class 'int'>, 'return': <class 'str'>}",
+     "{'name': str, 'times': int, 'return': str}",
+     "{'name': 'str', 'times': 'int'}",
+     "None"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Классы в словаре печатаются как <class 'str'>.",
+     "Типы хранятся как классы, а не строки, и есть ключ 'return'.",
+     "Аннотации сохраняются в __annotations__."
+    ]
+   },
+   "solution": {
+    "code": "def greet(name: str, times: int = 1) -> str:\n    return name * times\n\nprint(greet.__annotations__)",
+    "output": "{'name': <class 'str'>, 'times': <class 'int'>, 'return': <class 'str'>}\n"
+   }
+  },
+  {
+   "id": "py_typing_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Значение или None",
+   "prompt": "Опишите, что функция возвращает число или None",
+   "topic": "typing_basics",
+   "difficulty": 1,
+   "hint": "Объединение типов записывается тем же оператором, что объединение множеств.",
+   "explanation": "int | None — «целое или None». int or None просто вычисляется в int, а & и + с типами дают TypeError.",
+   "payload": {
+    "template": "def find(names: list[str], target: str) -> int {{0}} None:\n    return names.index(target) if target in names else None\n\nprint(find([\"a\", \"b\"], \"b\"), find.__annotations__[\"return\"])",
+    "options": [
+     "|",
+     "or",
+     "&",
+     "+"
+    ],
+    "answers": [
+     "|"
+    ],
+    "variantResults": {
+     "or": "1 <class 'int'>",
+     "&": "TypeError: unsupported operand type(s) for &: 'type' and 'NoneType'",
+     "+": "TypeError: unsupported operand type(s) for +: 'type' and 'NoneType'"
+    }
+   },
+   "solution": {
+    "code": "def find(names: list[str], target: str) -> int | None:\n    return names.index(target) if target in names else None\n\nprint(find([\"a\", \"b\"], \"b\"), find.__annotations__[\"return\"])",
+    "output": "1 int | None\n"
+   }
+  },
+  {
+   "id": "py_typing_004",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Читаем аннотации",
+   "prompt": "Сопоставьте аннотацию и её смысл",
+   "topic": "typing_basics",
+   "difficulty": 2,
+   "hint": "Многоточие в tuple означает «сколько угодно элементов».",
+   "explanation": "list[int] и dict[str, float] описывают содержимое коллекций, tuple[int, ...] — кортеж произвольной длины, | — объединение типов, Callable[[аргументы], результат] — функцию.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "list[int]",
+      "right": "Список целых чисел"
+     },
+     {
+      "left": "dict[str, float]",
+      "right": "Словарь: строка → число float"
+     },
+     {
+      "left": "tuple[int, ...]",
+      "right": "Кортеж любой длины из целых"
+     },
+     {
+      "left": "int | None",
+      "right": "Целое число или None"
+     },
+     {
+      "left": "Callable[[int], str]",
+      "right": "Функция: принимает int, возвращает str"
+     }
+    ]
+   }
+  },
+  {
+   "id": "py_typing_005",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Допустимые аннотации",
+   "prompt": "Какие аннотации сработают в def f(x: <аннотация>): без импортов?",
+   "topic": "typing_basics",
+   "difficulty": 2,
+   "hint": "Аннотация вычисляется при объявлении функции. Строка в кавычках не вычисляется.",
+   "explanation": "list[int], int | None и tuple[int, ...] — корректные выражения. \"Node\" в кавычках — отложенная ссылка (класс можно объявить позже). List без импорта — NameError, int + str — TypeError.",
+   "payload": {
+    "options": [
+     "list[int]",
+     "int | None",
+     "List[int]",
+     "tuple[int, ...]",
+     "\"Node\"",
+     "int + str"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     3,
+     4
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "List нужно импортировать из typing — а лучше писать list[int].",
+     "",
+     "",
+     "Типы не складываются: это TypeError при объявлении функции."
+    ]
+   }
+  },
+  {
+   "id": "py_typing_006",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Протокол",
+   "prompt": "Что выведет код?",
+   "topic": "typing_advanced",
+   "difficulty": 3,
+   "hint": "runtime_checkable-протокол при isinstance проверяет только наличие атрибута с нужным именем.",
+   "explanation": "Socket не наследует Closer, но у него есть close — подходит. У Fake тоже есть атрибут close (пусть и число), и isinstance его пропускает: проверяются только имена. У строки close нет.",
+   "code": "from typing import Protocol, runtime_checkable\n\n@runtime_checkable\nclass Closer(Protocol):\n    def close(self) -> None: ...\n\nclass Socket:\n    def close(self) -> None:\n        print(\"закрыт\")\n\nclass Fake:\n    close = 5\n\nprint(isinstance(Socket(), Closer), isinstance(Fake(), Closer), isinstance(\"hi\", Closer))",
+   "payload": {
+    "options": [
+     "True False False",
+     "True True False",
+     "False False False",
+     "TypeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "isinstance с протоколом проверяет лишь, что атрибут close есть, — у Fake он есть.",
+     "",
+     "Наследовать протокол не нужно: у Socket есть close.",
+     "@runtime_checkable разрешает isinstance с протоколом."
+    ]
+   },
+   "solution": {
+    "code": "from typing import Protocol, runtime_checkable\n\n@runtime_checkable\nclass Closer(Protocol):\n    def close(self) -> None: ...\n\nclass Socket:\n    def close(self) -> None:\n        print(\"закрыт\")\n\nclass Fake:\n    close = 5\n\nprint(isinstance(Socket(), Closer), isinstance(Fake(), Closer), isinstance(\"hi\", Closer))",
+    "output": "True True False\n"
+   }
+  },
+  {
+   "id": "py_typing_007",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Обобщённый класс",
+   "prompt": "Напишите, что выведет код",
+   "topic": "typing_advanced",
+   "difficulty": 3,
+   "hint": "[T] после имени класса объявляет параметр типа. Box[str] при выполнении ничего не проверяет.",
+   "explanation": "Box хранит значение любого типа. Box[str](...) работает как обычный вызов. __type_params__ — кортеж из параметра T, он печатается как (T,).",
+   "code": "class Box[T]:\n    def __init__(self, item: T):\n        self.item = item\n\nprint(Box(5).item, Box[str](\"x\").item)\nprint(Box.__type_params__)",
+   "payload": {
+    "expectedOutput": "5 x\n(T,)"
+   },
+   "solution": {
+    "code": "class Box[T]:\n    def __init__(self, item: T):\n        self.item = item\n\nprint(Box(5).item, Box[str](\"x\").item)\nprint(Box.__type_params__)",
+    "output": "5 x\n(T,)\n"
+   }
+  },
+  {
+   "id": "py_typing_008",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Забытый None",
+   "prompt": "Если имени нет (None), функция должна приветствовать гостя. Найдите строку с ошибкой",
+   "topic": "typing_basics",
+   "difficulty": 2,
+   "hint": "Аннотация str | None говорит: name может быть None. Что тогда сделает name.title()?",
+   "explanation": "У None нет метода title — AttributeError. Анализатор типов предупредил бы об этом заранее. Нужно обработать None, например name or \"гость\".",
+   "code": "def greet(name: str | None) -> str:\n    return \"Привет, \" + name.title()\n\nprint(greet(\"ада\"))\nprint(greet(None))",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "def greet(name: str | None) -> str:\n    return \"Привет, \" + (name or \"гость\").title()\n\nprint(greet(\"ада\"))\nprint(greet(None))",
+    "output": "Привет, Ада\nПривет, Гость\n"
+   }
+  },
+  {
+   "id": "py_typing_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Final и Literal",
+   "prompt": "Что выведет код?",
+   "topic": "typing_advanced",
+   "difficulty": 3,
+   "hint": "Final и Literal — подсказки для анализатора. Что из этого проверяется при выполнении?",
+   "explanation": "Python не мешает переприсвоить Final и передать в Literal другое значение: программа печатает 4 x. Ошибки покажет только статический анализатор (mypy, pyright) — до запуска.",
+   "code": "from typing import Final, Literal\n\nLIMIT: Final = 3\nLIMIT = 4\n\ndef open_mode(m: Literal[\"r\", \"w\"]) -> str:\n    return m\n\nprint(LIMIT, open_mode(\"x\"))",
+   "payload": {
+    "options": [
+     "4 x",
+     "3 x",
+     "TypeError",
+     "4 r"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Final не запрещает присваивание во время выполнения — LIMIT стал 4.",
+     "Аннотации не проверяются при выполнении.",
+     "Literal ничего не подставляет: функция возвращает переданное «x»."
+    ]
+   },
+   "solution": {
+    "code": "from typing import Final, Literal\n\nLIMIT: Final = 3\nLIMIT = 4\n\ndef open_mode(m: Literal[\"r\", \"w\"]) -> str:\n    return m\n\nprint(LIMIT, open_mode(\"x\"))",
+    "output": "4 x\n"
+   }
+  },
+  {
+   "id": "py_typing_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: TypedDict и псевдонимы",
+   "prompt": "Что выведет код?",
+   "topic": "typing_advanced",
+   "difficulty": 4,
+   "hint": "TypedDict существует только для анализатора: во время выполнения — обычный словарь без проверок.",
+   "explanation": "u — обычный dict, и строка «7» вместо числа проходит без ошибки. get_type_hints(User) возвращает объявленные ключи: id и name.",
+   "code": "from typing import TypedDict, get_type_hints\n\ntype UserId = int\n\nclass User(TypedDict):\n    id: UserId\n    name: str\n\nu: User = {\"id\": \"7\", \"name\": \"Ада\"}\nprint(type(u).__name__, repr(u[\"id\"]), list(get_type_hints(User)))",
+   "payload": {
+    "options": [
+     "User '7' ['id', 'name']",
+     "dict '7' ['id', 'name']",
+     "dict 7 ['id', 'name']",
+     "TypeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Объект, созданный литералом {...}, — обычный dict.",
+     "",
+     "Значение осталось строкой: TypedDict ничего не преобразует — repr показывает кавычки.",
+     "Во время выполнения TypedDict ничего не проверяет."
+    ]
+   },
+   "solution": {
+    "code": "from typing import TypedDict, get_type_hints\n\ntype UserId = int\n\nclass User(TypedDict):\n    id: UserId\n    name: str\n\nu: User = {\"id\": \"7\", \"name\": \"Ада\"}\nprint(type(u).__name__, repr(u[\"id\"]), list(get_type_hints(User)))",
+    "output": "dict '7' ['id', 'name']\n"
+   }
+  }
+ ]
+}

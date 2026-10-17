@@ -1,0 +1,297 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_conc_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Запуск и ожидание",
+   "prompt": "Что выведет код?",
+   "topic": "conc_threads",
+   "difficulty": 1,
+   "hint": "join дожидается конца каждого потока. А сколько потоков живо после этого?",
+   "explanation": "После join все четыре потока закончили работу: в results четыре квадрата. Живым остаётся только главный поток — active_count() равен 1.",
+   "code": "import threading\n\nresults = []\n\ndef work(n):\n    results.append(n * n)\n\nthreads = [threading.Thread(target=work, args=(n,)) for n in range(4)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\nprint(sorted(results), threading.active_count())",
+   "payload": {
+    "options": [
+     "[] 1",
+     "[0, 1, 4, 9] 1",
+     "[0, 1, 4, 9] 5",
+     "[0, 1, 4, 9] 4"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "join ждёт завершения потоков — к print все результаты уже добавлены.",
+     "",
+     "Завершённые потоки не считаются: живым остался только главный.",
+     "active_count считает и главный поток, а рабочие уже закончились."
+    ]
+   },
+   "solution": {
+    "code": "import threading\n\nresults = []\n\ndef work(n):\n    results.append(n * n)\n\nthreads = [threading.Thread(target=work, args=(n,)) for n in range(4)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\nprint(sorted(results), threading.active_count())",
+    "output": "[0, 1, 4, 9] 1\n",
+    "nativeOnly": true
+   }
+  },
+  {
+   "id": "py_conc_002",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Аргументы потока",
+   "prompt": "Передайте имя в функцию потока",
+   "topic": "conc_threads",
+   "difficulty": 1,
+   "hint": "Позиционные аргументы для target передают кортежем.",
+   "explanation": "args — кортеж позиционных аргументов для target. kwargs ждёт словарь (кортеж даст TypeError ещё до вызова greet); name и daemon — настройки самого потока, а greet вызовется без аргумента и упадёт.",
+   "payload": {
+    "template": "import threading\n\ndef greet(name):\n    print(\"привет,\", name)\n\nt = threading.Thread(target=greet, {{0}}=(\"Ада\",))\nt.start()\nt.join()\nprint(\"поток завершён:\", not t.is_alive())",
+    "options": [
+     "args",
+     "kwargs",
+     "name",
+     "daemon"
+    ],
+    "answers": [
+     "args"
+    ],
+    "variantResults": {
+     "kwargs": "поток завершён: True",
+     "name": "поток завершён: True",
+     "daemon": "поток завершён: True"
+    }
+   },
+   "solution": {
+    "code": "import threading\n\ndef greet(name):\n    print(\"привет,\", name)\n\nt = threading.Thread(target=greet, args=(\"Ада\",))\nt.start()\nt.join()\nprint(\"поток завершён:\", not t.is_alive())",
+    "output": "привет, Ада\nпоток завершён: True\n",
+    "nativeOnly": true
+   }
+  },
+  {
+   "id": "py_conc_003",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Замок, который не запирает",
+   "prompt": "Два снятия должны оставить 50. Найдите строку с ошибкой",
+   "topic": "conc_threads",
+   "difficulty": 3,
+   "hint": "Сколько разных замков создаётся в этой программе?",
+   "explanation": "threading.Lock() внутри функции создаёт новый замок при каждом вызове — потоки не мешают друг другу. Оба читают 100, и одно снятие теряется. Нужен один общий lock.",
+   "code": "import threading\nimport time\n\nbalance = 100\nlock = threading.Lock()\n\ndef withdraw(amount):\n    global balance\n    with threading.Lock():\n        current = balance\n        time.sleep(0.1)\n        balance = current - amount\n\nthreads = [threading.Thread(target=withdraw, args=(a,)) for a in (30, 20)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\nprint(balance)",
+   "payload": {
+    "buggyLines": [
+     8
+    ]
+   },
+   "solution": {
+    "code": "import threading\nimport time\n\nbalance = 100\nlock = threading.Lock()\n\ndef withdraw(amount):\n    global balance\n    with lock:\n        current = balance\n        time.sleep(0.1)\n        balance = current - amount\n\nthreads = [threading.Thread(target=withdraw, args=(a,)) for a in (30, 20)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\nprint(balance)",
+    "output": "50\n",
+    "nativeOnly": true
+   }
+  },
+  {
+   "id": "py_conc_004",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Порядок в pool.map",
+   "prompt": "Что выведет код?",
+   "topic": "conc_threads",
+   "difficulty": 2,
+   "hint": "Быстрее всех закончится slow_square(2). Но в каком порядке map отдаёт результаты?",
+   "explanation": "map возвращает результаты в порядке входных данных, даже если задачи закончились в другом порядке.",
+   "code": "from concurrent.futures import ThreadPoolExecutor\nimport time\n\ndef slow_square(n):\n    time.sleep(0.05 * (3 - n))\n    return n * n\n\nwith ThreadPoolExecutor(max_workers=3) as pool:\n    print(list(pool.map(slow_square, [0, 1, 2])))",
+   "payload": {
+    "options": [
+     "[0, 1, 4]",
+     "[4, 1, 0]",
+     "[0, 1, 2]"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Это порядок завершения. map сохраняет порядок входных данных.",
+     "map возвращает результаты функции — квадраты."
+    ]
+   },
+   "solution": {
+    "code": "from concurrent.futures import ThreadPoolExecutor\nimport time\n\ndef slow_square(n):\n    time.sleep(0.05 * (3 - n))\n    return n * n\n\nwith ThreadPoolExecutor(max_workers=3) as pool:\n    print(list(pool.map(slow_square, [0, 1, 2])))",
+    "output": "[0, 1, 4]\n",
+    "nativeOnly": true
+   }
+  },
+  {
+   "id": "py_conc_005",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "По мере готовности",
+   "prompt": "Что выведет код?",
+   "topic": "conc_threads",
+   "difficulty": 3,
+   "hint": "as_completed отдаёт задачи по мере завершения. А список futures?",
+   "explanation": "as_completed выдаёт Future в порядке готовности: b, c, a. Список futures остаётся в порядке создания.",
+   "code": "from concurrent.futures import ThreadPoolExecutor, as_completed\nimport time\n\ndef job(name, delay):\n    time.sleep(delay)\n    return name\n\nwith ThreadPoolExecutor() as pool:\n    futures = [pool.submit(job, n, d) for n, d in [(\"a\", 0.3), (\"b\", 0.1), (\"c\", 0.2)]]\n    print([f.result() for f in as_completed(futures)])\n    print([f.result() for f in futures])",
+   "payload": {
+    "options": [
+     "['a', 'b', 'c']\n['a', 'b', 'c']",
+     "['b', 'c', 'a']\n['a', 'b', 'c']",
+     "['b', 'c', 'a']\n['b', 'c', 'a']"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "as_completed выдаёт задачи по мере готовности — первой b.",
+     "",
+     "Список futures не пересортировывается: он в порядке submit."
+    ]
+   },
+   "solution": {
+    "code": "from concurrent.futures import ThreadPoolExecutor, as_completed\nimport time\n\ndef job(name, delay):\n    time.sleep(delay)\n    return name\n\nwith ThreadPoolExecutor() as pool:\n    futures = [pool.submit(job, n, d) for n, d in [(\"a\", 0.3), (\"b\", 0.1), (\"c\", 0.2)]]\n    print([f.result() for f in as_completed(futures)])\n    print([f.result() for f in futures])",
+    "output": "['b', 'c', 'a']\n['a', 'b', 'c']\n",
+    "nativeOnly": true
+   }
+  },
+  {
+   "id": "py_conc_006",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Где помогут потоки",
+   "prompt": "В каких задачах потоки обычного CPython (с GIL) реально ускорят программу?",
+   "topic": "conc_processes",
+   "difficulty": 2,
+   "hint": "GIL отпускается, пока поток ждёт ввода-вывода.",
+   "explanation": "Сеть, база данных и диск — ожидания: пока один поток ждёт, другие работают. Вычисления на чистом Python упираются в GIL — для них нужны процессы (или numpy).",
+   "payload": {
+    "options": [
+     "Скачать 50 страниц из сети",
+     "Ждать ответы от базы данных",
+     "Посчитать простые числа до 10 миллионов циклом на чистом Python",
+     "Читать много файлов с медленного диска",
+     "Перемножить большие матрицы вложенными циклами на чистом Python"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     3
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "Это чистые вычисления: GIL выполняет байт-код по очереди. Нужны процессы.",
+     "",
+     "Вычисления на чистом Python — нужны процессы или numpy."
+    ]
+   }
+  },
+  {
+   "id": "py_conc_007",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Словарь параллельности",
+   "prompt": "Сопоставьте понятие и смысл",
+   "topic": "conc_processes",
+   "difficulty": 2,
+   "hint": "Где пул потоков, а где пул процессов — подскажут их имена.",
+   "explanation": "GIL ограничивает потоки CPython, Lock защищает общие данные, Queue передаёт задачи, пулы потоков — для ожиданий, пулы процессов — для вычислений.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "GIL",
+      "right": "Блокировка внутри интерпретатора: из-за неё потоки не ускоряют вычисления на чистом Python"
+     },
+     {
+      "left": "threading.Lock",
+      "right": "Ваш замок для общих данных: with lock: …"
+     },
+     {
+      "left": "queue.Queue",
+      "right": "Потокобезопасная очередь задач"
+     },
+     {
+      "left": "ThreadPoolExecutor",
+      "right": "Пул потоков для ожиданий: сеть, файлы"
+     },
+     {
+      "left": "ProcessPoolExecutor",
+      "right": "Пул процессов для вычислений на всех ядрах"
+     }
+    ]
+   }
+  },
+  {
+   "id": "py_conc_008",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Счёт под замком",
+   "prompt": "Напишите, что выведет код",
+   "topic": "conc_threads",
+   "difficulty": 2,
+   "hint": "Сколько раз выполнится counter += 1 и может ли увеличение потеряться?",
+   "explanation": "С общим Lock каждое counter += 1 выполняется целиком: 3 × 5000 = 15000.",
+   "code": "import threading\n\ncounter = 0\nlock = threading.Lock()\n\ndef add():\n    global counter\n    for _ in range(5000):\n        with lock:\n            counter += 1\n\nthreads = [threading.Thread(target=add) for _ in range(3)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\nprint(counter, len(threads))",
+   "payload": {
+    "expectedOutput": "15000 3"
+   },
+   "solution": {
+    "code": "import threading\n\ncounter = 0\nlock = threading.Lock()\n\ndef add():\n    global counter\n    for _ in range(5000):\n        with lock:\n            counter += 1\n\nthreads = [threading.Thread(target=add) for _ in range(3)]\nfor t in threads:\n    t.start()\nfor t in threads:\n    t.join()\nprint(counter, len(threads))",
+    "output": "15000 3\n",
+    "nativeOnly": true
+   }
+  },
+  {
+   "id": "py_conc_009",
+   "type": "multiple_choice",
+   "role": "practice",
+   "title": "Пул процессов",
+   "prompt": "Почему запуск ProcessPoolExecutor прячут под if __name__ == \"__main__\"?",
+   "topic": "conc_processes",
+   "difficulty": 3,
+   "hint": "Что делает новый процесс при запуске spawn (Windows, macOS, Linux 3.14+)?",
+   "explanation": "При запуске «с нуля» (spawn, forkserver) процесс импортирует главный модуль. Код под if __name__ == \"__main__\" при импорте не выполняется; без проверки дочерний процесс снова создал бы пул, и Python остановил бы это ошибкой RuntimeError.",
+   "payload": {
+    "options": [
+     "Новые процессы импортируют главный модуль, и без проверки каждый попытался бы снова запустить пул",
+     "Без этой проверки процессы делят один GIL",
+     "Так быстрее: проверка включает оптимизацию байт-кода",
+     "ProcessPoolExecutor работает только внутри функций"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "У каждого процесса свой GIL — проверка здесь ни при чём.",
+     "Проверка не влияет на скорость — она защищает от повторного запуска.",
+     "Работает и на верхнем уровне; проверка нужна из-за повторного импорта модуля."
+    ]
+   }
+  },
+  {
+   "id": "py_conc_010",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: очередь задач",
+   "prompt": "Что выведет код?",
+   "topic": "conc_threads",
+   "difficulty": 4,
+   "hint": "q.join() ждёт, пока для каждого put вызовут task_done. А что сделает None?",
+   "explanation": "q.join() возвращается, когда все три элемента обработаны (task_done) — results уже полон, порядок FIFO. None выводит рабочего из цикла, t.join() дожидается его конца — поток больше не жив.",
+   "code": "import queue\nimport threading\n\nq = queue.Queue()\nresults = []\n\ndef worker():\n    while True:\n        item = q.get()\n        if item is None:\n            break\n        results.append(item * 10)\n        q.task_done()\n\nt = threading.Thread(target=worker)\nt.start()\nfor i in range(3):\n    q.put(i)\nq.join()\nprint(results)\nq.put(None)\nt.join()\nprint(t.is_alive())",
+   "payload": {
+    "options": [
+     "[]\nFalse",
+     "[0, 10, 20]\nTrue",
+     "[0, 10, 20]\nFalse",
+     "[20, 10, 0]\nFalse"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "q.join() ждёт обработки всех элементов — к print они в results.",
+     "None завершает цикл рабочего, и t.join() ждёт его конца.",
+     "",
+     "Queue — очередь FIFO: элементы выходят в порядке добавления."
+    ]
+   },
+   "solution": {
+    "code": "import queue\nimport threading\n\nq = queue.Queue()\nresults = []\n\ndef worker():\n    while True:\n        item = q.get()\n        if item is None:\n            break\n        results.append(item * 10)\n        q.task_done()\n\nt = threading.Thread(target=worker)\nt.start()\nfor i in range(3):\n    q.put(i)\nq.join()\nprint(results)\nq.put(None)\nt.join()\nprint(t.is_alive())",
+    "output": "[0, 10, 20]\nFalse\n",
+    "nativeOnly": true
+   }
+  }
+ ]
+}

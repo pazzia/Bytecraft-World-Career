@@ -1,0 +1,245 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_tup_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Распаковка",
+   "prompt": "Что выведет код?",
+   "topic": "tuple_basics",
+   "difficulty": 1,
+   "hint": "x получает 3, y — 4.",
+   "explanation": "Кортеж распаковывается в две переменные: 3 * 4 = 12.",
+   "code": "point = (3, 4)\nx, y = point\nprint(x * y)",
+   "payload": {
+    "options": [
+     "7",
+     "12",
+     "(3, 4)",
+     "34"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Здесь умножение, а не сложение.",
+     "",
+     "",
+     "x и y — числа, их перемножают."
+    ]
+   },
+   "solution": {
+    "code": "point = (3, 4)\nx, y = point\nprint(x * y)",
+    "output": "12\n"
+   }
+  },
+  {
+   "id": "py_tup_003",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Запятая решает",
+   "prompt": "Что выведет код?",
+   "topic": "tuple_basics",
+   "difficulty": 2,
+   "hint": "Кортеж делает запятая, а не скобки.",
+   "explanation": "(5) — просто число в скобках, (5,) — кортеж из одного элемента.",
+   "code": "print(type((5)).__name__, type((5,)).__name__)",
+   "payload": {
+    "options": [
+     "tuple tuple",
+     "int tuple",
+     "int int",
+     "tuple int"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "(5) без запятой — обычное число.",
+     "",
+     "(5,) — кортеж: запятая делает кортеж.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "print(type((5)).__name__, type((5,)).__name__)",
+    "output": "int tuple\n"
+   }
+  },
+  {
+   "id": "py_tup_002",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Неизменяемый кортеж",
+   "prompt": "Найдите строку с ошибкой",
+   "topic": "tuple_basics",
+   "difficulty": 2,
+   "hint": "Можно ли изменить элемент кортежа?",
+   "explanation": "Кортеж неизменяем: присваивание t[0] вызывает TypeError. Можно собрать новый кортеж.",
+   "code": "t = (1, 2, 3)\nt[0] = 10\nprint(t)",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "t = (1, 2, 3)\nt = (10,) + t[1:]\nprint(t)",
+    "output": "(10, 2, 3)\n"
+   }
+  },
+  {
+   "id": "py_set_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Без повторов",
+   "prompt": "Что выведет код?",
+   "topic": "set_basics",
+   "difficulty": 1,
+   "hint": "Множество хранит только уникальные элементы.",
+   "explanation": "Уникальных значений три: 1, 2 и 3.",
+   "code": "print(len({1, 2, 2, 3, 3, 3}))",
+   "payload": {
+    "options": [
+     "6",
+     "1",
+     "3",
+     "2"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Повторы в множество не попадают.",
+     "Уникальных значений больше одного.",
+     "",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "print(len({1, 2, 2, 3, 3, 3}))",
+    "output": "3\n"
+   }
+  },
+  {
+   "id": "py_set_004",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Пустое множество",
+   "prompt": "Создайте пустое множество",
+   "topic": "set_basics",
+   "difficulty": 1,
+   "hint": "{} создаёт не множество.",
+   "explanation": "set() — пустое множество. {} — пустой словарь, у него нет метода add.",
+   "payload": {
+    "template": "s = {{0}}\ns.add(1)\nprint(len(s))",
+    "options": [
+     "set()",
+     "{}",
+     "[]",
+     "()"
+    ],
+    "answers": [
+     "set()"
+    ],
+    "variantResults": {
+     "{}": "AttributeError: 'dict' object has no attribute 'add'",
+     "[]": "AttributeError: 'list' object has no attribute 'add'",
+     "()": "AttributeError: 'tuple' object has no attribute 'add'"
+    }
+   },
+   "solution": {
+    "code": "s = set()\ns.add(1)\nprint(len(s))",
+    "output": "1\n"
+   }
+  },
+  {
+   "id": "py_set_002",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Операции над множествами",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "set_ops",
+   "difficulty": 2,
+   "hint": "| — все, & — общие, - — только из a, ^ — ровно в одном.",
+   "explanation": "Объединение — все шесть чисел, пересечение — 3 и 5, разность — 1 и 7, симметрическая разность — 1, 4 и 7; 3 есть в a.",
+   "code": "a = {1, 3, 5, 7}\nb = {3, 4, 5}",
+   "payload": {
+    "pairs": [
+     {
+      "left": "sorted(a | b)",
+      "right": "[1, 3, 4, 5, 7]"
+     },
+     {
+      "left": "sorted(a & b)",
+      "right": "[3, 5]"
+     },
+     {
+      "left": "sorted(a - b)",
+      "right": "[1, 7]"
+     },
+     {
+      "left": "sorted(a ^ b)",
+      "right": "[1, 4, 7]"
+     },
+     {
+      "left": "3 in a",
+      "right": "True"
+     }
+    ]
+   },
+   "solution": {
+    "code": "a = {1, 3, 5, 7}\nb = {3, 4, 5}\nprint(sorted(a | b))\nprint(sorted(a & b))\nprint(sorted(a - b))\nprint(sorted(a ^ b))\nprint(3 in a)",
+    "output": "[1, 3, 4, 5, 7]\n[3, 5]\n[1, 7]\n[1, 4, 7]\nTrue\n"
+   }
+  },
+  {
+   "id": "py_set_003",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Что можно в множество",
+   "prompt": "Какие значения можно добавить в множество?",
+   "topic": "set_basics",
+   "difficulty": 2,
+   "hint": "Подходят только неизменяемые (хешируемые) значения.",
+   "explanation": "Числа, строки и кортежи хешируемы. Список и словарь изменяемы — TypeError: unhashable type.",
+   "payload": {
+    "options": [
+     "5",
+     "'текст'",
+     "(1, 2)",
+     "[1, 2]",
+     "{1: 2}",
+     "3.5"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     2,
+     5
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "",
+     "Список изменяем и не хешируется.",
+     "Словарь изменяем и не хешируется.",
+     ""
+    ]
+   }
+  },
+  {
+   "id": "py_set_005",
+   "type": "type_output",
+   "role": "boss",
+   "title": "Босс: уникальные слова",
+   "prompt": "Напишите, что выведет код",
+   "topic": "set_basics",
+   "difficulty": 3,
+   "hint": "Сколько всего слов и сколько разных? sorted упорядочит по алфавиту.",
+   "explanation": "Слов шесть, разных три. sorted расставляет их по алфавиту: кот, мышь, пёс.",
+   "code": "words = \"кот пёс кот мышь пёс кот\".split()\nunique = set(words)\nprint(len(words), len(unique), \", \".join(sorted(unique)))",
+   "payload": {
+    "expectedOutput": "6 3 кот, мышь, пёс"
+   },
+   "solution": {
+    "code": "words = \"кот пёс кот мышь пёс кот\".split()\nunique = set(words)\nprint(len(words), len(unique), \", \".join(sorted(unique)))",
+    "output": "6 3 кот, мышь, пёс\n"
+   }
+  }
+ ]
+}

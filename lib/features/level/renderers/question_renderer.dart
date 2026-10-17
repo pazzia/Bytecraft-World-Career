@@ -7,7 +7,10 @@ import '../domain/validation_outcome.dart';
 import 'bug_finder_renderer.dart';
 import 'code_ordering_renderer.dart';
 import 'fill_code_renderer.dart';
+import 'match_pairs_renderer.dart';
+import 'multi_select_renderer.dart';
 import 'multiple_choice_renderer.dart';
+import 'type_output_renderer.dart';
 import 'unsupported_renderer.dart';
 
 /// Everything a renderer needs. Renderers are stateless with respect to
@@ -54,6 +57,9 @@ class QuestionRendererRegistry {
     LevelType.fillCode: FillCodeRenderer(),
     LevelType.codeOrdering: CodeOrderingRenderer(),
     LevelType.bugFinder: BugFinderRenderer(),
+    LevelType.typeOutput: TypeOutputRenderer(),
+    LevelType.matchPairs: MatchPairsRenderer(),
+    LevelType.multiSelect: MultiSelectRenderer(),
   });
 
   final Map<LevelType, QuestionRenderer> _renderers;

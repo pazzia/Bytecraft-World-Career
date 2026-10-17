@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/theme/game_colors.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../../../shared/widgets/output_board.dart';
 import '../../../../shared/widgets/stat_badges.dart';
 
 /// Bottom sheet with instant feedback after checking an answer.
@@ -15,13 +16,29 @@ class FeedbackPanel extends StatefulWidget {
     required this.buttonLabel,
     required this.onPressed,
     this.livesLeft,
+    this.programResult,
+    this.hint,
+    this.onDetails,
   });
 
   final bool isCorrect;
+
+  /// Short analysis of the mistake, or the explanation after a right answer.
   final String? message;
   final String buttonLabel;
   final VoidCallback onPressed;
   final int? livesLeft;
+
+  /// What the program does with the player's version (fill-code).
+  final String? programResult;
+
+  /// Hint shown under a mistake.
+  final String? hint;
+
+  /// Opens the detailed review ("Разбор").
+  final VoidCallback? onDetails;
+
+  static final RegExp _errorResult = RegExp(r'^\w*(Error|Exception)\b');
 
   @override
   State<FeedbackPanel> createState() => _FeedbackPanelState();
@@ -99,13 +116,47 @@ class _FeedbackPanelState extends State<FeedbackPanel> {
                 const SizedBox(height: Spacing.sm),
                 Text(widget.message!, style: textTheme.bodyLarge),
               ],
+              if (widget.programResult != null) ...[
+                const SizedBox(height: Spacing.sm),
+                OutputBoard(
+                  label: 'С вашим вариантом программа выдаст',
+                  output: widget.programResult!,
+                  isError: FeedbackPanel._errorResult.hasMatch(widget.programResult!),
+                ),
+              ],
+              if (widget.hint != null && widget.hint!.isNotEmpty) ...[
+                const SizedBox(height: Spacing.sm),
+                Text(
+                  'Подсказка: ${widget.hint}',
+                  style: textTheme.bodyMedium?.copyWith(color: game.textMuted),
+                ),
+              ],
               const SizedBox(height: Spacing.lg),
-              AppButton(
-                label: widget.buttonLabel,
-                variant: widget.isCorrect
-                    ? AppButtonVariant.success
-                    : AppButtonVariant.danger,
-                onPressed: widget.onPressed,
+              Row(
+                children: [
+                  if (widget.onDetails != null) ...[
+                    Expanded(
+                      flex: 2,
+                      child: AppButton(
+                        key: const ValueKey('review_button'),
+                        label: 'Разбор',
+                        variant: AppButtonVariant.secondary,
+                        onPressed: widget.onDetails,
+                      ),
+                    ),
+                    const SizedBox(width: Spacing.md),
+                  ],
+                  Expanded(
+                    flex: 3,
+                    child: AppButton(
+                      label: widget.buttonLabel,
+                      variant: widget.isCorrect
+                          ? AppButtonVariant.success
+                          : AppButtonVariant.danger,
+                      onPressed: widget.onPressed,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

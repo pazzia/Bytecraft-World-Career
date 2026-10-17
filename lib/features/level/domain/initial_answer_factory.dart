@@ -18,6 +18,9 @@ class InitialAnswerFactory {
         CodeOrderingPayload(:final lines, :final alternativeOrders) =>
           OrderingAnswer(shuffledOrder(lines.length, alternativeOrders, seed)),
         BugFinderPayload() => null,
+        MultiSelectPayload() => null,
+        TypeOutputPayload() => const TextAnswer(''),
+        MatchPairsPayload(:final pairs) => MatchAnswer.empty(pairs.length),
         UnsupportedPayload() => null,
       };
 

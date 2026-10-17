@@ -13,6 +13,9 @@ abstract final class StorageKeys {
   static String timedProgress(String courseId) => 'player.timed.$courseId';
   static const int timedProgressSchema = 1;
 
+  static String journal(String courseId) => 'player.journal.$courseId';
+  static const int journalSchema = 1;
+
   static const String settings = 'app.settings';
   static const int settingsSchema = 1;
 

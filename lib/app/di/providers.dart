@@ -14,6 +14,9 @@ import '../../features/courses/domain/content_repository.dart';
 import '../../features/daily_challenge/data/local_daily_challenge_service.dart';
 import '../../features/daily_challenge/domain/daily_challenge.dart';
 import '../../features/gamification/domain/game_rules.dart';
+import '../../features/journal/data/local_journal_repository.dart';
+import '../../features/journal/data/topic_repository.dart';
+import '../../features/journal/domain/journal_service.dart';
 import '../../features/leaderboard/data/mock_leaderboard_repository.dart';
 import '../../features/leaderboard/domain/leaderboard.dart';
 import '../../features/level/engine/answer_validator.dart';
@@ -137,6 +140,17 @@ final progressRepositoryProvider = Provider<ProgressRepository>(
     clock: ref.watch(clockProvider),
     rules: ref.watch(gameRulesProvider),
     ids: ref.watch(idGeneratorProvider),
+  ),
+);
+
+final topicRepositoryProvider = Provider<TopicRepository>(
+  (ref) => TopicRepository(ref.watch(textAssetLoaderProvider)),
+);
+
+final journalServiceProvider = Provider<JournalService>(
+  (ref) => JournalService(
+    repository: LocalJournalRepository(ref.watch(documentStoreProvider)),
+    clock: ref.watch(clockProvider),
   ),
 );
 

@@ -189,3 +189,15 @@ abstract interface class LeaderboardRepository { currentLeague(userId); }
 | Уровень, повтор | обычный повторный XP (20% базы) |
 | Первое прохождение модуля | бонус за скорость до `timedMaxSpeedBonus` (100) пропорционально оставшемуся времени + `timedFirstClearCoins` (10) |
 | Повторное прохождение модуля | только обновление рекорда времени |
+
+## Курс Python, журнал и песочница
+
+**Контент.** Источник правды — `tool/content/course/c0N_*.py` (37 модулей: от переменных до asyncio, потоков, производительности и структуры проекта). `tool/content/generate_python_course.py` (только Python 3.12) собирает `assets/content/python/`: `course.json`, `modules/*.json`, `topics.json` (темы журнала), `practice.json` (задачи на написание кода). При сборке выполняется каждый пример, ответ и вариант: вывод вычисляется, дистракторы не могут совпасть с ответом, в fill никакая другая комбинация не даёт тот же вывод, у bug_finder правка в другой строке не должна чинить программу, задачи имеют ≥4 тестов, а стартовый код не проходит. CI повторяет сборку трижды (PYTHONHASHSEED), сверяет с ассетами и прогоняет все программы в Pyodide (`tool/pyodide/check_content.mjs`); уровни с потоками и процессами помечены `nativeOnly`.
+
+**Типы уровней.** predict_output, multiple_choice, fill_code, code_ordering, bug_finder, type_output, match_pairs, multi_select.
+
+**Разбор ошибок.** `MistakeAnalyzer` → краткая причина в `FeedbackPanel`; кнопка «Разбор» открывает `LevelReviewSheet`: что не так, что реально выводит программа с выбранным вариантом, объяснение, решение, карточка темы и кнопка «В журнал».
+
+**Журнал.** Темы с объяснением, примерами и типичными ошибками; отмеченные темы и темы с ошибками повторяются по интервалам Лейтнера (1, 3, 7, 16, 35 дней) в режиме повторения.
+
+**Песочница.** Pyodide (CPython 3.12, WebAssembly) в скрытом WebView; ассеты отдаёт локальный `AssetHttpServer` (127.0.0.1, COOP/COEP). Код выполняется в Web Worker (`assets/python_runner/worker.js`) с таймаутом через interrupt buffer и лимитом вывода. `sandbox_asyncio.py` ставит блокирующий цикл событий, чтобы работал `asyncio.run`. Задачи (`PracticeChecker`) сначала проверяют, как написан код (`tool/content/requirements_checker.py`, исполняется в Pyodide), затем гоняют тесты stdin → stdout.

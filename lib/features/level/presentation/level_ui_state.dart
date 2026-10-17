@@ -1,6 +1,7 @@
 import '../domain/answer.dart';
 import '../domain/level_result.dart';
 import '../domain/level_session.dart';
+import '../domain/mistake_analysis.dart';
 import '../domain/validation_outcome.dart';
 
 enum LevelPhase {
@@ -43,7 +44,12 @@ class LevelUiState {
     this.errorMessage,
     this.isSubmitting = false,
     this.isHintVisible = false,
+    this.mistakeNote,
+    this.isSolutionRevealed = false,
   });
+
+  /// After this many mistakes on one level the player may open the solution.
+  static const int mistakesBeforeSolution = 3;
 
   static const LevelUiState loading = LevelUiState(phase: LevelPhase.loading);
 
@@ -57,6 +63,17 @@ class LevelUiState {
   final String? errorMessage;
   final bool isSubmitting;
   final bool isHintVisible;
+
+  /// Short analysis of the last wrong answer.
+  final MistakeNote? mistakeNote;
+
+  /// The player gave up and looked at the solution.
+  final bool isSolutionRevealed;
+
+  bool get canRevealSolution =>
+      !isSolutionRevealed &&
+      (session?.mistakes ?? 0) >= mistakesBeforeSolution &&
+      session?.level.solution != null;
 
   bool get canSubmit =>
       phase == LevelPhase.playing &&
@@ -76,8 +93,11 @@ class LevelUiState {
     LevelResult? result,
     bool? isSubmitting,
     bool? isHintVisible,
+    MistakeNote? mistakeNote,
+    bool? isSolutionRevealed,
     bool clearOutcome = false,
     bool clearAnswer = false,
+    bool clearMistakeNote = false,
   }) =>
       LevelUiState(
         phase: phase ?? this.phase,
@@ -90,5 +110,8 @@ class LevelUiState {
         errorMessage: errorMessage,
         isSubmitting: isSubmitting ?? this.isSubmitting,
         isHintVisible: isHintVisible ?? this.isHintVisible,
+        mistakeNote:
+            clearMistakeNote ? null : mistakeNote ?? this.mistakeNote,
+        isSolutionRevealed: isSolutionRevealed ?? this.isSolutionRevealed,
       );
 }

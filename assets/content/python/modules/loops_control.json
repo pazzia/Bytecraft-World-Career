@@ -1,0 +1,303 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_loopx_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Стоп-кран",
+   "prompt": "Что выведет код?",
+   "topic": "loopx_break",
+   "difficulty": 1,
+   "hint": "break завершает цикл сразу — даже текущий шаг не доделывается.",
+   "explanation": "Складываются 0, 1, 2 — это 3. Когда n стало 3, сработал break до total += n, и n так и осталось 3.",
+   "code": "total = 0\nfor n in range(10):\n    if n == 3:\n        break\n    total += n\nprint(total, n)",
+   "payload": {
+    "options": [
+     "3 3",
+     "6 3",
+     "45 9",
+     "3 2"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "break срабатывает до total += n, поэтому 3 не прибавляется.",
+     "Так было бы без break: цикл прерывается на n = 3.",
+     "Переменная цикла сохраняет значение, на котором сработал break, — 3."
+    ]
+   },
+   "solution": {
+    "code": "total = 0\nfor n in range(10):\n    if n == 3:\n        break\n    total += n\nprint(total, n)",
+    "output": "3 3\n"
+   }
+  },
+  {
+   "id": "py_loopx_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Пропуск кратных трём",
+   "prompt": "Что выведет код?",
+   "topic": "loopx_break",
+   "difficulty": 1,
+   "hint": "continue пропускает остаток шага.",
+   "explanation": "3 и 6 пропущены, складываются 1 + 2 + 4 + 5 + 7 = 19.",
+   "code": "total = 0\nfor n in range(1, 8):\n    if n % 3 == 0:\n        continue\n    total += n\nprint(total)",
+   "payload": {
+    "options": [
+     "28",
+     "19",
+     "9",
+     "0"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "28 — сумма всех чисел от 1 до 7, но кратные трём пропущены.",
+     "",
+     "9 — это как раз пропущенные 3 + 6.",
+     "continue пропускает только кратные трём."
+    ]
+   },
+   "solution": {
+    "code": "total = 0\nfor n in range(1, 8):\n    if n % 3 == 0:\n        continue\n    total += n\nprint(total)",
+    "output": "19\n"
+   }
+  },
+  {
+   "id": "py_loopx_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Только первое",
+   "prompt": "Выведите только первое отрицательное число",
+   "topic": "loopx_break",
+   "difficulty": 1,
+   "hint": "После находки цикл нужно завершить.",
+   "explanation": "break завершает цикл после первой находки. continue и pass позволили бы напечатать и -9.",
+   "payload": {
+    "template": "nums = [4, 7, -2, 5, -9]\nfor n in nums:\n    if n < 0:\n        print(n)\n        {{0}}",
+    "options": [
+     "break",
+     "continue",
+     "pass",
+     "return"
+    ],
+    "answers": [
+     "break"
+    ],
+    "variantResults": {
+     "continue": "-2\n-9",
+     "pass": "-2\n-9",
+     "return": "SyntaxError: 'return' outside function"
+    }
+   },
+   "solution": {
+    "code": "nums = [4, 7, -2, 5, -9]\nfor n in nums:\n    if n < 0:\n        print(n)\n        break",
+    "output": "-2\n"
+   }
+  },
+  {
+   "id": "py_loopx_004",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Лесенка вниз",
+   "prompt": "Напишите, что выведет код",
+   "topic": "loop_range",
+   "difficulty": 2,
+   "hint": "Шаг -1: i принимает значения 3, 2, 1. \"#\" * i — строка из i решёток.",
+   "explanation": "range(3, 0, -1) — это 3, 2, 1 (0 не входит). На каждом шаге печатается строка из i решёток.",
+   "code": "for i in range(3, 0, -1):\n    print(\"#\" * i)",
+   "payload": {
+    "expectedOutput": "###\n##\n#"
+   },
+   "solution": {
+    "code": "for i in range(3, 0, -1):\n    print(\"#\" * i)",
+    "output": "###\n##\n#\n"
+   }
+  },
+  {
+   "id": "py_loopx_005",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "else у цикла",
+   "prompt": "Что выведет код?",
+   "topic": "loopx_else",
+   "difficulty": 2,
+   "hint": "else выполняется, если цикл закончился без break.",
+   "explanation": "Чётных нет, break не сработал, поэтому выполнилась ветка else.",
+   "code": "for n in [3, 5, 7]:\n    if n % 2 == 0:\n        print(\"чётное\")\n        break\nelse:\n    print(\"все нечётные\")",
+   "payload": {
+    "options": [
+     "чётное",
+     "чётное\nвсе нечётные",
+     "все нечётные",
+     "Ничего"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "В списке нет чётных чисел.",
+     "",
+     "",
+     "Цикл дошёл до конца без break — значит, выполняется else."
+    ]
+   },
+   "solution": {
+    "code": "for n in [3, 5, 7]:\n    if n % 2 == 0:\n        print(\"чётное\")\n        break\nelse:\n    print(\"все нечётные\")",
+    "output": "все нечётные\n"
+   }
+  },
+  {
+   "id": "py_loopx_006",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Ровно три раза",
+   "prompt": "Какие циклы выполнят тело ровно 3 раза?",
+   "topic": "loop_range",
+   "difficulty": 2,
+   "hint": "Посчитайте элементы каждой последовательности.",
+   "explanation": "range(3) — 3 числа, «abc» — 3 буквы, range(0, 6, 2) — 0, 2, 4, список из трёх нулей — 3 элемента. range(1, 3) даёт 2 числа, range(3, 0) пустой.",
+   "payload": {
+    "options": [
+     "for i in range(3):",
+     "for i in range(1, 3):",
+     "for c in \"abc\":",
+     "for i in range(0, 6, 2):",
+     "for i in range(3, 0):",
+     "for x in [0, 0, 0]:"
+    ],
+    "correctIndexes": [
+     0,
+     2,
+     3,
+     5
+    ],
+    "optionFeedback": [
+     "",
+     "range(1, 3) — это 1 и 2, всего два шага.",
+     "",
+     "",
+     "При положительном шаге range(3, 0) пустой.",
+     ""
+    ]
+   }
+  },
+  {
+   "id": "py_loopx_008",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "enumerate и zip",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "loopx_enumerate",
+   "difficulty": 2,
+   "hint": "zip останавливается на самой короткой последовательности.",
+   "explanation": "enumerate нумерует с 0 (или с start), zip склеивает элементы попарно и обрезает по короткой стороне.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "list(enumerate(\"ab\"))",
+      "right": "[(0, 'a'), (1, 'b')]"
+     },
+     {
+      "left": "list(enumerate(\"ab\", start=1))",
+      "right": "[(1, 'a'), (2, 'b')]"
+     },
+     {
+      "left": "list(zip([1, 2], \"xy\"))",
+      "right": "[(1, 'x'), (2, 'y')]"
+     },
+     {
+      "left": "list(zip(\"ab\", [1, 2, 3]))",
+      "right": "[('a', 1), ('b', 2)]"
+     }
+    ]
+   },
+   "solution": {
+    "code": "print(list(enumerate(\"ab\")))\nprint(list(enumerate(\"ab\", start=1)))\nprint(list(zip([1, 2], \"xy\")))\nprint(list(zip(\"ab\", [1, 2, 3])))",
+    "output": "[(0, 'a'), (1, 'b')]\n[(1, 'a'), (2, 'b')]\n[(1, 'x'), (2, 'y')]\n[('a', 1), ('b', 2)]\n"
+   }
+  },
+  {
+   "id": "py_loopx_007",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "На одно меньше",
+   "prompt": "Нужна сумма чисел от 1 до 5 (15), а программа выводит 10. Найдите ошибку",
+   "topic": "loop_range",
+   "difficulty": 2,
+   "hint": "Входит ли stop в range?",
+   "explanation": "range(1, 5) — это 1, 2, 3, 4. Чтобы включить 5, нужно range(1, 6).",
+   "code": "total = 0\nfor i in range(1, 5):\n    total += i\nprint(total)",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "total = 0\nfor i in range(1, 6):\n    total += i\nprint(total)",
+    "output": "15\n"
+   }
+  },
+  {
+   "id": "py_loopx_011",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Таблица умножения",
+   "prompt": "Напишите, что выведет код",
+   "topic": "loopx_nested",
+   "difficulty": 2,
+   "hint": "Внутренний цикл собирает одну строку таблицы для каждого i.",
+   "explanation": "Для каждого i внутренний цикл проходит j = 1, 2, 3 и добавляет i · j. strip убирает лишний пробел в конце строки.",
+   "code": "for i in range(1, 4):\n    row = \"\"\n    for j in range(1, 4):\n        row += str(i * j) + \" \"\n    print(row.strip())",
+   "payload": {
+    "expectedOutput": "1 2 3\n2 4 6\n3 6 9"
+   },
+   "solution": {
+    "code": "for i in range(1, 4):\n    row = \"\"\n    for j in range(1, 4):\n        row += str(i * j) + \" \"\n    print(row.strip())",
+    "output": "1 2 3\n2 4 6\n3 6 9\n"
+   }
+  },
+  {
+   "id": "py_loopx_010",
+   "type": "type_output",
+   "role": "challenge",
+   "title": "while True и break",
+   "prompt": "Напишите, что выведет код",
+   "topic": "loopx_break",
+   "difficulty": 3,
+   "hint": "Чётное делим пополам, нечётное — 3n + 1. Считайте шаги до 1.",
+   "explanation": "6 → 3 → 10 → 5 → 16 → 8 → 4 → 2 → 1 — восемь шагов. while True повторяется бесконечно, пока break не прервёт цикл.",
+   "code": "n = 6\nsteps = 0\nwhile True:\n    if n == 1:\n        break\n    n = n // 2 if n % 2 == 0 else 3 * n + 1\n    steps += 1\nprint(steps)",
+   "payload": {
+    "expectedOutput": "8"
+   },
+   "solution": {
+    "code": "n = 6\nsteps = 0\nwhile True:\n    if n == 1:\n        break\n    n = n // 2 if n % 2 == 0 else 3 * n + 1\n    steps += 1\nprint(steps)",
+    "output": "8\n"
+   }
+  },
+  {
+   "id": "py_loopx_009",
+   "type": "code_ordering",
+   "role": "boss",
+   "title": "Босс: простые числа",
+   "prompt": "Соберите программу, которая выведет простые числа меньше 10",
+   "topic": "loopx_else",
+   "difficulty": 3,
+   "hint": "else относится к внутреннему циклу: «делителей не нашли».",
+   "explanation": "Для каждого n перебираем делители. Нашли делитель — break. Не нашли — срабатывает else внутреннего цикла и печатается n.",
+   "payload": {
+    "lines": [
+     "for n in range(2, 10):",
+     "    for d in range(2, n):",
+     "        if n % d == 0:",
+     "            break",
+     "    else:",
+     "        print(n)"
+    ]
+   },
+   "solution": {
+    "code": "for n in range(2, 10):\n    for d in range(2, n):\n        if n % d == 0:\n            break\n    else:\n        print(n)",
+    "output": "2\n3\n5\n7\n"
+   }
+  }
+ ]
+}

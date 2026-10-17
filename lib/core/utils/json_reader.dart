@@ -65,6 +65,32 @@ class JsonReader {
     _fail(key, 'list of strings');
   }
 
+  List<String> optionalStringList(String key) {
+    if (raw[key] == null) return const [];
+    return requireStringList(key);
+  }
+
+  /// A JSON object whose values are all strings.
+  Map<String, String> optionalStringMap(String key) {
+    final value = raw[key];
+    if (value == null) return const {};
+    if (value is Map<String, dynamic> &&
+        value.values.every((element) => element is String)) {
+      return Map<String, String>.unmodifiable(value.cast<String, String>());
+    }
+    _fail(key, 'object of strings');
+  }
+
+  JsonReader? optionalObject(String key) {
+    if (raw[key] == null) return null;
+    return requireObject(key);
+  }
+
+  List<JsonReader> optionalObjectList(String key) {
+    if (raw[key] == null) return const [];
+    return requireObjectList(key);
+  }
+
   List<int> requireIntList(String key) {
     final value = raw[key];
     if (value is List && value.every((element) => element is int)) {

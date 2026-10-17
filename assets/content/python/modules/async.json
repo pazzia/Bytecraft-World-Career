@@ -1,0 +1,652 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_async_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Корутина ещё не работает",
+   "prompt": "Что выведет код?",
+   "topic": "async_basics",
+   "difficulty": 1,
+   "hint": "Что возвращает вызов async-функции — результат или что-то другое?",
+   "explanation": "hello() не выполняет тело, а создаёт объект coroutine. Тело (print) работает внутри asyncio.run, который возвращает результат корутины — 5.",
+   "code": "import asyncio\n\nasync def hello():\n    print(\"привет\")\n    return 5\n\ncoro = hello()\nprint(type(coro).__name__)\nprint(asyncio.run(coro))",
+   "payload": {
+    "options": [
+     "привет\ncoroutine\n5",
+     "coroutine\nпривет\n5",
+     "function\nпривет\n5",
+     "coroutine\n5"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Вызов hello() только создаёт корутину: «привет» напечатается в asyncio.run.",
+     "",
+     "Вызов async-функции возвращает объект coroutine.",
+     "print внутри корутины выполняется — во время asyncio.run."
+    ]
+   },
+   "solution": {
+    "code": "import asyncio\n\nasync def hello():\n    print(\"привет\")\n    return 5\n\ncoro = hello()\nprint(type(coro).__name__)\nprint(asyncio.run(coro))",
+    "output": "coroutine\nпривет\n5\n"
+   }
+  },
+  {
+   "id": "py_async_002",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Первая корутина",
+   "prompt": "Объявите корутину и дождитесь паузы",
+   "topic": "async_basics",
+   "difficulty": 1,
+   "hint": "Вспомните, как объявляют корутину и как ждут асинхронную паузу.",
+   "explanation": "async def объявляет корутину, await ждёт асинхронную паузу. Без async слово await — синтаксическая ошибка; return вернул бы корутину sleep, так и не дождавшись её, — «готово» не напечатается.",
+   "payload": {
+    "template": "import asyncio\n\n{{0}} def main():\n    {{1}} asyncio.sleep(0.01)\n    print(\"готово\")\n\nasyncio.run(main())",
+    "options": [
+     "async",
+     "await",
+     "return",
+     "def"
+    ],
+    "answers": [
+     "async",
+     "await"
+    ],
+    "variantResults": {
+     "async\u0001async": "SyntaxError: invalid syntax",
+     "async\u0001return": "(ничего не выводит)",
+     "async\u0001def": "SyntaxError: expected '('",
+     "await\u0001async": "SyntaxError: invalid syntax",
+     "await\u0001await": "SyntaxError: invalid syntax",
+     "await\u0001return": "SyntaxError: invalid syntax",
+     "await\u0001def": "SyntaxError: invalid syntax",
+     "return\u0001async": "SyntaxError: invalid syntax",
+     "return\u0001await": "SyntaxError: invalid syntax",
+     "return\u0001return": "SyntaxError: invalid syntax",
+     "return\u0001def": "SyntaxError: invalid syntax",
+     "def\u0001async": "SyntaxError: invalid syntax",
+     "def\u0001await": "SyntaxError: invalid syntax",
+     "def\u0001return": "SyntaxError: invalid syntax",
+     "def\u0001def": "SyntaxError: invalid syntax"
+    }
+   },
+   "solution": {
+    "code": "import asyncio\n\nasync def main():\n    await asyncio.sleep(0.01)\n    print(\"готово\")\n\nasyncio.run(main())",
+    "output": "готово\n"
+   }
+  },
+  {
+   "id": "py_async_003",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Порядок в gather",
+   "prompt": "Что выведет код?",
+   "topic": "async_tasks",
+   "difficulty": 2,
+   "hint": "Печать идёт по мере готовности. А в каком порядке gather возвращает результаты?",
+   "explanation": "Задачи ждут одновременно, поэтому первой готова b (10 мс), затем c и a. Но gather возвращает результаты в порядке аргументов, а не завершения.",
+   "code": "import asyncio\n\nasync def job(name, delay):\n    await asyncio.sleep(delay)\n    print(\"готов\", name)\n    return name.upper()\n\nasync def main():\n    results = await asyncio.gather(job(\"a\", 0.03), job(\"b\", 0.01), job(\"c\", 0.02))\n    print(results)\n\nasyncio.run(main())",
+   "payload": {
+    "options": [
+     "готов a\nготов b\nготов c\n['A', 'B', 'C']",
+     "готов b\nготов c\nготов a\n['A', 'B', 'C']",
+     "готов b\nготов c\nготов a\n['B', 'C', 'A']"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Корутины ждут одновременно: первой просыпается та, у которой пауза короче.",
+     "",
+     "gather сохраняет порядок аргументов, а не порядок завершения."
+    ]
+   },
+   "solution": {
+    "code": "import asyncio\n\nasync def job(name, delay):\n    await asyncio.sleep(delay)\n    print(\"готов\", name)\n    return name.upper()\n\nasync def main():\n    results = await asyncio.gather(job(\"a\", 0.03), job(\"b\", 0.01), job(\"c\", 0.02))\n    print(results)\n\nasyncio.run(main())",
+    "output": "готов b\nготов c\nготов a\n['A', 'B', 'C']\n"
+   }
+  },
+  {
+   "id": "py_async_004",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Последовательно или вместе",
+   "prompt": "Что выведет код?",
+   "topic": "async_tasks",
+   "difficulty": 2,
+   "hint": "peak — сколько fetch ждали одновременно. Начинается ли следующий await в списке до конца предыдущего?",
+   "explanation": "В one_by_one каждый await дожидается конца fetch, прежде чем начать следующий, — одновременно ждёт только один. gather запускает все три сразу: пик — 3. Результаты одинаковые: gather сохраняет порядок аргументов.",
+   "code": "import asyncio\n\nrunning = peak = 0\n\nasync def fetch(n):\n    global running, peak\n    running += 1\n    peak = max(peak, running)\n    await asyncio.sleep(0.01)\n    running -= 1\n    return n\n\nasync def one_by_one():\n    return [await fetch(1), await fetch(2), await fetch(3)]\n\nasync def together():\n    return await asyncio.gather(fetch(1), fetch(2), fetch(3))\n\nfor strategy in (one_by_one, together):\n    peak = 0\n    result = asyncio.run(strategy())\n    print(strategy.__name__, result, \"одновременно:\", peak)",
+   "payload": {
+    "options": [
+     "one_by_one [1, 2, 3] одновременно: 3\ntogether [1, 2, 3] одновременно: 3",
+     "one_by_one [1, 2, 3] одновременно: 1\ntogether [1, 2, 3] одновременно: 3",
+     "one_by_one [1, 2, 3] одновременно: 1\ntogether [3, 2, 1] одновременно: 3",
+     "one_by_one [1, 2, 3] одновременно: 1\ntogether [1, 2, 3] одновременно: 1"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "await внутри списка выполняются по очереди: следующий fetch начинается после конца предыдущего.",
+     "",
+     "gather возвращает результаты в порядке аргументов.",
+     "gather запускает корутины одновременно — все три ждут вместе."
+    ]
+   },
+   "solution": {
+    "code": "import asyncio\n\nrunning = peak = 0\n\nasync def fetch(n):\n    global running, peak\n    running += 1\n    peak = max(peak, running)\n    await asyncio.sleep(0.01)\n    running -= 1\n    return n\n\nasync def one_by_one():\n    return [await fetch(1), await fetch(2), await fetch(3)]\n\nasync def together():\n    return await asyncio.gather(fetch(1), fetch(2), fetch(3))\n\nfor strategy in (one_by_one, together):\n    peak = 0\n    result = asyncio.run(strategy())\n    print(strategy.__name__, result, \"одновременно:\", peak)",
+    "output": "one_by_one [1, 2, 3] одновременно: 1\ntogether [1, 2, 3] одновременно: 3\n"
+   }
+  },
+  {
+   "id": "py_async_005",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Заблокированный цикл",
+   "prompt": "Задачи A и B должны чередоваться: A 0, B 0, A 1, B 1. Найдите строку с ошибкой",
+   "topic": "async_basics",
+   "difficulty": 3,
+   "hint": "Какая пауза отдаёт управление циклу событий, а какая останавливает весь поток?",
+   "explanation": "time.sleep блокирует поток: пока A спит, цикл событий не может переключиться на B, и A выполняется целиком. await asyncio.sleep отдаёт управление — задачи чередуются.",
+   "code": "import asyncio\nimport time\n\nasync def tick(name):\n    for i in range(2):\n        time.sleep(0.01)\n        print(name, i)\n\nasync def main():\n    await asyncio.gather(tick(\"A\"), tick(\"B\"))\n\nasyncio.run(main())",
+   "payload": {
+    "buggyLines": [
+     5
+    ]
+   },
+   "solution": {
+    "code": "import asyncio\nimport time\n\nasync def tick(name):\n    for i in range(2):\n        await asyncio.sleep(0.01)\n        print(name, i)\n\nasync def main():\n    await asyncio.gather(tick(\"A\"), tick(\"B\"))\n\nasyncio.run(main())",
+    "output": "A 0\nB 0\nA 1\nB 1\n"
+   }
+  },
+  {
+   "id": "py_async_006",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Когда стартует задача",
+   "prompt": "Что выведет код?",
+   "topic": "async_tasks",
+   "difficulty": 4,
+   "hint": "create_task не запускает корутину сразу: она стартует, когда main отдаст управление. И каждый await sleep(0) — это одна передача хода.",
+   "explanation": "Задача ждёт первой паузы main. На sleep(0) main уступает: worker печатает «старт» и тоже уступает. main продолжает и на await task ждёт; worker заканчивает, и main завершается.",
+   "code": "import asyncio\n\nasync def worker():\n    print(\"worker старт\")\n    await asyncio.sleep(0)\n    print(\"worker конец\")\n\nasync def main():\n    task = asyncio.create_task(worker())\n    print(\"main: задача создана\")\n    await asyncio.sleep(0)\n    print(\"main: после sleep(0)\")\n    await task\n    print(\"main: конец\")\n\nasyncio.run(main())",
+   "payload": {
+    "options": [
+     "worker старт\nmain: задача создана\nmain: после sleep(0)\nworker конец\nmain: конец",
+     "main: задача создана\nmain: после sleep(0)\nworker старт\nworker конец\nmain: конец",
+     "main: задача создана\nworker старт\nworker конец\nmain: после sleep(0)\nmain: конец",
+     "main: задача создана\nworker старт\nmain: после sleep(0)\nworker конец\nmain: конец"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "create_task только планирует задачу: она начнётся, когда main отдаст управление.",
+     "await asyncio.sleep(0) — это пауза: в ней успевает начаться worker.",
+     "worker тоже уступает на sleep(0) — ход возвращается к main.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "import asyncio\n\nasync def worker():\n    print(\"worker старт\")\n    await asyncio.sleep(0)\n    print(\"worker конец\")\n\nasync def main():\n    task = asyncio.create_task(worker())\n    print(\"main: задача создана\")\n    await asyncio.sleep(0)\n    print(\"main: после sleep(0)\")\n    await task\n    print(\"main: конец\")\n\nasyncio.run(main())",
+    "output": "main: задача создана\nworker старт\nmain: после sleep(0)\nworker конец\nmain: конец\n"
+   }
+  },
+  {
+   "id": "py_async_007",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Таймаут и уборка",
+   "prompt": "Что выведет код?",
+   "topic": "async_tasks",
+   "difficulty": 3,
+   "hint": "Что происходит с корутиной, которая не успела? Срабатывает ли её finally?",
+   "explanation": "По таймауту wait_for отменяет slow: внутри неё await бросает CancelledError, finally печатает «уборка». Затем wait_for выбрасывает TimeoutError (в 3.11+ asyncio.TimeoutError — это он же).",
+   "code": "import asyncio\n\nasync def slow():\n    try:\n        await asyncio.sleep(1)\n        return \"данные\"\n    finally:\n        print(\"slow: уборка\")\n\nasync def main():\n    try:\n        print(await asyncio.wait_for(slow(), timeout=0.05))\n    except TimeoutError:\n        print(\"таймаут\")\n\nasyncio.run(main())",
+   "payload": {
+    "options": [
+     "таймаут",
+     "данные",
+     "таймаут\nslow: уборка",
+     "slow: уборка\nтаймаут"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Отменённая корутина выполняет свой finally.",
+     "Пауза 1 с больше таймаута 0.05 с — результата не будет.",
+     "Уборка происходит при отмене — раньше, чем TimeoutError дойдёт до main.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "import asyncio\n\nasync def slow():\n    try:\n        await asyncio.sleep(1)\n        return \"данные\"\n    finally:\n        print(\"slow: уборка\")\n\nasync def main():\n    try:\n        print(await asyncio.wait_for(slow(), timeout=0.05))\n    except TimeoutError:\n        print(\"таймаут\")\n\nasyncio.run(main())",
+    "output": "slow: уборка\nтаймаут\n"
+   }
+  },
+  {
+   "id": "py_async_008",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Только внутри async def",
+   "prompt": "Что можно написать только внутри async def?",
+   "topic": "async_basics",
+   "difficulty": 2,
+   "hint": "Ищите конструкции с ключевыми словами await и async.",
+   "explanation": "await, async with и async for — синтаксис корутин: на верхнем уровне обычного файла .py или в обычной функции это SyntaxError (в REPL python -m asyncio и в Jupyter await на верхнем уровне разрешён). asyncio.run, наоборот, вызывают из обычного кода.",
+   "payload": {
+    "options": [
+     "await asyncio.sleep(1)",
+     "async with lock:\n    pass",
+     "async for item in stream:\n    pass",
+     "asyncio.run(main())",
+     "time.sleep(1)",
+     "print(\"привет\")"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     2
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "",
+     "asyncio.run вызывают как раз из обычного кода — это вход в асинхронный мир.",
+     "Это обычная функция; внутри корутин её как раз избегают.",
+     "print работает везде."
+    ]
+   }
+  },
+  {
+   "id": "py_async_009",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Инструменты asyncio",
+   "prompt": "Сопоставьте инструмент и его назначение",
+   "topic": "async_tasks",
+   "difficulty": 2,
+   "hint": "Начните с самого очевидного: где «очередь», где «таймаут».",
+   "explanation": "gather собирает результаты, create_task запускает фоновую задачу, wait_for ограничивает время, TaskGroup управляет группой задач, Queue передаёт данные.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "asyncio.gather",
+      "right": "Ждёт несколько корутин, результаты — в порядке аргументов"
+     },
+     {
+      "left": "asyncio.create_task",
+      "right": "Планирует корутину, не дожидаясь её"
+     },
+     {
+      "left": "asyncio.wait_for",
+      "right": "Ждёт результат не дольше заданного времени"
+     },
+     {
+      "left": "asyncio.TaskGroup",
+      "right": "Блок задач: при ошибке в одной остальные отменяются"
+     },
+     {
+      "left": "asyncio.Queue",
+      "right": "Передаёт данные между корутинами"
+     }
+    ]
+   }
+  },
+  {
+   "id": "py_async_011",
+   "type": "code_ordering",
+   "role": "practice",
+   "title": "Собери программу",
+   "prompt": "Расставьте строки так, чтобы программа напечатала «результат: 42»",
+   "topic": "async_basics",
+   "difficulty": 2,
+   "hint": "Сначала импорт и объявления, вызов asyncio.run — последним.",
+   "explanation": "Функции объявляют до вызова asyncio.run. Порядок двух async def между собой не важен: answer нужна только при выполнении main.",
+   "payload": {
+    "lines": [
+     "import asyncio",
+     "async def answer():",
+     "    await asyncio.sleep(0.01)",
+     "    return 42",
+     "async def main():",
+     "    print(\"результат:\", await answer())",
+     "asyncio.run(main())"
+    ],
+    "alternativeOrders": [
+     [
+      0,
+      1,
+      3,
+      2,
+      4,
+      5,
+      6
+     ],
+     [
+      0,
+      1,
+      3,
+      4,
+      2,
+      5,
+      6
+     ],
+     [
+      0,
+      1,
+      3,
+      4,
+      5,
+      2,
+      6
+     ],
+     [
+      0,
+      4,
+      2,
+      5,
+      1,
+      3,
+      6
+     ],
+     [
+      0,
+      4,
+      5,
+      1,
+      2,
+      3,
+      6
+     ],
+     [
+      0,
+      4,
+      5,
+      1,
+      3,
+      2,
+      6
+     ],
+     [
+      0,
+      4,
+      5,
+      2,
+      1,
+      3,
+      6
+     ],
+     [
+      1,
+      2,
+      3,
+      0,
+      4,
+      5,
+      6
+     ],
+     [
+      1,
+      2,
+      3,
+      4,
+      5,
+      0,
+      6
+     ],
+     [
+      1,
+      3,
+      0,
+      4,
+      2,
+      5,
+      6
+     ],
+     [
+      1,
+      3,
+      0,
+      4,
+      5,
+      2,
+      6
+     ],
+     [
+      1,
+      3,
+      2,
+      0,
+      4,
+      5,
+      6
+     ],
+     [
+      1,
+      3,
+      2,
+      4,
+      5,
+      0,
+      6
+     ],
+     [
+      1,
+      3,
+      4,
+      2,
+      5,
+      0,
+      6
+     ],
+     [
+      1,
+      3,
+      4,
+      5,
+      2,
+      0,
+      6
+     ],
+     [
+      4,
+      2,
+      5,
+      0,
+      1,
+      3,
+      6
+     ],
+     [
+      4,
+      2,
+      5,
+      1,
+      3,
+      0,
+      6
+     ],
+     [
+      4,
+      5,
+      0,
+      1,
+      2,
+      3,
+      6
+     ],
+     [
+      4,
+      5,
+      0,
+      1,
+      3,
+      2,
+      6
+     ],
+     [
+      4,
+      5,
+      1,
+      2,
+      3,
+      0,
+      6
+     ],
+     [
+      4,
+      5,
+      1,
+      3,
+      2,
+      0,
+      6
+     ],
+     [
+      4,
+      5,
+      2,
+      0,
+      1,
+      3,
+      6
+     ],
+     [
+      4,
+      5,
+      2,
+      1,
+      3,
+      0,
+      6
+     ]
+    ]
+   },
+   "solution": {
+    "code": "import asyncio\nasync def answer():\n    await asyncio.sleep(0.01)\n    return 42\nasync def main():\n    print(\"результат:\", await answer())\nasyncio.run(main())",
+    "output": "результат: 42\n"
+   }
+  },
+  {
+   "id": "py_async_012",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Ошибки в группе задач",
+   "prompt": "Что выведет код?",
+   "topic": "async_tasks",
+   "difficulty": 4,
+   "hint": "return_exceptions=True кладёт исключение в список результатов. В каком виде TaskGroup отдаёт ошибки?",
+   "explanation": "gather с return_exceptions=True не бросает исключение, а ставит его на место результата. TaskGroup собирает ошибки задач в ExceptionGroup; except* ValueError ловит их, а group.exceptions — кортеж исключений.",
+   "code": "import asyncio\n\nasync def job(n):\n    await asyncio.sleep(0.01 * n)\n    if n == 2:\n        raise ValueError(n)\n    return n\n\nasync def main():\n    print(await asyncio.gather(job(1), job(2), job(3), return_exceptions=True))\n    try:\n        async with asyncio.TaskGroup() as tg:\n            for n in (1, 2, 3):\n                tg.create_task(job(n))\n    except* ValueError as group:\n        print(\"ошибки:\", group.exceptions)\n\nasyncio.run(main())",
+   "payload": {
+    "options": [
+     "[1, 3]\nошибки: (ValueError(2),)",
+     "ValueError: 2",
+     "[1, ValueError(2), 3]\nошибки: (ValueError(2),)",
+     "[1, ValueError(2), 3]\nошибки: ValueError(2)"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Исключение не выбрасывается из списка — оно стоит на своём месте.",
+     "return_exceptions=True не даёт исключению вылететь из gather, а except* ловит ошибки TaskGroup.",
+     "",
+     "group.exceptions — кортеж, даже если ошибка одна."
+    ]
+   },
+   "solution": {
+    "code": "import asyncio\n\nasync def job(n):\n    await asyncio.sleep(0.01 * n)\n    if n == 2:\n        raise ValueError(n)\n    return n\n\nasync def main():\n    print(await asyncio.gather(job(1), job(2), job(3), return_exceptions=True))\n    try:\n        async with asyncio.TaskGroup() as tg:\n            for n in (1, 2, 3):\n                tg.create_task(job(n))\n    except* ValueError as group:\n        print(\"ошибки:\", group.exceptions)\n\nasyncio.run(main())",
+    "output": "[1, ValueError(2), 3]\nошибки: (ValueError(2),)\n"
+   }
+  },
+  {
+   "id": "py_async_013",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Явная отмена",
+   "prompt": "Что выведет код?",
+   "topic": "async_tasks",
+   "difficulty": 3,
+   "hint": "cancel() бросает CancelledError внутрь задачи на её текущем await. Что сделает raise в except?",
+   "explanation": "task.cancel() бросает CancelledError внутрь worker на await asyncio.sleep. worker убирает за собой и пробрасывает отмену дальше, поэтому задача считается отменённой, а await task в main выбрасывает CancelledError.",
+   "code": "import asyncio\n\nasync def worker():\n    try:\n        await asyncio.sleep(1)\n    except asyncio.CancelledError:\n        print(\"отмена: убираю за собой\")\n        raise\n\nasync def main():\n    task = asyncio.create_task(worker())\n    await asyncio.sleep(0.01)\n    task.cancel()\n    try:\n        await task\n    except asyncio.CancelledError:\n        print(\"задача отменена:\", task.cancelled())\n\nasyncio.run(main())",
+   "payload": {
+    "options": [
+     "задача отменена: True",
+     "отмена: убираю за собой\nзадача отменена: True",
+     "отмена: убираю за собой\nзадача отменена: False",
+     "отмена: убираю за собой"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "except внутри worker выполняется — он печатает про уборку.",
+     "",
+     "raise пробросил отмену: задача отменена, cancelled() — True.",
+     "await task выбрасывает CancelledError, и main его ловит."
+    ]
+   },
+   "solution": {
+    "code": "import asyncio\n\nasync def worker():\n    try:\n        await asyncio.sleep(1)\n    except asyncio.CancelledError:\n        print(\"отмена: убираю за собой\")\n        raise\n\nasync def main():\n    task = asyncio.create_task(worker())\n    await asyncio.sleep(0.01)\n    task.cancel()\n    try:\n        await task\n    except asyncio.CancelledError:\n        print(\"задача отменена:\", task.cancelled())\n\nasyncio.run(main())",
+    "output": "отмена: убираю за собой\nзадача отменена: True\n"
+   }
+  },
+  {
+   "id": "py_async_014",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Не больше двух сразу",
+   "prompt": "Что выведет код?",
+   "topic": "async_tasks",
+   "difficulty": 3,
+   "hint": "Semaphore(2) пускает в блок не больше двух корутин. Остальные ждут, но не пропадают.",
+   "explanation": "Все пять корутин стартуют, но в async with sem одновременно находятся не больше двух — так ограничивают число параллельных запросов к серверу. Результаты — все пять, в порядке аргументов.",
+   "code": "import asyncio\n\nactive = peak = 0\n\nasync def fetch(sem, n):\n    global active, peak\n    async with sem:\n        active += 1\n        peak = max(peak, active)\n        await asyncio.sleep(0.01)\n        active -= 1\n    return n\n\nasync def main():\n    sem = asyncio.Semaphore(2)\n    print(await asyncio.gather(*(fetch(sem, n) for n in range(5))), peak)\n\nasyncio.run(main())",
+   "payload": {
+    "options": [
+     "[0, 1, 2, 3, 4] 5",
+     "[0, 1, 2, 3, 4] 1",
+     "[0, 1] 2",
+     "[0, 1, 2, 3, 4] 2"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Semaphore(2) не пускает в блок больше двух корутин сразу.",
+     "Две корутины ждут внутри блока одновременно.",
+     "Остальные корутины не отбрасываются, а ждут своей очереди.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "import asyncio\n\nactive = peak = 0\n\nasync def fetch(sem, n):\n    global active, peak\n    async with sem:\n        active += 1\n        peak = max(peak, active)\n        await asyncio.sleep(0.01)\n        active -= 1\n    return n\n\nasync def main():\n    sem = asyncio.Semaphore(2)\n    print(await asyncio.gather(*(fetch(sem, n) for n in range(5))), peak)\n\nasyncio.run(main())",
+    "output": "[0, 1, 2, 3, 4] 2\n"
+   }
+  },
+  {
+   "id": "py_async_010",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: производитель и потребитель",
+   "prompt": "Что выведет код?",
+   "topic": "async_tasks",
+   "difficulty": 4,
+   "hint": "В очереди помещается один элемент: put ждёт, пока потребитель заберёт предыдущий. И когда выполняется код после async with?",
+   "explanation": "Очередь на один элемент: producer кладёт a, а на b ждёт. consumer забирает a, место освобождается — producer кладёт b и снова ждёт. Так они чередуются. Блок TaskGroup ждёт обе задачи, поэтому «всё» — последнее.",
+   "code": "import asyncio\n\nasync def producer(queue):\n    for item in [\"a\", \"b\", \"c\"]:\n        await queue.put(item)\n        print(\"положил\", item)\n    await queue.put(None)\n\nasync def consumer(queue):\n    while (item := await queue.get()) is not None:\n        print(\"взял\", item)\n\nasync def main():\n    queue = asyncio.Queue(maxsize=1)\n    async with asyncio.TaskGroup() as tg:\n        tg.create_task(producer(queue))\n        tg.create_task(consumer(queue))\n    print(\"всё\")\n\nasyncio.run(main())",
+   "payload": {
+    "options": [
+     "положил a\nположил b\nположил c\nвзял a\nвзял b\nвзял c\nвсё",
+     "положил a\nвзял a\nположил b\nвзял b\nположил c\nвзял c\nвсё",
+     "положил a\nвзял a\nвзял b\nположил b\nположил c\nвзял c\nвсё",
+     "всё\nположил a\nвзял a\nположил b\nвзял b\nположил c\nвзял c"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "maxsize=1: второй put ждёт, пока потребитель заберёт первый элемент.",
+     "",
+     "producer печатает «положил» сразу после put — раньше, чем consumer успеет взять элемент.",
+     "Выход из async with TaskGroup ждёт завершения всех задач."
+    ]
+   },
+   "solution": {
+    "code": "import asyncio\n\nasync def producer(queue):\n    for item in [\"a\", \"b\", \"c\"]:\n        await queue.put(item)\n        print(\"положил\", item)\n    await queue.put(None)\n\nasync def consumer(queue):\n    while (item := await queue.get()) is not None:\n        print(\"взял\", item)\n\nasync def main():\n    queue = asyncio.Queue(maxsize=1)\n    async with asyncio.TaskGroup() as tg:\n        tg.create_task(producer(queue))\n        tg.create_task(consumer(queue))\n    print(\"всё\")\n\nasyncio.run(main())",
+    "output": "положил a\nвзял a\nположил b\nвзял b\nположил c\nвзял c\nвсё\n"
+   }
+  }
+ ]
+}

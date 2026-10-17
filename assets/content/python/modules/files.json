@@ -1,0 +1,294 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_files_001",
+   "type": "multiple_choice",
+   "role": "lesson",
+   "title": "Режим «a»",
+   "prompt": "Что делает режим \"a\" в open(\"log.txt\", \"a\")?",
+   "topic": "files_open",
+   "difficulty": 1,
+   "hint": "a — от слова append.",
+   "explanation": "\"a\" (append) дописывает данные в конец, сохраняя старое содержимое; если файла нет, он создаётся.",
+   "payload": {
+    "options": [
+     "Открывает только для чтения",
+     "Стирает файл и пишет заново",
+     "Дописывает в конец файла",
+     "Создаёт новый файл; если файл уже есть — ошибка"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Это режим \"r\".",
+     "Это режим \"w\".",
+     "",
+     "Это режим \"x\"."
+    ]
+   }
+  },
+  {
+   "id": "py_files_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Сколько строк",
+   "prompt": "Что выведет код?",
+   "topic": "files_read",
+   "difficulty": 1,
+   "hint": "readlines возвращает список строк файла.",
+   "explanation": "В файл записаны две строки, каждая с \\n в конце. readlines() возвращает список из двух элементов.",
+   "code": "with open(\"notes.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"первая\\n\")\n    f.write(\"вторая\\n\")\nwith open(\"notes.txt\", encoding=\"utf-8\") as f:\n    print(len(f.readlines()))",
+   "payload": {
+    "options": [
+     "1",
+     "2",
+     "14",
+     "0"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Каждый write с \\n добавляет отдельную строку.",
+     "",
+     "len считает элементы списка (строки), а не символы.",
+     "with закрыл файл после записи, данные сохранены."
+    ]
+   },
+   "solution": {
+    "code": "with open(\"notes.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"первая\\n\")\n    f.write(\"вторая\\n\")\nwith open(\"notes.txt\", encoding=\"utf-8\") as f:\n    print(len(f.readlines()))",
+    "output": "2\n"
+   }
+  },
+  {
+   "id": "py_files_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Не стереть",
+   "prompt": "Допишите вторую строку, сохранив первую",
+   "topic": "files_open",
+   "difficulty": 1,
+   "hint": "Нужен режим дописывания.",
+   "explanation": "Режим \"a\" дописывает в конец. \"w\" стёр бы строку a, \"r\" не разрешает запись, \"x\" требует, чтобы файла не было.",
+   "payload": {
+    "template": "with open(\"log.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"a\\n\")\nwith open(\"log.txt\", \"{{0}}\", encoding=\"utf-8\") as f:\n    f.write(\"b\\n\")\nwith open(\"log.txt\", encoding=\"utf-8\") as f:\n    print(f.read(), end=\"\")",
+    "options": [
+     "a",
+     "w",
+     "r",
+     "x"
+    ],
+    "answers": [
+     "a"
+    ],
+    "variantResults": {
+     "w": "b",
+     "r": "UnsupportedOperation: not writable",
+     "x": "FileExistsError: [Errno 17] File exists: 'log.txt'"
+    }
+   },
+   "solution": {
+    "code": "with open(\"log.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"a\\n\")\nwith open(\"log.txt\", \"a\", encoding=\"utf-8\") as f:\n    f.write(\"b\\n\")\nwith open(\"log.txt\", encoding=\"utf-8\") as f:\n    print(f.read(), end=\"\")",
+    "output": "a\nb\n"
+   }
+  },
+  {
+   "id": "py_files_004",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Сумма из файла",
+   "prompt": "Напишите, что выведет код",
+   "topic": "files_read",
+   "difficulty": 2,
+   "hint": "int() не мешает перевод строки в конце.",
+   "explanation": "Цикл идёт по трём строкам: 3 + 5 + 8 = 16, строк 3.",
+   "code": "with open(\"data.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"3\\n5\\n8\\n\")\ntotal = 0\ncount = 0\nwith open(\"data.txt\", encoding=\"utf-8\") as f:\n    for line in f:\n        total += int(line)\n        count += 1\nprint(total, count)",
+   "payload": {
+    "expectedOutput": "16 3"
+   },
+   "solution": {
+    "code": "with open(\"data.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"3\\n5\\n8\\n\")\ntotal = 0\ncount = 0\nwith open(\"data.txt\", encoding=\"utf-8\") as f:\n    for line in f:\n        total += int(line)\n        count += 1\nprint(total, count)",
+    "output": "16 3\n"
+   }
+  },
+  {
+   "id": "py_files_005",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Склеенные имена",
+   "prompt": "Каждое имя должно оказаться на своей строке, программа должна вывести 2. Найдите строку с ошибкой",
+   "topic": "files_open",
+   "difficulty": 2,
+   "hint": "Добавляет ли write перевод строки сам?",
+   "explanation": "write пишет ровно то, что передано: получилась одна строка «АдаЛинус». Нужно добавлять \"\\n\".",
+   "code": "names = [\"Ада\", \"Линус\"]\nwith open(\"names.txt\", \"w\", encoding=\"utf-8\") as f:\n    for name in names:\n        f.write(name)\nwith open(\"names.txt\", encoding=\"utf-8\") as f:\n    print(len(f.readlines()))",
+   "payload": {
+    "buggyLines": [
+     3
+    ]
+   },
+   "solution": {
+    "code": "names = [\"Ада\", \"Линус\"]\nwith open(\"names.txt\", \"w\", encoding=\"utf-8\") as f:\n    for name in names:\n        f.write(name + \"\\n\")\nwith open(\"names.txt\", encoding=\"utf-8\") as f:\n    print(len(f.readlines()))",
+    "output": "2\n"
+   }
+  },
+  {
+   "id": "py_files_006",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Части пути",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "files_pathlib",
+   "difficulty": 2,
+   "hint": "suffix — только последнее расширение.",
+   "explanation": "name — имя с расширением, stem — без последнего расширения, suffix — «.csv», parent — папка, parts[0] — первая часть пути.",
+   "code": "from pathlib import Path\np = Path(\"reports/2024/summary.final.csv\")",
+   "payload": {
+    "pairs": [
+     {
+      "left": "p.name",
+      "right": "summary.final.csv"
+     },
+     {
+      "left": "p.stem",
+      "right": "summary.final"
+     },
+     {
+      "left": "p.suffix",
+      "right": ".csv"
+     },
+     {
+      "left": "p.parent",
+      "right": "reports/2024"
+     },
+     {
+      "left": "p.parts[0]",
+      "right": "reports"
+     }
+    ]
+   },
+   "solution": {
+    "code": "from pathlib import Path\np = Path(\"reports/2024/summary.final.csv\")\nprint(p.name)\nprint(p.stem)\nprint(p.suffix)\nprint(p.parent)\nprint(p.parts[0])",
+    "output": "summary.final.csv\nsummary.final\n.csv\nreports/2024\nreports\n"
+   }
+  },
+  {
+   "id": "py_files_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Весь текст",
+   "prompt": "В файле data.txt две строки. Какие выражения вернут всё его содержимое одной строкой?",
+   "topic": "files_read",
+   "difficulty": 2,
+   "hint": "readlines возвращает список, readline — одну строку.",
+   "explanation": "read() и read_text() возвращают весь текст. join склеивает строки, по которым идёт цикл. readlines даёт список, readline — только первую строку. (В варианте с голым open файл не закрывается явно — в рабочем коде нужен with.)",
+   "payload": {
+    "options": [
+     "open(\"data.txt\").read()",
+     "Path(\"data.txt\").read_text()",
+     "open(\"data.txt\").readlines()",
+     "\"\".join(open(\"data.txt\"))",
+     "open(\"data.txt\").readline()"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     3
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "readlines возвращает список строк, а не одну строку.",
+     "",
+     "readline читает только одну строку."
+    ]
+   }
+  },
+  {
+   "id": "py_files_008",
+   "type": "code_ordering",
+   "role": "challenge",
+   "title": "Простой CSV",
+   "prompt": "Соберите программу, которая выведет 77",
+   "topic": "files_read",
+   "difficulty": 3,
+   "hint": "Сначала записать файл, потом прочитать.",
+   "explanation": "Каждая строка файла — «имя;возраст». split(\";\")[1] берёт возраст, int убирает \\n: 36 + 41 = 77.",
+   "payload": {
+    "lines": [
+     "rows = [(\"Ада\", 36), (\"Алан\", 41)]",
+     "with open(\"people.csv\", \"w\", encoding=\"utf-8\") as f:",
+     "    for name, age in rows:",
+     "        f.write(f\"{name};{age}\\n\")",
+     "with open(\"people.csv\", encoding=\"utf-8\") as f:",
+     "    ages = [int(line.split(\";\")[1]) for line in f]",
+     "print(sum(ages))"
+    ]
+   },
+   "solution": {
+    "code": "rows = [(\"Ада\", 36), (\"Алан\", 41)]\nwith open(\"people.csv\", \"w\", encoding=\"utf-8\") as f:\n    for name, age in rows:\n        f.write(f\"{name};{age}\\n\")\nwith open(\"people.csv\", encoding=\"utf-8\") as f:\n    ages = [int(line.split(\";\")[1]) for line in f]\nprint(sum(ages))",
+    "output": "77\n"
+   }
+  },
+  {
+   "id": "py_files_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Запятая внутри значения",
+   "prompt": "Что выведет код?",
+   "topic": "files_csv",
+   "difficulty": 3,
+   "hint": "csv.writer берёт значение с запятой в кавычки. Знает ли о кавычках split?",
+   "explanation": "В файле строка Грейс,\"Нью-Йорк, США\",85. split(\",\") режет и внутри кавычек — 4 части. csv.reader понимает кавычки и возвращает 3 значения.",
+   "code": "import csv\n\nwith open(\"t.csv\", \"w\", newline=\"\", encoding=\"utf-8\") as f:\n    csv.writer(f).writerow([\"Грейс\", \"Нью-Йорк, США\", 85])\n\nwith open(\"t.csv\", newline=\"\", encoding=\"utf-8\") as f:\n    line = f.readline().strip()\n    print(len(line.split(\",\")))\nwith open(\"t.csv\", newline=\"\", encoding=\"utf-8\") as f:\n    print(len(next(csv.reader(f))))",
+   "payload": {
+    "options": [
+     "3\n3",
+     "4\n3",
+     "4\n4",
+     "3\n4"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "split ничего не знает о кавычках и режет по каждой запятой.",
+     "",
+     "csv.reader учитывает кавычки: значений три.",
+     "Наоборот: split даёт 4 части, csv.reader — 3 значения."
+    ]
+   },
+   "solution": {
+    "code": "import csv\n\nwith open(\"t.csv\", \"w\", newline=\"\", encoding=\"utf-8\") as f:\n    csv.writer(f).writerow([\"Грейс\", \"Нью-Йорк, США\", 85])\n\nwith open(\"t.csv\", newline=\"\", encoding=\"utf-8\") as f:\n    line = f.readline().strip()\n    print(len(line.split(\",\")))\nwith open(\"t.csv\", newline=\"\", encoding=\"utf-8\") as f:\n    print(len(next(csv.reader(f))))",
+    "output": "4\n3\n"
+   }
+  },
+  {
+   "id": "py_files_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: после with",
+   "prompt": "Что выведет код?",
+   "topic": "files_open",
+   "difficulty": 3,
+   "hint": "Что делает with с файлом при выходе из блока?",
+   "explanation": "После блока with файл закрыт: f.closed — True, а запись в закрытый файл вызывает ValueError.",
+   "code": "with open(\"t.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"hi\")\nprint(f.closed)\ntry:\n    f.write(\"again\")\nexcept ValueError as e:\n    print(\"ошибка:\", e)",
+   "payload": {
+    "options": [
+     "True\nошибка: I/O operation on closed file.",
+     "False",
+     "True",
+     "False\nошибка: I/O operation on closed file."
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "with закрывает файл при выходе из блока.",
+     "Запись в закрытый файл не игнорируется молча: ValueError.",
+     "Ошибка верная, но f.closed уже True."
+    ]
+   },
+   "solution": {
+    "code": "with open(\"t.txt\", \"w\", encoding=\"utf-8\") as f:\n    f.write(\"hi\")\nprint(f.closed)\ntry:\n    f.write(\"again\")\nexcept ValueError as e:\n    print(\"ошибка:\", e)",
+    "output": "True\nошибка: I/O operation on closed file.\n"
+   }
+  }
+ ]
+}

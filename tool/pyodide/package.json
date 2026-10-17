@@ -1,0 +1,8 @@
+{
+  "name": "bytecraft-pyodide",
+  "private": true,
+  "description": "Pins the Pyodide version bundled into the app and used by the content check.",
+  "dependencies": {
+    "pyodide": "0.27.7"
+  }
+}

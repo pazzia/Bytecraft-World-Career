@@ -3,6 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/journal/presentation/journal_screen.dart';
+import '../../features/journal/presentation/topic_screen.dart';
+import '../../features/playground/presentation/playground_screen.dart';
+import '../../features/playground/presentation/practice_task_screen.dart';
 import '../../features/learning_map/presentation/learning_map_screen.dart';
 import '../../features/level/presentation/level_screen.dart';
 import '../../features/onboarding/presentation/course_selection_screen.dart';
@@ -98,6 +102,30 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: Routes.journal,
+                builder: (context, state) => const JournalScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.playground,
+                builder: (context, state) => const PlaygroundScreen(),
+                routes: [
+                  GoRoute(
+                    path: Routes.practiceTaskSegment,
+                    builder: (context, state) => PracticeTaskScreen(
+                      taskId: state.pathParameters[Routes.taskIdParam]!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: Routes.profile,
                 builder: (context, state) => const ProfileScreen(),
               ),
@@ -114,6 +142,13 @@ final routerProvider = Provider<GoRouter>((ref) {
             levelId: state.pathParameters[Routes.levelIdParam]!,
             mode: Routes.modeFrom(state.uri.queryParameters[Routes.modeQuery]),
           ),
+        ),
+      ),
+      GoRoute(
+        path: Routes.topicPattern,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => TopicScreen(
+          topicId: state.pathParameters[Routes.topicIdParam]!,
         ),
       ),
       GoRoute(

@@ -8,6 +8,18 @@ abstract final class Routes {
   static const String home = '/home';
   static const String map = '/map';
   static const String profile = '/profile';
+  static const String journal = '/journal';
+  static const String playground = '/code';
+  static const String topicPattern = '/topic/:topicId';
+  static const String topicIdParam = 'topicId';
+
+  static const String practiceTaskSegment = 'task/:taskId';
+  static const String taskIdParam = 'taskId';
+
+  static String practiceTask(String taskId) =>
+      '$playground/task/${Uri.encodeComponent(taskId)}';
+
+  static String topic(String topicId) => '/topic/${Uri.encodeComponent(topicId)}';
   static const String shop = '/shop';
   static const String premium = '/premium';
 

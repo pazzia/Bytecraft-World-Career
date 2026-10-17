@@ -6,6 +6,10 @@ enum LevelMode {
 
   /// Part of a timed module run ("На время").
   timed,
+
+  /// Reviewing a journal topic: plays like a replay, the result moves the
+  /// topic between review boxes.
+  review,
 }
 
 /// In-memory state of one play-through. Immutable: the engine returns an
