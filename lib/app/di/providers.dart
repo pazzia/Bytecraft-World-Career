@@ -7,6 +7,8 @@ import '../../core/storage/json_document_store.dart';
 import '../../core/storage/key_value_store.dart';
 import '../../core/time/clock.dart';
 import '../../core/utils/id_generator.dart';
+import '../../features/career/data/dio_github_portfolio_repository.dart';
+import '../../features/career/domain/github_portfolio.dart';
 import '../../features/courses/data/content_sources.dart';
 import '../../features/courses/data/default_content_repository.dart';
 import '../../features/courses/data/dio_remote_content_source.dart';
@@ -131,6 +133,24 @@ final contentRepositoryProvider = Provider<ContentRepository>((ref) {
     bundled: BundledContentSource(ref.watch(textAssetLoaderProvider)),
     remote: remote,
     cache: ContentCache(ref.watch(documentStoreProvider)),
+  );
+});
+
+final githubPortfolioRepositoryProvider = Provider<GitHubPortfolioRepository>((ref) {
+  final config = ref.watch(appConfigProvider);
+  return DioGitHubPortfolioRepository(
+    Dio(
+      BaseOptions(
+        baseUrl: 'https://api.github.com',
+        connectTimeout: config.networkTimeout,
+        receiveTimeout: config.networkTimeout,
+        headers: const {
+          'Accept': 'application/vnd.github+json',
+          'X-GitHub-Api-Version': '2022-11-28',
+          'User-Agent': 'Bytecraft-mobile',
+        },
+      ),
+    ),
   );
 });
 
