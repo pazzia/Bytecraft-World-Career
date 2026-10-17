@@ -58,7 +58,7 @@ class VacancyMatcher {
     final average = detected.fold<int>(0, (sum, item) => sum + item.score) /
         detected.length;
     return VacancyMatchReport(
-      match: average.round().clamp(0, 100),
+      match: average.round().clamp(0, 100).toInt(),
       requirements: List.unmodifiable(detected),
     );
   }
