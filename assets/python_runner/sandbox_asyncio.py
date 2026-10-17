@@ -68,4 +68,37 @@ class _SandboxPolicy(asyncio.DefaultEventLoopPolicy):
         return _SandboxLoop()
 
 
+def _cancel_all_tasks(loop):
+    tasks = [task for task in asyncio.all_tasks(loop) if not task.done()]
+    for task in tasks:
+        task.cancel()
+    if tasks:
+        loop.run_until_complete(asyncio.gather(*tasks, return_exceptions=True))
+
+
+def run(main, *, debug=None, loop_factory=None):
+    """asyncio.run on the sandbox loop. Pyodide replaces asyncio.run with a
+    version that needs JavaScript stack switching (JSPI), which a WebView
+    may not support, so the standard behaviour is restored here."""
+    if asyncio.events._get_running_loop() is not None:
+        raise RuntimeError("asyncio.run() cannot be called from a running event loop")
+    if not asyncio.iscoroutine(main):
+        raise ValueError(f"a coroutine was expected, got {main!r}")
+    loop = (loop_factory or _SandboxLoop)()
+    if debug is not None:
+        loop.set_debug(debug)
+    try:
+        asyncio.set_event_loop(loop)
+        return loop.run_until_complete(main)
+    finally:
+        try:
+            _cancel_all_tasks(loop)
+            loop.run_until_complete(loop.shutdown_asyncgens())
+        finally:
+            asyncio.set_event_loop(None)
+            loop.close()
+
+
 asyncio.set_event_loop_policy(_SandboxPolicy())
+asyncio.run = run
+asyncio.runners.run = run
