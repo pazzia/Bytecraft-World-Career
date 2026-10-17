@@ -39,6 +39,54 @@ jobs:
           sed -i 's/android:label="bytecraft"/android:label="Bytecraft"/' android/app/src/main/AndroidManifest.xml
           grep -q 'android:label="Bytecraft"' android/app/src/main/AndroidManifest.xml
           cp -r tool/android/res/. android/app/src/main/res/
+          # The Python sandbox talks to a loopback HTTP server (see
+          # lib/features/playground/data/asset_http_server.dart): it needs
+          # INTERNET and plain HTTP to 127.0.0.1 only.
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i '0,/<application/s//<uses-permission android:name="android.permission.INTERNET"\/>\n    <application android:networkSecurityConfig="@xml\/network_security_config"/' "$M"
+          grep -q 'android.permission.INTERNET' "$M"
+          grep -q 'networkSecurityConfig' "$M"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # The course is generated from tool/content/course/*.py; every level,
+      # example and exercise is executed while generating. The committed
+      # assets must match the sources, and the result must not depend on
+      # hash randomization (set order).
+      - name: Check course content
+        id: content
+        run: |
+          set -o pipefail
+          {
+            python tool/content/generate_python_course.py "$RUNNER_TEMP/content-a"
+            PYTHONHASHSEED=1 python tool/content/generate_python_course.py "$RUNNER_TEMP/content-b" >/dev/null
+            PYTHONHASHSEED=2 python tool/content/generate_python_course.py "$RUNNER_TEMP/content-c" >/dev/null
+            diff -r "$RUNNER_TEMP/content-b" "$RUNNER_TEMP/content-c" && echo "deterministic: yes"
+            diff -r "$RUNNER_TEMP/content-a" assets/content/python && echo "assets up to date: yes"
+          } 2>&1 | tee content.txt
+
+      # Pyodide (CPython for WebAssembly) powers the in-app sandbox. It is
+      # downloaded at build time (version pinned in tool/pyodide/package.json)
+      # and every program of the course is run in it too.
+      - name: Bundle Pyodide
+        run: |
+          set -euo pipefail
+          cd tool/pyodide
+          npm install --no-audit --no-fund
+          SRC=node_modules/pyodide
+          for f in pyodide.js pyodide.asm.js pyodide.asm.wasm python_stdlib.zip pyodide-lock.json; do
+            cp "$SRC/$f" ../../assets/pyodide/
+          done
+          ls -la ../../assets/pyodide
+
+      - name: Check content in Pyodide
+        id: pyodide
+        run: |
+          set -o pipefail
+          node tool/pyodide/check_content.mjs assets/content/python 2>&1 | tee pyodide.txt
 
       - name: Install dependencies
         run: flutter pub get 2>&1 | tee pub.txt
@@ -184,10 +232,12 @@ jobs:
             echo "</details>"
           }
           {
-            echo "### CI: version=${{ steps.apk.outputs.version }}+${{ github.run_number }} · analyze=${{ steps.analyze.outcome }} · tests=${{ steps.tests.outcome }} · apk=${{ steps.apk.outcome }} · release-signed=${{ steps.sign.outputs.signed || 'n/a' }} · key=${{ steps.sign.outputs.source || 'n/a' }}"
+            echo "### CI: version=${{ steps.apk.outputs.version }}+${{ github.run_number }} · content=${{ steps.content.outcome }} · pyodide=${{ steps.pyodide.outcome }} · analyze=${{ steps.analyze.outcome }} · tests=${{ steps.tests.outcome }} · apk=${{ steps.apk.outcome }} · release-signed=${{ steps.sign.outputs.signed || 'n/a' }} · key=${{ steps.sign.outputs.source || 'n/a' }}"
             echo
             section "Flutter version" flutter-version.txt 6
             section "pub get" pub.txt 40
+            section "content" content.txt 40
+            section "pyodide" pyodide.txt 80
             section "flutter analyze" analyze.txt 150
             if grep -q "EXCEPTION CAUGHT BY" test.txt 2>/dev/null; then
               awk '/EXCEPTION CAUGHT BY/{found=1} found{print; n++} n>=70{exit}' test.txt > first-failure.txt

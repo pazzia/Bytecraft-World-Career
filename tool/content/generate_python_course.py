@@ -80,6 +80,9 @@ def write_json(path, data):
 
 
 def main(out_dir):
+    # The app runs Pyodide 0.27 (CPython 3.12): outputs and error messages
+    # must come from the same Python version.
+    assert sys.version_info[:2] == (3, 12), "run the generator with python3.12"
     modules = load_modules()
     levels, topics, tasks = validate(modules)
     os.makedirs(os.path.join(out_dir, "modules"), exist_ok=True)

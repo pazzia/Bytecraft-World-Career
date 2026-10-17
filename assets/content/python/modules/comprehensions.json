@@ -1,0 +1,243 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_comp_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Удвоение",
+   "prompt": "Что выведет код?",
+   "topic": "comp_list",
+   "difficulty": 1,
+   "hint": "range(4) — 0, 1, 2, 3.",
+   "explanation": "Каждое число от 0 до 3 умножается на 2.",
+   "code": "print([x * 2 for x in range(4)])",
+   "payload": {
+    "options": [
+     "[2, 4, 6, 8]",
+     "[0, 2, 4, 6]",
+     "[0, 1, 2, 3]",
+     "[0, 2, 4, 6, 8]"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "range(4) начинается с 0.",
+     "",
+     "Каждый x умножается на 2.",
+     "В range(4) нет числа 4."
+    ]
+   },
+   "solution": {
+    "code": "print([x * 2 for x in range(4)])",
+    "output": "[0, 2, 4, 6]\n"
+   }
+  },
+  {
+   "id": "py_comp_002",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Только чётные",
+   "prompt": "Оставьте в списке только чётные числа",
+   "topic": "comp_cond",
+   "difficulty": 1,
+   "hint": "Фильтр во включении задаётся словом из условий.",
+   "explanation": "if в конце включения отбирает элементы.",
+   "payload": {
+    "template": "evens = [x for x in range(10) {{0}} x % 2 == 0]\nprint(evens)",
+    "options": [
+     "if",
+     "and",
+     "while",
+     "for"
+    ],
+    "answers": [
+     "if"
+    ],
+    "variantResults": {
+     "and": "NameError: name 'x' is not defined",
+     "while": "SyntaxError: invalid syntax",
+     "for": "SyntaxError: invalid syntax"
+    }
+   },
+   "solution": {
+    "code": "evens = [x for x in range(10) if x % 2 == 0]\nprint(evens)",
+    "output": "[0, 2, 4, 6, 8]\n"
+   }
+  },
+  {
+   "id": "py_comp_003",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Какие скобки?",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "comp_dict_set",
+   "difficulty": 2,
+   "hint": "Двоеточие внутри фигурных скобок — словарь.",
+   "explanation": "Квадратные скобки — список, фигурные с двоеточием — словарь, без двоеточия — множество (повторы убираются), генератор в sum складывает 0 + 1 + 2 + 3.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "[c.upper() for c in \"ab\"]",
+      "right": "['A', 'B']"
+     },
+     {
+      "left": "{x: x * x for x in range(3)}",
+      "right": "{0: 0, 1: 1, 2: 4}"
+     },
+     {
+      "left": "{len(w) for w in [\"a\", \"bb\", \"cc\"]}",
+      "right": "{1, 2}"
+     },
+     {
+      "left": "[x for x in range(5) if x > 2]",
+      "right": "[3, 4]"
+     },
+     {
+      "left": "sum(x for x in range(4))",
+      "right": "6"
+     }
+    ]
+   },
+   "solution": {
+    "code": "print([c.upper() for c in \"ab\"])\nprint({x: x * x for x in range(3)})\nprint({len(w) for w in [\"a\", \"bb\", \"cc\"]})\nprint([x for x in range(5) if x > 2])\nprint(sum(x for x in range(4)))",
+    "output": "['A', 'B']\n{0: 0, 1: 1, 2: 4}\n{1, 2}\n[3, 4]\n6\n"
+   }
+  },
+  {
+   "id": "py_comp_004",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Пары",
+   "prompt": "Напишите, что выведет код",
+   "topic": "comp_list",
+   "difficulty": 2,
+   "hint": "Первый for — внешний цикл.",
+   "explanation": "Для i = 1: 11, 12; для i = 2: 21, 22.",
+   "code": "pairs = [f\"{i}{j}\" for i in range(1, 3) for j in range(1, 3)]\nprint(\" \".join(pairs))",
+   "payload": {
+    "expectedOutput": "11 12 21 22"
+   },
+   "solution": {
+    "code": "pairs = [f\"{i}{j}\" for i in range(1, 3) for j in range(1, 3)]\nprint(\" \".join(pairs))",
+    "output": "11 12 21 22\n"
+   }
+  },
+  {
+   "id": "py_comp_005",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Чёт или нечет",
+   "prompt": "Что выведет код?",
+   "topic": "comp_cond",
+   "difficulty": 2,
+   "hint": "0 — чётное число.",
+   "explanation": "Для 0 и 2 — «чёт», для 1 — «нечет».",
+   "code": "print([\"чёт\" if n % 2 == 0 else \"нечет\" for n in range(3)])",
+   "payload": {
+    "options": [
+     "['чёт', 'нечет', 'чёт']",
+     "['нечет', 'чёт', 'нечет']",
+     "['чёт', 'чёт']",
+     "SyntaxError"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Ноль чётный.",
+     "Условие в начале не отбирает, а выбирает значение — элементов три.",
+     "if ... else в начале включения — корректный синтаксис."
+    ]
+   },
+   "solution": {
+    "code": "print([\"чёт\" if n % 2 == 0 else \"нечет\" for n in range(3)])",
+    "output": "['чёт', 'нечет', 'чёт']\n"
+   }
+  },
+  {
+   "id": "py_comp_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Квадраты",
+   "prompt": "Какие выражения дают список [0, 1, 4]?",
+   "topic": "comp_dict_set",
+   "difficulty": 2,
+   "hint": "Нужен именно список, а не множество или генератор.",
+   "explanation": "Первые три дают список [0, 1, 4]. Фигурные скобки дают множество, круглые — генератор, x * 2 — удвоение.",
+   "payload": {
+    "options": [
+     "[x * x for x in range(3)]",
+     "list(x ** 2 for x in range(3))",
+     "[x ** 2 for x in [0, 1, 2]]",
+     "{x * x for x in range(3)}",
+     "(x * x for x in range(3))",
+     "[x * 2 for x in range(3)]"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     2
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "",
+     "Фигурные скобки создают множество, а не список.",
+     "Круглые скобки создают генератор, а не список.",
+     "x * 2 — удвоение: [0, 2, 4]."
+    ]
+   }
+  },
+  {
+   "id": "py_comp_006",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Перепутанное условие",
+   "prompt": "Отрицательные числа нужно заменить нулями. Найдите строку с ошибкой",
+   "topic": "comp_cond",
+   "difficulty": 2,
+   "hint": "Где во включении стоит условное выражение с else?",
+   "explanation": "Условное выражение с else ставится в начало, перед for. if в конце только фильтрует и не может иметь else.",
+   "code": "nums = [3, -1, 5]\nresult = [x for x in nums if x > 0 else 0]\nprint(result)",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "nums = [3, -1, 5]\nresult = [x if x > 0 else 0 for x in nums]\nprint(result)",
+    "output": "[3, 0, 5]\n"
+   }
+  },
+  {
+   "id": "py_comp_008",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: словарь длин",
+   "prompt": "Что выведет код?",
+   "topic": "comp_dict_set",
+   "difficulty": 3,
+   "hint": "Фильтр отбрасывает слова из 3 букв и короче. Ключ — слово.",
+   "explanation": "fig отфильтрован (3 буквы). Ключи — слова, значения — длины, порядок как в списке.",
+   "code": "words = [\"apple\", \"kiwi\", \"banana\", \"fig\"]\nby_len = {w: len(w) for w in words if len(w) > 3}\nprint(by_len)",
+   "payload": {
+    "options": [
+     "{'apple': 5, 'kiwi': 4, 'banana': 6, 'fig': 3}",
+     "{5: 'apple', 4: 'kiwi', 6: 'banana'}",
+     "{'apple': 5, 'kiwi': 4, 'banana': 6}",
+     "['apple', 'kiwi', 'banana']"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Условие len(w) > 3 отбрасывает fig.",
+     "Ключ — то, что слева от двоеточия: слово.",
+     "",
+     "Фигурные скобки с двоеточием создают словарь."
+    ]
+   },
+   "solution": {
+    "code": "words = [\"apple\", \"kiwi\", \"banana\", \"fig\"]\nby_len = {w: len(w) for w in words if len(w) > 3}\nprint(by_len)",
+    "output": "{'apple': 5, 'kiwi': 4, 'banana': 6}\n"
+   }
+  }
+ ]
+}

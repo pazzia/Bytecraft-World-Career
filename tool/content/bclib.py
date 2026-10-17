@@ -74,6 +74,18 @@ def run(code, stdin=""):
     return Run(out.getvalue())
 
 
+def _solution(code, output, stdin="", native_only=False):
+    """Working program of a level. `native_only` marks code that CPython
+    runs but the in-app interpreter (Pyodide in a browser sandbox) can't,
+    e.g. threads; the Pyodide check in CI skips it."""
+    solution = dict(code=code, output=output)
+    if stdin:
+        solution["stdin"] = stdin
+    if native_only:
+        solution["nativeOnly"] = True
+    return solution
+
+
 def dedent(code):
     return textwrap.dedent(code).strip("\n")
 
@@ -176,7 +188,7 @@ def fill(level_id, title, prompt, template, options, answers, *, topic, hint, ex
     level = _base(level_id, "fill_code", role, title, prompt, topic, difficulty, hint, explanation)
     level["payload"] = dict(template=template, options=list(options), answers=list(answers),
                             variantResults=variants)
-    level["solution"] = dict(code=solution, output=correct.out)
+    level["solution"] = _solution(solution, correct.out, stdin)
     return level
 
 
@@ -320,13 +332,18 @@ def multi(level_id, title, prompt, options, correct, *, topic, hint, explanation
 def topic(topic_id, title, summary, body, examples, pitfalls=()):
     """A journal topic. `examples` are (code, note) pairs; outputs are computed."""
     built = []
-    for code, note in examples:
+    for item in examples:
+        code, note = item[0], item[1]
+        flags = item[2] if len(item) > 2 else {}
+        assert set(flags) <= {"native_only"}, (topic_id, "unknown flags", flags)
         code = dedent(code)
         result = run(code)
         assert result.ok, (topic_id, "example fails", result.error, result.message, code)
         example = dict(code=code, output=result.out)
         if note:
             example["note"] = note
+        if flags.get("native_only"):
+            example["nativeOnly"] = True
         built.append(example)
     assert built, (topic_id, "a topic needs an example")
     return dict(id=topic_id, title=title, summary=summary, body=dedent(body),
@@ -356,3 +373,11 @@ def task(task_id, title, prompt, *, solution, tests, starter="", hint=None, diff
     if hint:
         item["hint"] = hint
     return item
+
+
+def native(level):
+    """Marks a level whose code needs real CPython (threads, processes...):
+    the Pyodide check in CI skips its solution."""
+    assert "solution" in level, (level["id"], "no solution to mark")
+    level["solution"]["nativeOnly"] = True
+    return level

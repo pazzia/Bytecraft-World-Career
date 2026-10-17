@@ -1,0 +1,243 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_dict_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Значение по ключу",
+   "prompt": "Что выведет код?",
+   "topic": "dict_basics",
+   "difficulty": 1,
+   "hint": "d[ключ] возвращает значение.",
+   "explanation": "По ключу «Алан» хранится 41.",
+   "code": "ages = {\"Ада\": 36, \"Алан\": 41}\nprint(ages[\"Алан\"])",
+   "payload": {
+    "options": [
+     "36",
+     "41",
+     "Алан",
+     "KeyError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "36 — значение для ключа «Ада».",
+     "",
+     "По ключу возвращается значение, а не ключ.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "ages = {\"Ада\": 36, \"Алан\": 41}\nprint(ages[\"Алан\"])",
+    "output": "41\n"
+   }
+  },
+  {
+   "id": "py_dict_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Без ошибки",
+   "prompt": "Что выведет код?",
+   "topic": "dict_methods",
+   "difficulty": 1,
+   "hint": "get не вызывает ошибку для отсутствующего ключа.",
+   "explanation": "Ключа «Боб» нет, get возвращает значение по умолчанию 0. Словарь не изменился — в нём 2 пары.",
+   "code": "ages = {\"Ада\": 36, \"Алан\": 41}\nprint(ages.get(\"Боб\", 0), len(ages))",
+   "payload": {
+    "options": [
+     "KeyError",
+     "0 2",
+     "None 2",
+     "0 3"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "KeyError вызвал бы ages[\"Боб\"], а get безопасен.",
+     "",
+     "None возвращается, только если default не передан.",
+     "get ничего не добавляет в словарь."
+    ]
+   },
+   "solution": {
+    "code": "ages = {\"Ада\": 36, \"Алан\": 41}\nprint(ages.get(\"Боб\", 0), len(ages))",
+    "output": "0 2\n"
+   }
+  },
+  {
+   "id": "py_dict_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Пары ключ-значение",
+   "prompt": "Переберите словарь парами «название цена»",
+   "topic": "dict_methods",
+   "difficulty": 1,
+   "hint": "Нужен метод, который отдаёт пары.",
+   "explanation": "items() отдаёт кортежи (ключ, значение), которые распаковываются в name и price.",
+   "payload": {
+    "template": "prices = {\"чай\": 3, \"кофе\": 5}\nfor name, price in prices.{{0}}():\n    print(name, price)",
+    "options": [
+     "items",
+     "keys",
+     "values",
+     "get"
+    ],
+    "answers": [
+     "items"
+    ],
+    "variantResults": {
+     "keys": "ValueError: too many values to unpack (expected 2)",
+     "values": "TypeError: cannot unpack non-iterable int object",
+     "get": "TypeError: get expected at least 1 argument, got 0"
+    }
+   },
+   "solution": {
+    "code": "prices = {\"чай\": 3, \"кофе\": 5}\nfor name, price in prices.items():\n    print(name, price)",
+    "output": "чай 3\nкофе 5\n"
+   }
+  },
+  {
+   "id": "py_dict_006",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Что внутри словаря",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "dict_methods",
+   "difficulty": 2,
+   "hint": "list(d) и in работают с ключами.",
+   "explanation": "list(d) — список ключей, values() — значения, in ищет среди ключей, поэтому 1 in d — False; пар две.",
+   "code": "d = {\"a\": 1, \"b\": 2}",
+   "payload": {
+    "pairs": [
+     {
+      "left": "list(d)",
+      "right": "['a', 'b']"
+     },
+     {
+      "left": "list(d.values())",
+      "right": "[1, 2]"
+     },
+     {
+      "left": "\"a\" in d",
+      "right": "True"
+     },
+     {
+      "left": "1 in d",
+      "right": "False"
+     },
+     {
+      "left": "len(d)",
+      "right": "2"
+     }
+    ]
+   },
+   "solution": {
+    "code": "d = {\"a\": 1, \"b\": 2}\nprint(list(d))\nprint(list(d.values()))\nprint(\"a\" in d)\nprint(1 in d)\nprint(len(d))",
+    "output": "['a', 'b']\n[1, 2]\nTrue\nFalse\n2\n"
+   }
+  },
+  {
+   "id": "py_dict_007",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Повторный ключ",
+   "prompt": "Что выведет код?",
+   "topic": "dict_basics",
+   "difficulty": 2,
+   "hint": "Ключи в словаре уникальны.",
+   "explanation": "Второе значение для того же ключа перезаписывает первое.",
+   "code": "d = {\"x\": 1, \"x\": 2}\nprint(d)",
+   "payload": {
+    "options": [
+     "{'x': 1}",
+     "{'x': 1, 'x': 2}",
+     "{'x': 2}",
+     "SyntaxError"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Последнее значение для ключа побеждает.",
+     "Одинаковых ключей в словаре не бывает.",
+     "",
+     "Это корректный код: ключ просто перезаписывается."
+    ]
+   },
+   "solution": {
+    "code": "d = {\"x\": 1, \"x\": 2}\nprint(d)",
+    "output": "{'x': 2}\n"
+   }
+  },
+  {
+   "id": "py_dict_005",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Подсчёт букв",
+   "prompt": "Напишите, что выведет код",
+   "topic": "dict_counting",
+   "difficulty": 2,
+   "hint": "Посчитайте каждую букву в abracadabra.",
+   "explanation": "a встречается 5 раз, b — 2 раза, разных букв пять: a, b, r, c, d.",
+   "code": "counts = {}\nfor ch in \"abracadabra\":\n    counts[ch] = counts.get(ch, 0) + 1\nprint(counts[\"a\"], counts[\"b\"], len(counts))",
+   "payload": {
+    "expectedOutput": "5 2 5"
+   },
+   "solution": {
+    "code": "counts = {}\nfor ch in \"abracadabra\":\n    counts[ch] = counts.get(ch, 0) + 1\nprint(counts[\"a\"], counts[\"b\"], len(counts))",
+    "output": "5 2 5\n"
+   }
+  },
+  {
+   "id": "py_dict_004",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Нет такого ключа",
+   "prompt": "Если товара нет, программа должна вывести 0. Найдите ошибку",
+   "topic": "dict_methods",
+   "difficulty": 2,
+   "hint": "Что будет при обращении к отсутствующему ключу через []?",
+   "explanation": "stock[\"pear\"] вызывает KeyError. get(\"pear\", 0) вернёт 0.",
+   "code": "stock = {\"apple\": 3}\nprint(stock[\"pear\"])",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "stock = {\"apple\": 3}\nprint(stock.get(\"pear\", 0))",
+    "output": "0\n"
+   }
+  },
+  {
+   "id": "py_dict_008",
+   "type": "code_ordering",
+   "role": "boss",
+   "title": "Босс: длины слов",
+   "prompt": "Соберите программу, которая выведет «6 3»",
+   "topic": "dict_basics",
+   "difficulty": 3,
+   "hint": "Словарь нужно создать до цикла, а вывести — после.",
+   "explanation": "Создаём пустой словарь, в цикле записываем длину каждого слова, в конце выводим длину «собака» и число ключей.",
+   "payload": {
+    "lines": [
+     "words = [\"кот\", \"собака\", \"ёж\"]",
+     "lengths = {}",
+     "for w in words:",
+     "    lengths[w] = len(w)",
+     "print(lengths[\"собака\"], len(lengths))"
+    ],
+    "alternativeOrders": [
+     [
+      1,
+      0,
+      2,
+      3,
+      4
+     ]
+    ]
+   },
+   "solution": {
+    "code": "words = [\"кот\", \"собака\", \"ёж\"]\nlengths = {}\nfor w in words:\n    lengths[w] = len(w)\nprint(lengths[\"собака\"], len(lengths))",
+    "output": "6 3\n"
+   }
+  }
+ ]
+}

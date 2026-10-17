@@ -1,0 +1,260 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_str_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Первый и последний",
+   "prompt": "Что выведет код?",
+   "topic": "str_index",
+   "difficulty": 1,
+   "hint": "Индексы начинаются с 0, отрицательные считаются с конца.",
+   "explanation": "s[0] — первый символ «P», s[-1] — последний «n».",
+   "code": "s = \"Python\"\nprint(s[0], s[-1])",
+   "payload": {
+    "options": [
+     "p n",
+     "P n",
+     "P o",
+     "y n"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Регистр сохраняется: первая буква заглавная.",
+     "",
+     "",
+     "Нумерация начинается с 0, s[0] — это «P»."
+    ]
+   },
+   "solution": {
+    "code": "s = \"Python\"\nprint(s[0], s[-1])",
+    "output": "P n\n"
+   }
+  },
+  {
+   "id": "py_str_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Срез",
+   "prompt": "Что выведет код?",
+   "topic": "str_index",
+   "difficulty": 1,
+   "hint": "Правая граница среза не входит.",
+   "explanation": "Символы с индексами 1, 2, 3: y, t, h.",
+   "code": "print(\"Python\"[1:4])",
+   "payload": {
+    "options": [
+     "Pyth",
+     "yth",
+     "ytho",
+     "yt"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Индекс 0 (P) в срез [1:4] не входит.",
+     "",
+     "Символ с индексом 4 не входит: правая граница исключается.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "print(\"Python\"[1:4])",
+    "output": "yth\n"
+   }
+  },
+  {
+   "id": "py_str_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Заглавные буквы",
+   "prompt": "Выведите имя заглавными буквами: ADA",
+   "topic": "str_methods",
+   "difficulty": 1,
+   "hint": "Нужен метод, который делает все буквы большими.",
+   "explanation": "upper() возвращает копию строки, где все буквы заглавные.",
+   "payload": {
+    "template": "name = \"ada\"\nprint(name.{{0}}())",
+    "options": [
+     "upper",
+     "lower",
+     "title",
+     "strip"
+    ],
+    "answers": [
+     "upper"
+    ],
+    "variantResults": {
+     "lower": "ada",
+     "title": "Ada",
+     "strip": "ada"
+    }
+   },
+   "solution": {
+    "code": "name = \"ada\"\nprint(name.upper())",
+    "output": "ADA\n"
+   }
+  },
+  {
+   "id": "py_str_007",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Склейка и повтор",
+   "prompt": "Что выведет код?",
+   "topic": "str_basics",
+   "difficulty": 1,
+   "hint": "Строку можно умножить на число.",
+   "explanation": "\"ab\" * 3 повторяет строку трижды, в слове hello 5 букв.",
+   "code": "print(\"ab\" * 3, len(\"hello\"))",
+   "payload": {
+    "options": [
+     "ab3 5",
+     "ababab 5",
+     "ababab 4",
+     "ab ab ab 5"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Умножение строки на число повторяет её.",
+     "",
+     "В слове hello 5 букв.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "print(\"ab\" * 3, len(\"hello\"))",
+    "output": "ababab 5\n"
+   }
+  },
+  {
+   "id": "py_str_004",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Методы строк",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "str_methods",
+   "difficulty": 2,
+   "hint": "split режет строку в список, join склеивает список.",
+   "explanation": "split даёт список, join склеивает через разделитель, strip убирает пробелы по краям, count считает вхождения, replace заменяет все вхождения.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "\"a,b,c\".split(\",\")",
+      "right": "['a', 'b', 'c']"
+     },
+     {
+      "left": "\"-\".join([\"x\", \"y\"])",
+      "right": "x-y"
+     },
+     {
+      "left": "\"  hi  \".strip()",
+      "right": "hi"
+     },
+     {
+      "left": "\"banana\".count(\"a\")",
+      "right": "3"
+     },
+     {
+      "left": "\"Hello\".replace(\"l\", \"L\")",
+      "right": "HeLLo"
+     }
+    ]
+   },
+   "solution": {
+    "code": "print(\"a,b,c\".split(\",\"))\nprint(\"-\".join([\"x\", \"y\"]))\nprint(\"  hi  \".strip())\nprint(\"banana\".count(\"a\"))\nprint(\"Hello\".replace(\"l\", \"L\"))",
+    "output": "['a', 'b', 'c']\nx-y\nhi\n3\nHeLLo\n"
+   }
+  },
+  {
+   "id": "py_str_008",
+   "type": "fill_code",
+   "role": "practice",
+   "title": "Задом наперёд",
+   "prompt": "Выведите слово задом наперёд: nohtyp",
+   "topic": "str_index",
+   "difficulty": 2,
+   "hint": "Шаг среза может быть отрицательным.",
+   "explanation": "Срез с шагом -1 идёт от конца к началу.",
+   "payload": {
+    "template": "word = \"python\"\nprint(word[{{0}}])",
+    "options": [
+     "::-1",
+     "::1",
+     "-1:",
+     ":-1"
+    ],
+    "answers": [
+     "::-1"
+    ],
+    "variantResults": {
+     "::1": "python",
+     "-1:": "n",
+     ":-1": "pytho"
+    }
+   },
+   "solution": {
+    "code": "word = \"python\"\nprint(word[::-1])",
+    "output": "nohtyp\n"
+   }
+  },
+  {
+   "id": "py_str_005",
+   "type": "type_output",
+   "role": "practice",
+   "title": "f-строка",
+   "prompt": "Напишите, что выведет код",
+   "topic": "str_fstring",
+   "difficulty": 2,
+   "hint": "Внутри фигурных скобок вычисляется выражение.",
+   "explanation": "f-строка подставляет name и результат age + 1.",
+   "code": "name = \"Ада\"\nage = 30\nprint(f\"{name}: {age + 1}\")",
+   "payload": {
+    "expectedOutput": "Ада: 31"
+   },
+   "solution": {
+    "code": "name = \"Ада\"\nage = 30\nprint(f\"{name}: {age + 1}\")",
+    "output": "Ада: 31\n"
+   }
+  },
+  {
+   "id": "py_str_006",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Неизменяемая строка",
+   "prompt": "Найдите строку с ошибкой",
+   "topic": "str_basics",
+   "difficulty": 2,
+   "hint": "Можно ли поменять символ строки по индексу?",
+   "explanation": "Строки неизменяемы: присваивание s[0] вызывает TypeError. Нужно создать новую строку.",
+   "code": "s = \"hello\"\ns[0] = \"H\"\nprint(s)",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "s = \"hello\"\ns = \"H\" + s[1:]\nprint(s)",
+    "output": "Hello\n"
+   }
+  },
+  {
+   "id": "py_str_009",
+   "type": "type_output",
+   "role": "boss",
+   "title": "Босс: строковый конвейер",
+   "prompt": "Напишите, что выведет код",
+   "topic": "str_methods",
+   "difficulty": 3,
+   "hint": "Разберите каждое выражение по шагам: lower → count, срез → upper, find.",
+   "explanation": "В \"hello, world\" две «o». Срез с 7 — \"World\", в верхнем регистре WORLD. W стоит на позиции 7.",
+   "code": "s = \"Hello, World\"\nprint(s.lower().count(\"o\"), s[7:].upper(), s.find(\"W\"))",
+   "payload": {
+    "expectedOutput": "2 WORLD 7"
+   },
+   "solution": {
+    "code": "s = \"Hello, World\"\nprint(s.lower().count(\"o\"), s[7:].upper(), s.find(\"W\"))",
+    "output": "2 WORLD 7\n"
+   }
+  }
+ ]
+}

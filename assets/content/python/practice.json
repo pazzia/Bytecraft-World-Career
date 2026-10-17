@@ -1,0 +1,433 @@
+{
+ "schemaVersion": 1,
+ "tasks": [
+  {
+   "id": "t_str_reverse_words",
+   "title": "Слова наоборот",
+   "prompt": "Прочитайте строку и выведите её слова в обратном порядке через пробел.",
+   "starter": "line = input()\nprint(line)",
+   "solution": "words = input().split()\nprint(' '.join(reversed(words)))",
+   "tests": [
+    {
+     "stdin": "я люблю python\n",
+     "expected": "python люблю я\n"
+    },
+    {
+     "stdin": "один\n",
+     "expected": "один\n"
+    },
+    {
+     "stdin": "a b c d\n",
+     "expected": "d c b a\n"
+    }
+   ],
+   "difficulty": 1,
+   "hint": "split() разобьёт строку на слова, reversed() перевернёт список, ' '.join() склеит.",
+   "module": "strings"
+  },
+  {
+   "id": "t_str_palindrome",
+   "title": "Палиндром",
+   "prompt": "Прочитайте слово и выведите «да», если оно читается одинаково с обеих сторон (без учёта регистра), иначе «нет».",
+   "starter": "word = input()",
+   "solution": "word = input().strip().lower()\nprint('да' if word == word[::-1] else 'нет')",
+   "tests": [
+    {
+     "stdin": "Шалаш\n",
+     "expected": "да\n"
+    },
+    {
+     "stdin": "python\n",
+     "expected": "нет\n"
+    },
+    {
+     "stdin": "Level\n",
+     "expected": "да\n"
+    },
+    {
+     "stdin": "ab\n",
+     "expected": "нет\n"
+    }
+   ],
+   "difficulty": 1,
+   "hint": "Сравните слово в нижнем регистре с word[::-1].",
+   "module": "strings"
+  },
+  {
+   "id": "t_io_sum",
+   "title": "Сумма двух чисел",
+   "prompt": "Прочитайте два целых числа (каждое на своей строке) и выведите их сумму.",
+   "starter": "a = input()\nb = input()\nprint(a + b)",
+   "solution": "a = int(input())\nb = int(input())\nprint(a + b)",
+   "tests": [
+    {
+     "stdin": "2\n3\n",
+     "expected": "5\n"
+    },
+    {
+     "stdin": "10\n-4\n",
+     "expected": "6\n"
+    },
+    {
+     "stdin": "0\n0\n",
+     "expected": "0\n"
+    },
+    {
+     "stdin": "100\n250\n",
+     "expected": "350\n"
+    }
+   ],
+   "difficulty": 1,
+   "hint": "input() возвращает строку. Превратите её в число через int().",
+   "module": "io"
+  },
+  {
+   "id": "t_io_greet",
+   "title": "Приветствие",
+   "prompt": "Прочитайте имя и выведите «Привет, <имя>!».",
+   "starter": "name = input()\nprint('Привет, name!')",
+   "solution": "name = input()\nprint(f'Привет, {name}!')",
+   "tests": [
+    {
+     "stdin": "Ада\n",
+     "expected": "Привет, Ада!\n"
+    },
+    {
+     "stdin": "Боб\n",
+     "expected": "Привет, Боб!\n"
+    },
+    {
+     "stdin": "Мир\n",
+     "expected": "Привет, Мир!\n"
+    }
+   ],
+   "difficulty": 1,
+   "hint": "Используйте f-строку: f'Привет, {name}!'",
+   "module": "io"
+  },
+  {
+   "id": "t_io_minutes",
+   "title": "Часы и минуты",
+   "prompt": "Прочитайте количество минут и выведите его в формате «H ч M мин». Например, 135 → «2 ч 15 мин».",
+   "starter": "",
+   "solution": "m = int(input())\nprint(f'{m // 60} ч {m % 60} мин')",
+   "tests": [
+    {
+     "stdin": "135\n",
+     "expected": "2 ч 15 мин\n"
+    },
+    {
+     "stdin": "59\n",
+     "expected": "0 ч 59 мин\n"
+    },
+    {
+     "stdin": "60\n",
+     "expected": "1 ч 0 мин\n"
+    },
+    {
+     "stdin": "1000\n",
+     "expected": "16 ч 40 мин\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Часы — это m // 60, минуты — m % 60.",
+   "module": "io"
+  },
+  {
+   "id": "t_cond_leap",
+   "title": "Високосный год",
+   "prompt": "Прочитайте год и выведите «високосный» или «обычный». Год високосный, если делится на 4, но не на 100, либо делится на 400.",
+   "starter": "y = int(input())\nif y % 4 == 0:\n    print('високосный')\nelse:\n    print('обычный')",
+   "solution": "y = int(input())\nif (y % 4 == 0 and y % 100 != 0) or y % 400 == 0:\n    print('високосный')\nelse:\n    print('обычный')",
+   "tests": [
+    {
+     "stdin": "2024\n",
+     "expected": "високосный\n"
+    },
+    {
+     "stdin": "1900\n",
+     "expected": "обычный\n"
+    },
+    {
+     "stdin": "2000\n",
+     "expected": "високосный\n"
+    },
+    {
+     "stdin": "2023\n",
+     "expected": "обычный\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Проверьте три условия: делится на 4, не делится на 100, делится на 400.",
+   "module": "conditions"
+  },
+  {
+   "id": "t_cond_sign",
+   "title": "Знак числа",
+   "prompt": "Прочитайте целое число и выведите «положительное», «отрицательное» или «ноль».",
+   "starter": "",
+   "solution": "n = int(input())\nif n > 0:\n    print('положительное')\nelif n < 0:\n    print('отрицательное')\nelse:\n    print('ноль')",
+   "tests": [
+    {
+     "stdin": "5\n",
+     "expected": "положительное\n"
+    },
+    {
+     "stdin": "-3\n",
+     "expected": "отрицательное\n"
+    },
+    {
+     "stdin": "0\n",
+     "expected": "ноль\n"
+    }
+   ],
+   "difficulty": 1,
+   "hint": "Нужна цепочка if / elif / else.",
+   "module": "conditions"
+  },
+  {
+   "id": "t_loop_sum_to_n",
+   "title": "Сумма до n",
+   "prompt": "Прочитайте n и выведите сумму чисел от 1 до n.",
+   "starter": "n = int(input())\ntotal = 0\nfor i in range(n):\n    total += i\nprint(total)",
+   "solution": "n = int(input())\ntotal = 0\nfor i in range(1, n + 1):\n    total += i\nprint(total)",
+   "tests": [
+    {
+     "stdin": "5\n",
+     "expected": "15\n"
+    },
+    {
+     "stdin": "1\n",
+     "expected": "1\n"
+    },
+    {
+     "stdin": "100\n",
+     "expected": "5050\n"
+    }
+   ],
+   "difficulty": 1,
+   "hint": "range(1, n + 1) — числа от 1 до n включительно.",
+   "module": "loops"
+  },
+  {
+   "id": "t_loop_fizzbuzz",
+   "title": "FizzBuzz",
+   "prompt": "Прочитайте n и выведите числа от 1 до n, каждое на своей строке. Вместо чисел, кратных 3, выведите Fizz, кратных 5 — Buzz, кратных 15 — FizzBuzz.",
+   "starter": "",
+   "solution": "n = int(input())\nfor i in range(1, n + 1):\n    if i % 15 == 0:\n        print('FizzBuzz')\n    elif i % 3 == 0:\n        print('Fizz')\n    elif i % 5 == 0:\n        print('Buzz')\n    else:\n        print(i)",
+   "tests": [
+    {
+     "stdin": "5\n",
+     "expected": "1\n2\nFizz\n4\nBuzz\n"
+    },
+    {
+     "stdin": "15\n",
+     "expected": "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n"
+    },
+    {
+     "stdin": "3\n",
+     "expected": "1\n2\nFizz\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Проверяйте кратность 15 первой.",
+   "module": "loops"
+  },
+  {
+   "id": "t_loopx_first_negative",
+   "title": "Первое отрицательное",
+   "prompt": "В строке записаны целые числа через пробел. Выведите первое отрицательное число или «нет», если таких нет.",
+   "starter": "",
+   "solution": "nums = [int(x) for x in input().split()]\nfor n in nums:\n    if n < 0:\n        print(n)\n        break\nelse:\n    print('нет')",
+   "tests": [
+    {
+     "stdin": "4 7 -2 5 -9\n",
+     "expected": "-2\n"
+    },
+    {
+     "stdin": "1 2 3\n",
+     "expected": "нет\n"
+    },
+    {
+     "stdin": "-1\n",
+     "expected": "-1\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Пригодятся break и else у цикла.",
+   "module": "loops_control"
+  },
+  {
+   "id": "t_loopx_triangle",
+   "title": "Треугольник",
+   "prompt": "Прочитайте n и выведите треугольник: в строке i (от 1 до n) — i звёздочек.",
+   "starter": "",
+   "solution": "n = int(input())\nfor i in range(1, n + 1):\n    print('*' * i)",
+   "tests": [
+    {
+     "stdin": "3\n",
+     "expected": "*\n**\n***\n"
+    },
+    {
+     "stdin": "1\n",
+     "expected": "*\n"
+    },
+    {
+     "stdin": "5\n",
+     "expected": "*\n**\n***\n****\n*****\n"
+    }
+   ],
+   "difficulty": 1,
+   "hint": "'*' * i — строка из i звёздочек.",
+   "module": "loops_control"
+  },
+  {
+   "id": "t_list_min_max",
+   "title": "Минимум и максимум",
+   "prompt": "В строке — целые числа через пробел. Выведите минимум и максимум через пробел.",
+   "starter": "nums = input().split()\nprint(min(nums), max(nums))",
+   "solution": "nums = [int(x) for x in input().split()]\nprint(min(nums), max(nums))",
+   "tests": [
+    {
+     "stdin": "3 9 1 7\n",
+     "expected": "1 9\n"
+    },
+    {
+     "stdin": "5\n",
+     "expected": "5 5\n"
+    },
+    {
+     "stdin": "-2 -8 0\n",
+     "expected": "-8 0\n"
+    }
+   ],
+   "difficulty": 1,
+   "hint": "Без int() числа сравниваются как строки: '9' > '10'.",
+   "module": "lists"
+  },
+  {
+   "id": "t_list_second_max",
+   "title": "Второй максимум",
+   "prompt": "В строке — целые числа через пробел (различных чисел минимум два). Выведите второе по величине различное число.",
+   "starter": "",
+   "solution": "nums = sorted(set(int(x) for x in input().split()))\nprint(nums[-2])",
+   "tests": [
+    {
+     "stdin": "3 9 1 7\n",
+     "expected": "7\n"
+    },
+    {
+     "stdin": "5 5 4\n",
+     "expected": "4\n"
+    },
+    {
+     "stdin": "10 -1 10 3\n",
+     "expected": "3\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Уберите повторы через set, отсортируйте и возьмите предпоследний.",
+   "module": "lists"
+  },
+  {
+   "id": "t_set_common",
+   "title": "Общие слова",
+   "prompt": "В двух строках — слова через пробел. Выведите общие слова в алфавитном порядке через пробел или «нет», если общих нет.",
+   "starter": "",
+   "solution": "a = set(input().split())\nb = set(input().split())\ncommon = sorted(a & b)\nprint(' '.join(common) if common else 'нет')",
+   "tests": [
+    {
+     "stdin": "кот пёс мышь\nпёс ёж кот\n",
+     "expected": "кот пёс\n"
+    },
+    {
+     "stdin": "a b\nc d\n",
+     "expected": "нет\n"
+    },
+    {
+     "stdin": "x\nx\n",
+     "expected": "x\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Пересечение множеств: a & b.",
+   "module": "tuples_sets"
+  },
+  {
+   "id": "t_dict_word_count",
+   "title": "Самое частое слово",
+   "prompt": "Прочитайте строку слов через пробел. Выведите самое частое слово и сколько раз оно встретилось. Если таких несколько — то, что раньше по алфавиту.",
+   "starter": "",
+   "solution": "counts = {}\nfor w in input().split():\n    counts[w] = counts.get(w, 0) + 1\nbest = min(counts, key=lambda w: (-counts[w], w))\nprint(best, counts[best])",
+   "tests": [
+    {
+     "stdin": "кот пёс кот\n",
+     "expected": "кот 2\n"
+    },
+    {
+     "stdin": "b a b a\n",
+     "expected": "a 2\n"
+    },
+    {
+     "stdin": "один\n",
+     "expected": "один 1\n"
+    },
+    {
+     "stdin": "x y z y z\n",
+     "expected": "y 2\n"
+    }
+   ],
+   "difficulty": 3,
+   "hint": "Посчитайте слова в словаре; для выбора — сортировка по (-частота, слово).",
+   "module": "dicts"
+  },
+  {
+   "id": "t_dict_phonebook",
+   "title": "Телефонная книга",
+   "prompt": "В первой строке n — число записей, затем n строк «имя номер», затем строка с именем для поиска. Выведите номер или «не найдено».",
+   "starter": "",
+   "solution": "n = int(input())\nbook = {}\nfor _ in range(n):\n    name, phone = input().split()\n    book[name] = phone\nprint(book.get(input().strip(), 'не найдено'))",
+   "tests": [
+    {
+     "stdin": "2\nАда 123\nАлан 456\nАлан\n",
+     "expected": "456\n"
+    },
+    {
+     "stdin": "1\nБоб 7\nЕва\n",
+     "expected": "не найдено\n"
+    },
+    {
+     "stdin": "3\na 1\nb 2\nc 3\na\n",
+     "expected": "1\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Сохраните записи в словарь и используйте get с значением по умолчанию.",
+   "module": "dicts"
+  },
+  {
+   "id": "t_comp_even_squares",
+   "title": "Квадраты чётных",
+   "prompt": "Прочитайте n и выведите через пробел квадраты всех чётных чисел от 0 до n включительно.",
+   "starter": "",
+   "solution": "n = int(input())\nprint(' '.join(str(x * x) for x in range(0, n + 1, 2)))",
+   "tests": [
+    {
+     "stdin": "6\n",
+     "expected": "0 4 16 36\n"
+    },
+    {
+     "stdin": "0\n",
+     "expected": "0\n"
+    },
+    {
+     "stdin": "9\n",
+     "expected": "0 4 16 36 64\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "Включение + ' '.join(str(...)).",
+   "module": "comprehensions"
+  }
+ ]
+}
