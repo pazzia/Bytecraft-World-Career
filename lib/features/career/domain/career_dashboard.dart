@@ -1,5 +1,6 @@
 import '../../courses/domain/course.dart';
 import '../../progress/domain/course_progress.dart';
+import 'github_portfolio.dart';
 
 enum CareerSkillId {
   pythonCore,
@@ -59,12 +60,16 @@ class CareerSkill {
     required this.title,
     required this.score,
     required this.target,
+    this.courseScore = 0,
+    this.portfolioBonus = 0,
   });
 
   final CareerSkillId id;
   final String title;
   final int score;
   final int target;
+  final int courseScore;
+  final int portfolioBonus;
 
   int get gap => (target - score).clamp(0, 100).toInt();
   bool get readyForAssessment => score >= target;
@@ -108,6 +113,8 @@ class CareerDashboard {
     required this.roleMatches,
     required this.completedLevels,
     required this.totalLevels,
+    required this.portfolio,
+    required this.portfolioScore,
   });
 
   final CareerTargetId targetId;
@@ -120,6 +127,8 @@ class CareerDashboard {
   final List<RoleMatch> roleMatches;
   final int completedLevels;
   final int totalLevels;
+  final GitHubPortfolio portfolio;
+  final int portfolioScore;
 
   int get assessmentReadyCount =>
       skills.where((skill) => skill.readyForAssessment).length;
@@ -132,7 +141,9 @@ class CareerDashboardCalculator {
     required Course course,
     required CourseProgress progress,
     CareerTargetId target = CareerTargetId.pythonBackend,
+    GitHubPortfolio? portfolio,
   }) {
+    final currentPortfolio = portfolio ?? GitHubPortfolio.disconnected();
     final requirements = target.requirements;
     final skills = <CareerSkill>[
       _skill(
@@ -142,6 +153,7 @@ class CareerDashboardCalculator {
         course,
         progress,
         _pythonCore,
+        currentPortfolio,
       ),
       _skill(
         CareerSkillId.oop,
@@ -150,6 +162,7 @@ class CareerDashboardCalculator {
         course,
         progress,
         _oop,
+        currentPortfolio,
       ),
       _skill(
         CareerSkillId.algorithms,
@@ -158,6 +171,7 @@ class CareerDashboardCalculator {
         course,
         progress,
         _algorithms,
+        currentPortfolio,
       ),
       _skill(
         CareerSkillId.testing,
@@ -166,6 +180,7 @@ class CareerDashboardCalculator {
         course,
         progress,
         _testing,
+        currentPortfolio,
       ),
       _skill(
         CareerSkillId.async,
@@ -174,6 +189,7 @@ class CareerDashboardCalculator {
         course,
         progress,
         _async,
+        currentPortfolio,
       ),
       _skill(
         CareerSkillId.production,
@@ -182,6 +198,7 @@ class CareerDashboardCalculator {
         course,
         progress,
         _production,
+        currentPortfolio,
       ),
     ];
 
@@ -191,7 +208,10 @@ class CareerDashboardCalculator {
     final completion = courseTotal == 0
         ? 0
         : _percent(progress.completedCount / courseTotal * 100);
-    final cvScore = _percent(readiness * 0.72 + completion * 0.28);
+    final portfolioScore = portfolioScoreFor(currentPortfolio);
+    final cvScore = _percent(
+      readiness * 0.65 + completion * 0.25 + portfolioScore * 0.10,
+    );
 
     final actions = _actions(skills, course, progress);
     final roleMatches = [
@@ -214,6 +234,8 @@ class CareerDashboardCalculator {
       roleMatches: List.unmodifiable(roleMatches),
       completedLevels: progress.completedCount,
       totalLevels: courseTotal,
+      portfolio: currentPortfolio,
+      portfolioScore: portfolioScore,
     );
   }
 
@@ -227,6 +249,28 @@ class CareerDashboardCalculator {
     return _percent(total / skills.length * 100);
   }
 
+  static int portfolioScoreFor(GitHubPortfolio portfolio) {
+    if (!portfolio.connected || portfolio.projects.isEmpty) return 0;
+    final projects = portfolio.projects;
+    final python = projects.where((project) => project.isPython).length;
+    final tests = projects.where((project) => project.hasTests).length;
+    final ci = projects.where((project) => project.hasCi).length;
+    final docker = projects.where((project) => project.hasDocker).length;
+    final packaging = projects.where((project) => project.hasPackageConfig).length;
+    final engagement = projects
+        .where((project) => project.stars > 0 || project.forks > 0)
+        .length;
+    return _percent(
+      projects.length * 4 +
+          python * 5 +
+          tests * 7 +
+          ci * 7 +
+          docker * 7 +
+          packaging * 5 +
+          engagement * 2,
+    );
+  }
+
   static int _percent(num value) => value.round().clamp(0, 100).toInt();
 
   CareerSkill _skill(
@@ -236,13 +280,19 @@ class CareerDashboardCalculator {
     Course course,
     CourseProgress progress,
     Set<String> moduleIds,
-  ) =>
-      CareerSkill(
-        id: id,
-        title: title,
-        score: _moduleScore(course, progress, moduleIds),
-        target: target,
-      );
+    GitHubPortfolio portfolio,
+  ) {
+    final courseScore = _moduleScore(course, progress, moduleIds);
+    final portfolioBonus = _portfolioBonus(id, portfolio);
+    return CareerSkill(
+      id: id,
+      title: title,
+      score: _percent(courseScore + portfolioBonus),
+      target: target,
+      courseScore: courseScore,
+      portfolioBonus: portfolioBonus,
+    );
+  }
 
   int _moduleScore(
     Course course,
@@ -266,6 +316,69 @@ class CareerDashboardCalculator {
     final masteryScore = stars / (total * 3) * 30;
     return _percent(completionScore + masteryScore);
   }
+
+  int _portfolioBonus(CareerSkillId id, GitHubPortfolio portfolio) {
+    if (!portfolio.connected) return 0;
+    final projects = portfolio.projects;
+    final python = projects.where((project) => project.isPython).length;
+    final packages = projects
+        .where((project) => project.isPython && project.hasPackageConfig)
+        .length;
+    final tests = projects.where((project) => project.hasTests).length;
+    final ci = projects.where((project) => project.hasCi).length;
+    final docker = projects.where((project) => project.hasDocker).length;
+
+    return switch (id) {
+      CareerSkillId.pythonCore => (python * 3 + packages).clamp(0, 12),
+      CareerSkillId.oop => (packages * 2 +
+              _keywordHits(projects, const {
+                'api',
+                'backend',
+                'service',
+                'architecture',
+                'django',
+                'flask',
+                'fastapi',
+                'library',
+              }) *
+              2)
+          .clamp(0, 10),
+      CareerSkillId.algorithms => (_keywordHits(projects, const {
+                'algorithm',
+                'algorithms',
+                'leetcode',
+                'dsa',
+                'graph',
+                'sorting',
+              }) *
+              4)
+          .clamp(0, 10),
+      CareerSkillId.testing => (tests * 5 + ci * 2).clamp(0, 12),
+      CareerSkillId.async => (_keywordHits(projects, const {
+                'async',
+                'asyncio',
+                'aio',
+                'concurrency',
+                'thread',
+                'celery',
+                'queue',
+                'kafka',
+              }) *
+              4)
+          .clamp(0, 10),
+      CareerSkillId.production =>
+        (ci * 3 + docker * 4 + packages * 2).clamp(0, 12),
+    };
+  }
+
+  int _keywordHits(
+    List<GitHubProjectEvidence> projects,
+    Set<String> keywords,
+  ) =>
+      projects.where((project) {
+        final text = project.searchableText;
+        return keywords.any((keyword) => text.contains(keyword));
+      }).length;
 
   int _weightedAverage(List<CareerSkill> skills) {
     const weights = {
