@@ -4,28 +4,21 @@ import 'package:flutter_test/flutter_test.dart';
 import '../helpers/app_harness.dart';
 
 /// End-to-end smoke test on a phone-sized screen with the real bundled
-/// course: onboarding → home → first level → rewards → map.
+/// course: World hub → learning map → first level → rewards → map.
 /// Any layout overflow fails the test.
 void main() {
-  testWidgets('a new player completes the first level', (tester) async {
+  testWidgets('a World player enters learning and completes the first level',
+      (tester) async {
     final store = await pumpBytecraft(tester);
 
-    expect(find.text('Код за пару минут в день'), findsOneWidget);
-    await tester.tap(find.text('Немного знаю'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Дальше'));
-    await tester.pumpAndSettle();
+    expect(find.text('Bytecraft World'), findsOneWidget);
+    expect(find.text('Учись. Пиши. Строй. Соревнуйся.'), findsOneWidget);
+    expect(find.text('CODE CITY'), findsOneWidget);
 
-    expect(find.text('Что будем учить?'), findsOneWidget);
-    // The only available course is pre-selected.
-    await tester.tap(find.text('Начать'));
-    await tester.pumpAndSettle();
-
-    // Home: the next level on the board.
-    dumpTexts(tester, 'home');
+    await openTab(tester, 'Учёба');
     expect(find.text('Переменные'), findsWidgets);
     expect(find.text('Первая переменная'), findsOneWidget);
-    await tester.tap(find.text('Продолжить'));
+    await tester.tap(find.text('Первая переменная'));
     await tester.pumpAndSettle();
 
     // Level: x = 5 → answer "5".
@@ -47,7 +40,8 @@ void main() {
     expect(find.text('1 из 8'), findsOneWidget);
     expect(find.text('Обучение'), findsOneWidget);
 
-    // Progress was persisted.
+    // Both learning progress and the World meta-game were persisted.
     expect(store.snapshot.keys, contains('player.course.python'));
+    expect(store.snapshot.keys, contains('bytecraft_world_state'));
   });
 }
