@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/di/providers.dart';
 import '../../progress/presentation/progress_providers.dart';
+import '../../world/presentation/world_controller.dart';
 import '../domain/answer.dart';
 import '../domain/initial_answer_factory.dart';
 import '../domain/level_result.dart';
@@ -18,8 +19,6 @@ typedef LevelArgs = ({String courseId, String levelId, LevelMode mode});
 final levelControllerProvider = NotifierProvider.autoDispose
     .family<LevelController, LevelUiState, LevelArgs>(LevelController.new);
 
-/// Presentation controller for one level screen. Thin: all rules live in
-/// [LevelEngine]; this class maps engine results to [LevelUiState].
 class LevelController extends Notifier<LevelUiState> {
   LevelController(this.args);
 
@@ -55,8 +54,6 @@ class LevelController extends Notifier<LevelUiState> {
         LevelStartDenied(:final reason, :final lives) => LevelUiState(
             phase: switch (reason) {
               LevelStartDenial.noLives => LevelPhase.outOfLives,
-              // The run's clock ran out between levels (e.g. on the
-              // rewards screen): offer a restart, not a dead end.
               LevelStartDenial.noActiveRun => LevelPhase.timeUp,
               _ => LevelPhase.denied,
             },
@@ -111,9 +108,16 @@ class LevelController extends Notifier<LevelUiState> {
       );
       if (wrong) {
         await _recordMistake(session);
-      } else if (result.completion != null &&
-          session.mode == LevelMode.review) {
-        await _recordReview(session, remembered: result.session.mistakes == 0);
+        await _recordWorldMistake(session);
+      } else if (result.completion != null) {
+        if (session.mode != LevelMode.review) {
+          await _rewardWorldForLesson(result.session);
+        } else {
+          await _recordReview(
+            session,
+            remembered: result.session.mistakes == 0,
+          );
+        }
       }
     } catch (error) {
       if (!ref.mounted) return;
@@ -121,8 +125,27 @@ class LevelController extends Notifier<LevelUiState> {
     }
   }
 
-  /// Called by the countdown when it reaches zero. The engine has the final
-  /// word (the device clock in the widget may be a second off).
+  Future<void> _rewardWorldForLesson(LevelSession session) async {
+    try {
+      await ref.read(worldControllerProvider.notifier).recordLessonCompleted(
+            moduleId: session.level.moduleId,
+            mistakes: session.mistakes,
+          );
+    } catch (_) {
+      // The meta-game is additive: learning must never fail because of it.
+    }
+  }
+
+  Future<void> _recordWorldMistake(LevelSession session) async {
+    try {
+      await ref
+          .read(worldControllerProvider.notifier)
+          .recordLearningMistake(session.level.moduleId);
+    } catch (_) {
+      // Best effort for the same reason as the journal.
+    }
+  }
+
   Future<void> onCountdownFinished() async {
     final session = state.session;
     if (session == null || session.mode != LevelMode.timed) return;
@@ -144,7 +167,7 @@ class LevelController extends Notifier<LevelUiState> {
           .read(journalServiceProvider)
           .recordMistake(args.courseId, topicId, session.level.id);
     } catch (_) {
-      return; // The journal is best-effort; the level goes on.
+      return;
     }
     if (!ref.mounted) return;
     ref.read(progressRevisionProvider.notifier).bump();
@@ -167,7 +190,6 @@ class LevelController extends Notifier<LevelUiState> {
     ref.read(progressRevisionProvider.notifier).bump();
   }
 
-  /// Saves the level's topic to the journal (or removes it).
   Future<void> toggleTopicInJournal({required bool save}) async {
     final level = state.session?.level;
     final topicId = level?.topicId;
@@ -182,15 +204,12 @@ class LevelController extends Notifier<LevelUiState> {
     ref.read(progressRevisionProvider.notifier).bump();
   }
 
-  /// The player gave up: the solution becomes visible in the review and
-  /// the topic goes to the journal, so it comes back for practice.
   Future<void> revealSolution() async {
     if (!state.canRevealSolution) return;
     state = state.copyWith(isSolutionRevealed: true);
     await toggleTopicInJournal(save: true);
   }
 
-  /// Closes the wrong-answer feedback and lets the player try again.
   void dismissMistake() {
     if (state.phase != LevelPhase.wrongAnswer) return;
     final next = answerAfterMistake(state.answer, state.outcome);
@@ -201,7 +220,6 @@ class LevelController extends Notifier<LevelUiState> {
     );
   }
 
-  /// Moves from the "Correct!" panel to the rewards screen.
   void showRewards() {
     if (state.phase != LevelPhase.correctAnswer) return;
     state = state.copyWith(phase: LevelPhase.completed);
@@ -221,7 +239,6 @@ class LevelController extends Notifier<LevelUiState> {
     await _start();
   }
 
-  /// Rewarded ad → +1 life, then restart the level.
   Future<bool> watchAdForLife() async {
     final granted = await ref.read(economyServiceProvider).watchAdForLife();
     if (!ref.mounted) return granted;
@@ -230,9 +247,6 @@ class LevelController extends Notifier<LevelUiState> {
     return granted;
   }
 
-  /// Draft answer for the retry: correct parts stay, the wrong ones are
-  /// removed, so re-tapping "Проверить" can't repeat the same mistake (and
-  /// cost another life) by accident.
   static Answer? answerAfterMistake(
     Answer? answer,
     ValidationOutcome? outcome,
@@ -254,7 +268,6 @@ class LevelController extends Notifier<LevelUiState> {
         final kept = options.difference(outcome.wrongParts);
         return kept.isEmpty ? null : OptionSetAnswer(kept);
       case MatchAnswer(:final links, :final pairCount):
-        // Keep the right pairs, drop the wrong ones.
         return MatchAnswer(
           {
             for (final entry in links.entries)
