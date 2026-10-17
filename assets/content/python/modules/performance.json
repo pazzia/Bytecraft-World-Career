@@ -14,14 +14,14 @@
    "code": "from functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\nprint(fib(30))\ninfo = fib.cache_info()\nprint(info.misses, info.hits)",
    "payload": {
     "options": [
-     "832040\n1664079 0",
+     "832040\n2692537 0",
      "832040\n30 30",
      "832040\n31 30",
      "832040\n31 28"
     ],
     "correctIndex": 3,
     "optionFeedback": [
-     "Это число вызовов без кэша. С кэшем каждое n считается один раз.",
+     "Это число вызовов без кэша (2·fib(31) − 1). С кэшем каждое n считается один раз.",
      "Значений n от 0 до 30 — 31, каждое даёт один промах.",
      "Попаданий меньше: проверьте, какие вызовы реально повторяются.",
      ""
@@ -114,31 +114,31 @@
    "id": "py_perf_005",
    "type": "predict_output",
    "role": "practice",
-   "title": "__slots__",
+   "title": "__slots__ и наследование",
    "prompt": "Что выведет код?",
    "topic": "perf_tricks",
    "difficulty": 3,
-   "hint": "__slots__ заменяет словарь атрибутов фиксированным набором ячеек.",
-   "explanation": "С __slots__ у объекта нет __dict__ — только ячейки x и y. Новый атрибут z добавить нельзя: AttributeError. Зато каждый объект занимает меньше памяти.",
-   "code": "class Point:\n    __slots__ = (\"x\", \"y\")\n\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n\np = Point(1, 2)\ntry:\n    p.z = 3\nexcept AttributeError:\n    print(\"нельзя добавить z\")\nprint(hasattr(p, \"__dict__\"), p.x + p.y)",
+   "hint": "__slots__ убирает __dict__ только если слоты объявлены во всей цепочке наследования.",
+   "explanation": "У Point есть только слоты x и y — словаря атрибутов нет. Tagged объявил слоты, но его родитель Base — нет, и __dict__ приходит от Base: новый атрибут extra добавляется, а экономия памяти пропадает.",
+   "code": "class Point:\n    __slots__ = (\"x\", \"y\")\n\nclass Base:\n    pass\n\nclass Tagged(Base):\n    __slots__ = (\"tag\",)\n\np, t = Point(), Tagged()\nt.extra = 1\nprint(hasattr(p, \"__dict__\"), hasattr(t, \"__dict__\"), t.extra)",
    "payload": {
     "options": [
-     "False 3",
-     "True 3",
-     "нельзя добавить z\nFalse 3",
-     "нельзя добавить z\nTrue 3"
+     "False False 1",
+     "False True 1",
+     "True True 1",
+     "AttributeError"
     ],
-    "correctIndex": 2,
+    "correctIndex": 1,
     "optionFeedback": [
-     "Присваивание p.z падает с AttributeError — его ловит except.",
-     "__slots__ убирает __dict__, и новый атрибут добавить нельзя.",
+     "Base без __slots__ даёт объектам Tagged словарь __dict__.",
      "",
-     "У объекта со __slots__ нет __dict__."
+     "У Point слоты во всей цепочке — __dict__ нет.",
+     "Благодаря __dict__ от Base атрибут extra добавляется без ошибки."
     ]
    },
    "solution": {
-    "code": "class Point:\n    __slots__ = (\"x\", \"y\")\n\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n\np = Point(1, 2)\ntry:\n    p.z = 3\nexcept AttributeError:\n    print(\"нельзя добавить z\")\nprint(hasattr(p, \"__dict__\"), p.x + p.y)",
-    "output": "нельзя добавить z\nFalse 3\n"
+    "code": "class Point:\n    __slots__ = (\"x\", \"y\")\n\nclass Base:\n    pass\n\nclass Tagged(Base):\n    __slots__ = (\"tag\",)\n\np, t = Point(), Tagged()\nt.extra = 1\nprint(hasattr(p, \"__dict__\"), hasattr(t, \"__dict__\"), t.extra)",
+    "output": "False True 1\n"
    }
   },
   {
@@ -150,7 +150,7 @@
    "topic": "perf_tricks",
    "difficulty": 2,
    "hint": "Ищите изменения, которые убирают лишнюю работу или переносят её в C.",
-   "explanation": "Множество ищет за O(1), join собирает строку за один проход, вынос из цикла убирает повторные вычисления. while не быстрее for, а встроенная sum (на C) быстрее ручного цикла.",
+   "explanation": "Множество ищет за O(1), join собирает строку за один проход, вынос из цикла убирает повторные вычисления. CPython иногда ускоряет += для строк на месте, но это не гарантировано (PEP 8 советует join). while не быстрее for, а встроенная sum (на C) быстрее ручного цикла.",
    "payload": {
     "options": [
      "Заменить x in список на x in множество, если проверок много",
@@ -217,26 +217,26 @@
    "topic": "perf_measure",
    "difficulty": 1,
    "hint": "number — сколько раз вызвать функцию. Что добавляется на последнем вызове?",
-   "explanation": "timeit вызвал функцию 500 раз и вернул общее время в секундах (положительное число). На последнем вызове длина была 499.",
-   "code": "import timeit\n\ncalls = []\nseconds = timeit.timeit(lambda: calls.append(len(calls)), number=500)\nprint(len(calls), calls[-1], seconds > 0)",
+   "explanation": "timeit вызвал функцию 500 раз и вернул общее время в секундах — дробное число. На последнем вызове длина была 499.",
+   "code": "import timeit\n\ncalls = []\nseconds = timeit.timeit(lambda: calls.append(len(calls)), number=500)\nprint(len(calls), calls[-1], type(seconds).__name__)",
    "payload": {
     "options": [
-     "1 0 True",
-     "500 499 True",
-     "500 500 True",
-     "500 499 False"
+     "1 0 float",
+     "500 499 float",
+     "500 500 float",
+     "500 499 int"
     ],
     "correctIndex": 1,
     "optionFeedback": [
      "number=500 — функция вызвана 500 раз.",
      "",
      "Последний вызов добавил len(calls) до добавления — 499.",
-     "timeit возвращает затраченное время — оно больше нуля."
+     "timeit возвращает время в секундах — float."
     ]
    },
    "solution": {
-    "code": "import timeit\n\ncalls = []\nseconds = timeit.timeit(lambda: calls.append(len(calls)), number=500)\nprint(len(calls), calls[-1], seconds > 0)",
-    "output": "500 499 True\n"
+    "code": "import timeit\n\ncalls = []\nseconds = timeit.timeit(lambda: calls.append(len(calls)), number=500)\nprint(len(calls), calls[-1], type(seconds).__name__)",
+    "output": "500 499 float\n"
    }
   },
   {
@@ -248,14 +248,14 @@
    "topic": "perf_measure",
    "difficulty": 3,
    "hint": "Цикл по banned_list — это то, что делает x in список. Множество отвечает за одну проверку.",
-   "explanation": "Поиск в списке из 1000 элементов для 3000 чисел — около миллиона сравнений (≈ n·m). Множество делает одну проверку на число — 3000. Вот почему x in список внутри цикла опасен.",
-   "code": "banned_list = list(range(0, 3000, 3))\nbanned_set = set(banned_list)\nchecks_list = checks_set = 0\n\nfor x in range(3000):\n    for item in banned_list:\n        checks_list += 1\n        if item == x:\n            break\n    checks_set += 1\n\nprint(len(banned_list), checks_list > 400_000, checks_set)",
+   "explanation": "Для 2000 чисел, которых нет в списке, просматриваются все 1000 элементов — 2 000 000 сравнений; для найденных — в среднем половина, ещё 500 500. Всего около 2,5 миллиона против 3000 проверок множества. Вот почему x in список внутри цикла опасен.",
+   "code": "banned_list = list(range(0, 3000, 3))\nbanned_set = set(banned_list)\nchecks_list = checks_set = 0\n\nfor x in range(3000):\n    for item in banned_list:\n        checks_list += 1\n        if item == x:\n            break\n    checks_set += 1\n\nprint(len(banned_list), checks_list, checks_set)",
    "payload": {
-    "expectedOutput": "1000 True 3000"
+    "expectedOutput": "1000 2500500 3000"
    },
    "solution": {
-    "code": "banned_list = list(range(0, 3000, 3))\nbanned_set = set(banned_list)\nchecks_list = checks_set = 0\n\nfor x in range(3000):\n    for item in banned_list:\n        checks_list += 1\n        if item == x:\n            break\n    checks_set += 1\n\nprint(len(banned_list), checks_list > 400_000, checks_set)",
-    "output": "1000 True 3000\n"
+    "code": "banned_list = list(range(0, 3000, 3))\nbanned_set = set(banned_list)\nchecks_list = checks_set = 0\n\nfor x in range(3000):\n    for item in banned_list:\n        checks_list += 1\n        if item == x:\n            break\n    checks_set += 1\n\nprint(len(banned_list), checks_list, checks_set)",
+    "output": "1000 2500500 3000\n"
    }
   },
   {
@@ -266,7 +266,7 @@
    "prompt": "Что выведет код?",
    "topic": "perf_measure",
    "difficulty": 4,
-   "hint": "Медленная версия перебирает пары: для первых i элементов — сколько пар до пары (999, 999)? Сумма 1000 + 999 + … + 1.",
+   "hint": "Сколько пар (i, j) проверит двойной цикл, если дубликат — последний элемент?",
    "explanation": "Дубликат — последний элемент, поэтому медленная версия перебирает почти все пары: 1000 + 999 + … + 1 = 500 500 шагов (O(n²)). Быстрая проходит список один раз и находит повтор на 1001-м элементе (O(n)).",
    "code": "def has_dup_slow(items):\n    steps = 0\n    for i in range(len(items)):\n        for j in range(i + 1, len(items)):\n            steps += 1\n            if items[i] == items[j]:\n                return True, steps\n    return False, steps\n\ndef has_dup_fast(items):\n    seen = set()\n    for steps, x in enumerate(items, 1):\n        if x in seen:\n            return True, steps\n        seen.add(x)\n    return False, len(items)\n\ndata = list(range(1000)) + [999]\nprint(has_dup_slow(data))\nprint(has_dup_fast(data))",
    "payload": {

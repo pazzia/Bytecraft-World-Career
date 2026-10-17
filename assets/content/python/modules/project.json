@@ -299,6 +299,37 @@
    }
   },
   {
+   "id": "py_proj_011",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Ошибка в аргументах",
+   "prompt": "Что выведет код?",
+   "topic": "proj_cli_logging",
+   "difficulty": 3,
+   "hint": "argparse сам сообщает об ошибке и завершает программу. Каким кодом?",
+   "explanation": "«много» не превращается в int: argparse печатает подсказку в stderr и вызывает sys.exit(2). Код 2 — стандарт для неверных аргументов командной строки. В тестах ловят SystemExit или создают парсер с exit_on_error=False.",
+   "code": "import argparse\n\nparser = argparse.ArgumentParser(prog=\"tool\")\nparser.add_argument(\"--limit\", type=int)\ntry:\n    parser.parse_args([\"--limit\", \"много\"])\nexcept SystemExit as error:\n    print(\"код выхода:\", error.code)",
+   "payload": {
+    "options": [
+     "ValueError",
+     "код выхода: 1",
+     "код выхода: 0",
+     "код выхода: 2"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "argparse перехватывает ошибку преобразования и завершает программу через SystemExit.",
+     "Для неверных аргументов argparse использует код 2.",
+     "Код 0 означает успех — здесь ошибка.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "import argparse\n\nparser = argparse.ArgumentParser(prog=\"tool\")\nparser.add_argument(\"--limit\", type=int)\ntry:\n    parser.parse_args([\"--limit\", \"много\"])\nexcept SystemExit as error:\n    print(\"код выхода:\", error.code)",
+    "output": "код выхода: 2\n"
+   }
+  },
+  {
    "id": "py_proj_010",
    "type": "predict_output",
    "role": "boss",

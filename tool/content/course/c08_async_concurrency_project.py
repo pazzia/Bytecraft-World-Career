@@ -42,9 +42,7 @@ MODULES.append(dict(
                     text = await greet("Ада")
                     print(text)
 
-                coro = main()
-                print(type(coro).__name__)
-                asyncio.run(coro)""", "Вызов main() только создаёт корутину; работает она в asyncio.run.")],
+                asyncio.run(main())""", "await ждёт результат корутины; asyncio.run запускает главную.")],
               ["Забыть await: f() без await не выполняется, Python лишь предупредит «coroutine was never awaited».",
                "Вызывать time.sleep или долгий цикл внутри корутины — это блокирует все задачи сразу.",
                "Вызывать asyncio.run изнутри уже работающей корутины — RuntimeError: внутри используют await."]),
@@ -53,13 +51,15 @@ MODULES.append(dict(
               """
               await f(); await g() — последовательно: g начнётся только после f. Чтобы ждать одновременно, корутины превращают в задачи.
 
-              asyncio.gather(f(), g(), h()) — ждёт все и возвращает список результатов в порядке аргументов, а не в порядке завершения. Если одна упала, исключение долетает до await gather.
+              asyncio.gather(f(), g(), h()) — ждёт все и возвращает список результатов в порядке аргументов, а не в порядке завершения. Если одна упала, исключение долетает до await gather, а остальные корутины не отменяются и продолжают работать. С return_exceptions=True исключения попадают в список результатов.
 
-              asyncio.create_task(f()) — задача начинает выполняться при ближайшей паузе текущей корутины; результат забирают через await task. Ссылку на задачу нужно хранить, иначе её может собрать сборщик мусора.
+              asyncio.create_task(f()) — задача начнёт выполняться, когда текущая задача отдаст управление циклу (на await того, что реально ждёт; await корутины, которая не приостанавливается, хода не отдаёт). Результат забирают через await task, отменяют — task.cancel(). Ссылку на задачу нужно хранить, иначе её может собрать сборщик мусора.
 
-              async with asyncio.TaskGroup() as tg: tg.create_task(...) (Python 3.11+) — современная замена gather: выход из блока ждёт все задачи, а при ошибке в одной остальные отменяются.
+              async with asyncio.TaskGroup() as tg: tg.create_task(...) (Python 3.11+) — современная замена gather: выход из блока ждёт все задачи, а при ошибке в одной остальные отменяются; ошибки приходят как ExceptionGroup и ловятся через except*.
 
-              await asyncio.wait_for(f(), timeout=1) или async with asyncio.timeout(1): — если не успели, корутина отменяется (внутри неё летит CancelledError, срабатывают finally), а снаружи — TimeoutError.
+              await asyncio.wait_for(f(), timeout=1) отменяет ожидаемую корутину, async with asyncio.timeout(1): (3.11+) — текущую задачу внутри блока. Внутри летит CancelledError (срабатывают finally), а наружу выходит TimeoutError.
+
+              async with lock: — asyncio.Lock, замок для корутин. async for x in поток: — перебор асинхронного итератора. asyncio.Semaphore(n) ограничивает, сколько корутин одновременно входят в блок.
 
               asyncio.Queue — очередь между корутинами: await queue.put(x) и await queue.get(). С maxsize производитель ждёт, пока потребитель освободит место.
               """,
@@ -83,7 +83,7 @@ MODULES.append(dict(
 
                 asyncio.run(main())""", None)],
               ["Ждать задачи по одной в цикле for вместо gather/TaskGroup, если их можно ждать одновременно.",
-               "Ловить голый except Exception вокруг await и глотать CancelledError: в 3.8+ это BaseException, но except BaseException или «пустой» except его поймают и сломают отмену."]),
+               "Глотать CancelledError: с 3.8 это BaseException, и except Exception его не ловит, но except BaseException или голый except: поймают. Поймали — уберите за собой и снова raise, иначе отмена и таймауты сломаются."]),
     ],
     tasks=[
         task("t_async_gather", "Параллельная загрузка",
@@ -122,9 +122,10 @@ MODULES.append(dict(
                 asyncio.run(main())""",
              tests=["3\nкошка 30\nпёс 10\nёж 50\n", "2\nalpha 40\nbeta 20\n", "1\nсоло 10\n",
                     "4\nd 70\nc 50\nb 30\na 10\n"],
-             hint="Соберите корутины в список и передайте их в gather через звёздочку: gather(*jobs).",
+             hint="Не ждите fetch сразу: сначала соберите корутины, потом дождитесь их одним вызовом.",
              difficulty=3,
-             requires=dict(defines=["fetch", "main"], uses=["async"], calls=["gather", "sleep"])),
+             requires=dict(defines=["fetch", "main"], uses=["async"],
+                           calls_in={"main": ["gather"], "fetch": ["sleep"]})),
     ],
     levels=[
         predict("py_async_001", "Корутина ещё не работает", """\
@@ -152,7 +153,7 @@ MODULES.append(dict(
                  print("готово")
 
              asyncio.run(main())""", ["async", "await", "return", "def"], ["async", "await"],
-             topic="async_basics", hint="Корутину объявляют одним словом перед def, а ждут — другим.",
+             topic="async_basics", hint="Вспомните, как объявляют корутину и как ждут асинхронную паузу.",
              explanation="async def объявляет корутину, await ждёт асинхронную паузу. Без async слово await — синтаксическая ошибка; return вернул бы корутину sleep, так и не дождавшись её, — «готово» не напечатается.",
              expect="готово\n"),
         predict("py_async_003", "Порядок в gather", """\
@@ -176,10 +177,15 @@ MODULES.append(dict(
                           "готов b\nготов c\nготов a\n['B', 'C', 'A']": "gather сохраняет порядок аргументов, а не порядок завершения."}),
         predict("py_async_004", "Последовательно или вместе", """\
                 import asyncio
-                import time
+
+                running = peak = 0
 
                 async def fetch(n):
-                    await asyncio.sleep(0.1)
+                    global running, peak
+                    running += 1
+                    peak = max(peak, running)
+                    await asyncio.sleep(0.01)
+                    running -= 1
                     return n
 
                 async def one_by_one():
@@ -189,19 +195,18 @@ MODULES.append(dict(
                     return await asyncio.gather(fetch(1), fetch(2), fetch(3))
 
                 for strategy in (one_by_one, together):
-                    start = time.perf_counter()
+                    peak = 0
                     result = asyncio.run(strategy())
-                    fast = time.perf_counter() - start < 0.2
-                    print(strategy.__name__, result, "быстро" if fast else "медленно")""",
-                ["one_by_one [1, 2, 3] быстро\ntogether [1, 2, 3] быстро",
-                 "one_by_one [1, 2, 3] медленно\ntogether [3, 2, 1] быстро",
-                 "one_by_one [1, 2, 3] медленно\ntogether [1, 2, 3] медленно"],
+                    print(strategy.__name__, result, "одновременно:", peak)""",
+                ["one_by_one [1, 2, 3] одновременно: 3\ntogether [1, 2, 3] одновременно: 3",
+                 "one_by_one [1, 2, 3] одновременно: 1\ntogether [3, 2, 1] одновременно: 3",
+                 "one_by_one [1, 2, 3] одновременно: 1\ntogether [1, 2, 3] одновременно: 1"],
                 position=1, topic="async_tasks", role="practice", difficulty=2,
-                hint="Три await подряд ждут по очереди: 0.1 + 0.1 + 0.1. Сколько ждёт gather?",
-                explanation="one_by_one ждёт три раза подряд — около 0.3 с. gather ждёт три паузы одновременно — около 0.1 с. Результаты одинаковые: gather сохраняет порядок.",
-                feedback={"one_by_one [1, 2, 3] быстро\ntogether [1, 2, 3] быстро": "await внутри списка выполняются по очереди — это 0.3 с.",
-                          "one_by_one [1, 2, 3] медленно\ntogether [3, 2, 1] быстро": "gather возвращает результаты в порядке аргументов.",
-                          "one_by_one [1, 2, 3] медленно\ntogether [1, 2, 3] медленно": "gather ждёт паузы одновременно — около 0.1 с."}),
+                hint="peak — сколько fetch ждали одновременно. Начинается ли следующий await в списке до конца предыдущего?",
+                explanation="В one_by_one каждый await дожидается конца fetch, прежде чем начать следующий, — одновременно ждёт только один. gather запускает все три сразу: пик — 3. Результаты одинаковые: gather сохраняет порядок аргументов.",
+                feedback={"one_by_one [1, 2, 3] одновременно: 3\ntogether [1, 2, 3] одновременно: 3": "await внутри списка выполняются по очереди: следующий fetch начинается после конца предыдущего.",
+                          "one_by_one [1, 2, 3] одновременно: 1\ntogether [3, 2, 1] одновременно: 3": "gather возвращает результаты в порядке аргументов.",
+                          "one_by_one [1, 2, 3] одновременно: 1\ntogether [1, 2, 3] одновременно: 1": "gather запускает корутины одновременно — все три ждут вместе."}),
         bug("py_async_005", "Заблокированный цикл", """\
             import asyncio
             import time
@@ -274,7 +279,7 @@ MODULES.append(dict(
                "asyncio.run(main())", "time.sleep(1)", "print(\"привет\")"], [0, 1, 2],
               check=lambda code: not compiles(code), topic="async_basics",
               hint="Ищите конструкции с ключевыми словами await и async.",
-              explanation="await, async with и async for — синтаксис корутин: на верхнем уровне или в обычной функции это SyntaxError. asyncio.run, наоборот, вызывают из обычного кода.",
+              explanation="await, async with и async for — синтаксис корутин: на верхнем уровне обычного файла .py или в обычной функции это SyntaxError (в REPL python -m asyncio и в Jupyter await на верхнем уровне разрешён). asyncio.run, наоборот, вызывают из обычного кода.",
               feedback={"asyncio.run(main())": "asyncio.run вызывают как раз из обычного кода — это вход в асинхронный мир.",
                         "time.sleep(1)": "Это обычная функция; внутри корутин её как раз избегают.",
                         "print(\"привет\")": "print работает везде."}),
@@ -298,6 +303,86 @@ MODULES.append(dict(
                "asyncio.run(main())"],
               topic="async_basics", hint="Сначала импорт и объявления, вызов asyncio.run — последним.",
               explanation="Функции объявляют до вызова asyncio.run. Порядок двух async def между собой не важен: answer нужна только при выполнении main."),
+        predict("py_async_012", "Ошибки в группе задач", """\
+                import asyncio
+
+                async def job(n):
+                    await asyncio.sleep(0.01 * n)
+                    if n == 2:
+                        raise ValueError(n)
+                    return n
+
+                async def main():
+                    print(await asyncio.gather(job(1), job(2), job(3), return_exceptions=True))
+                    try:
+                        async with asyncio.TaskGroup() as tg:
+                            for n in (1, 2, 3):
+                                tg.create_task(job(n))
+                    except* ValueError as group:
+                        print("ошибки:", group.exceptions)
+
+                asyncio.run(main())""",
+                ["[1, 3]\nошибки: (ValueError(2),)", "ValueError: 2",
+                 "[1, ValueError(2), 3]\nошибки: ValueError(2)"], position=2, topic="async_tasks",
+                role="challenge", difficulty=4,
+                hint="return_exceptions=True кладёт исключение в список результатов. В каком виде TaskGroup отдаёт ошибки?",
+                explanation="gather с return_exceptions=True не бросает исключение, а ставит его на место результата. TaskGroup собирает ошибки задач в ExceptionGroup; except* ValueError ловит их, а group.exceptions — кортеж исключений.",
+                feedback={"[1, 3]\nошибки: (ValueError(2),)": "Исключение не выбрасывается из списка — оно стоит на своём месте.",
+                          "ValueError: 2": "return_exceptions=True не даёт исключению вылететь из gather, а except* ловит ошибки TaskGroup.",
+                          "[1, ValueError(2), 3]\nошибки: ValueError(2)": "group.exceptions — кортеж, даже если ошибка одна."}),
+        predict("py_async_013", "Явная отмена", """\
+                import asyncio
+
+                async def worker():
+                    try:
+                        await asyncio.sleep(1)
+                    except asyncio.CancelledError:
+                        print("отмена: убираю за собой")
+                        raise
+
+                async def main():
+                    task = asyncio.create_task(worker())
+                    await asyncio.sleep(0.01)
+                    task.cancel()
+                    try:
+                        await task
+                    except asyncio.CancelledError:
+                        print("задача отменена:", task.cancelled())
+
+                asyncio.run(main())""",
+                ["задача отменена: True", "отмена: убираю за собой\nзадача отменена: False",
+                 "отмена: убираю за собой"], position=1, topic="async_tasks", role="practice", difficulty=3,
+                hint="cancel() бросает CancelledError внутрь задачи на её текущем await. Что сделает raise в except?",
+                explanation="task.cancel() бросает CancelledError внутрь worker на await asyncio.sleep. worker убирает за собой и пробрасывает отмену дальше, поэтому задача считается отменённой, а await task в main выбрасывает CancelledError.",
+                feedback={"задача отменена: True": "except внутри worker выполняется — он печатает про уборку.",
+                          "отмена: убираю за собой\nзадача отменена: False": "raise пробросил отмену: задача отменена, cancelled() — True.",
+                          "отмена: убираю за собой": "await task выбрасывает CancelledError, и main его ловит."}),
+        predict("py_async_014", "Не больше двух сразу", """\
+                import asyncio
+
+                active = peak = 0
+
+                async def fetch(sem, n):
+                    global active, peak
+                    async with sem:
+                        active += 1
+                        peak = max(peak, active)
+                        await asyncio.sleep(0.01)
+                        active -= 1
+                    return n
+
+                async def main():
+                    sem = asyncio.Semaphore(2)
+                    print(await asyncio.gather(*(fetch(sem, n) for n in range(5))), peak)
+
+                asyncio.run(main())""",
+                ["[0, 1, 2, 3, 4] 5", "[0, 1, 2, 3, 4] 1", "[0, 1] 2"], position=3, topic="async_tasks",
+                role="practice", difficulty=3,
+                hint="Semaphore(2) пускает в блок не больше двух корутин. Остальные ждут, но не пропадают.",
+                explanation="Все пять корутин стартуют, но в async with sem одновременно находятся не больше двух — так ограничивают число параллельных запросов к серверу. Результаты — все пять, в порядке аргументов.",
+                feedback={"[0, 1, 2, 3, 4] 5": "Semaphore(2) не пускает в блок больше двух корутин сразу.",
+                          "[0, 1, 2, 3, 4] 1": "Две корутины ждут внутри блока одновременно.",
+                          "[0, 1] 2": "Остальные корутины не отбрасываются, а ждут своей очереди."}),
         predict("py_async_010", "Босс: производитель и потребитель", """\
                 import asyncio
 
@@ -320,13 +405,13 @@ MODULES.append(dict(
 
                 asyncio.run(main())""",
                 ["положил a\nположил b\nположил c\nвзял a\nвзял b\nвзял c\nвсё",
-                 "положил a\nвзял a\nположил b\nвзял b\nположил c\nвзял c",
+                 "положил a\nвзял a\nвзял b\nположил b\nположил c\nвзял c\nвсё",
                  "всё\nположил a\nвзял a\nположил b\nвзял b\nположил c\nвзял c"],
                 position=1, topic="async_tasks", role="boss", difficulty=4,
                 hint="В очереди помещается один элемент: put ждёт, пока потребитель заберёт предыдущий. И когда выполняется код после async with?",
                 explanation="Очередь на один элемент: producer кладёт a, а на b ждёт. consumer забирает a, место освобождается — producer кладёт b и снова ждёт. Так они чередуются. Блок TaskGroup ждёт обе задачи, поэтому «всё» — последнее.",
                 feedback={"положил a\nположил b\nположил c\nвзял a\nвзял b\nвзял c\nвсё": "maxsize=1: второй put ждёт, пока потребитель заберёт первый элемент.",
-                          "положил a\nвзял a\nположил b\nвзял b\nположил c\nвзял c": "После блока TaskGroup печатается «всё».",
+                          "положил a\nвзял a\nвзял b\nположил b\nположил c\nвзял c\nвсё": "producer печатает «положил» сразу после put — раньше, чем consumer успеет взять элемент.",
                           "всё\nположил a\nвзял a\nположил b\nвзял b\nположил c\nвзял c": "Выход из async with TaskGroup ждёт завершения всех задач."}),
     ],
 ))
@@ -345,11 +430,11 @@ MODULES.append(dict(
     icon="🧵",
     topics=[
         topic("conc_threads", "Потоки и GIL",
-              "Поток — ещё одна линия выполнения в той же программе. Thread(target=f).start() запускает f параллельно, join() ждёт её конца. Общие данные защищают Lock. Из-за GIL потоки ускоряют ожидание (сеть, диск), но не вычисления на чистом Python.",
+              "Поток — ещё одна линия выполнения в той же программе. Thread(target=f).start() запускает f одновременно с остальным кодом (конкурентно: с GIL байт-код потоков выполняется по очереди), join() ждёт её конца. Общие данные защищают Lock. Из-за GIL потоки ускоряют ожидание (сеть, диск), но не вычисления на чистом Python.",
               """
-              threading.Thread(target=функция, args=(аргументы,)) создаёт поток, start() запускает его, join() ждёт завершения. Без join главный поток не ждёт результатов.
+              threading.Thread(target=функция, args=(аргументы,)) создаёт поток, start() запускает его, join() ждёт завершения. Без join главный поток не ждёт результатов. t.is_alive() — работает ли поток, threading.active_count() — сколько потоков живо, включая главный. daemon=True — фоновый поток, который не мешает программе завершиться.
 
-              GIL (глобальная блокировка интерпретатора) в обычном CPython позволяет выполнять байт-код только одному потоку за раз. Пока поток ждёт ввода-вывода, GIL отпускается — поэтому потоки хороши для сетевых запросов и файлов, но не ускоряют вычисления на чистом Python. (С Python 3.13 есть экспериментальная сборка без GIL.)
+              GIL (глобальная блокировка интерпретатора) в обычном CPython позволяет выполнять байт-код только одному потоку за раз. Пока поток ждёт ввода-вывода, GIL отпускается — поэтому потоки хороши для сетевых запросов и файлов, но не ускоряют вычисления на чистом Python. (В 3.13 появилась экспериментальная сборка без GIL — free-threading; с 3.14 она официально поддерживается, но ставится отдельно, например python3.14t, и не используется по умолчанию.)
 
               Гонка данных: два потока читают и меняют одно значение, и обновления теряются. Решение — threading.Lock: with lock: ... пускает в блок только один поток. Lock должен быть общим для всех потоков, а не создаваться заново при каждом вызове.
 
@@ -385,7 +470,7 @@ MODULES.append(dict(
 
               ProcessPoolExecutor имеет тот же интерфейс, что ThreadPoolExecutor: map, submit, as_completed. Функция и аргументы должны сериализоваться: lambda и функции, объявленные внутри других функций, не подойдут.
 
-              Новые процессы на Windows и macOS запускаются «с нуля» и импортируют главный модуль. Поэтому запуск пула обязательно прячут под if __name__ == "__main__": — иначе каждый процесс запустит пул снова.
+              У запущенного файла имя модуля __name__ равно "__main__", а при импорте — имени файла (подробнее — в модуле «Программа как проект»). Новые процессы на Windows и macOS (способ spawn), а с Python 3.14 и на Linux (forkserver) импортируют главный модуль заново. Без if __name__ == "__main__": дочерний процесс попытался бы снова создать пул — multiprocessing это замечает и падает с RuntimeError. Fork (Linux до 3.13) копирует процесс и модуль не импортирует, но проверку пишут всегда — ради переносимости.
 
               Как выбрать: много ожиданий в сети — asyncio (тысячи соединений) или потоки (проще с синхронными библиотеками); тяжёлые вычисления на чистом Python — процессы; вычисления в numpy и других C-библиотеках часто отпускают GIL и работают и в потоках.
 
@@ -399,7 +484,7 @@ MODULES.append(dict(
                         print(list(pool.map(pow, [2, 3, 4], [10, 2, 3])))""",
                 "pow — встроенная функция, она сериализуется и выполняется в процессах пула.", {"native_only": True})],
               ["Передавать в ProcessPoolExecutor lambda — её нельзя сериализовать (PicklingError).",
-               "Запускать пул процессов без if __name__ == \"__main__\" — на Windows и macOS это бесконечный запуск процессов."]),
+               "Запускать пул процессов без if __name__ == \"__main__\" — на Windows, macOS и Linux 3.14+ дочерние процессы падают с RuntimeError."]),
     ],
     levels=[
         native(predict("py_conc_001", "Запуск и ожидание", """\
@@ -434,7 +519,7 @@ MODULES.append(dict(
                     t.join()
                     print("поток завершён:", not t.is_alive())""", ["args", "kwargs", "name", "daemon"], ["args"],
                     topic="conc_threads", hint="Позиционные аргументы для target передают кортежем.",
-                    explanation="args — кортеж позиционных аргументов для target. kwargs ждёт словарь, name — это имя потока, daemon — флаг фонового потока; во всех трёх случаях greet не получит name и упадёт внутри потока.",
+                    explanation="args — кортеж позиционных аргументов для target. kwargs ждёт словарь (кортеж даст TypeError ещё до вызова greet); name и daemon — настройки самого потока, а greet вызовется без аргумента и упадёт.",
                     expect="привет, Ада\nпоток завершён: True\n")),
         native(bug("py_conc_003", "Замок, который не запирает", """\
             import threading
@@ -447,7 +532,7 @@ MODULES.append(dict(
                 global balance
                 with threading.Lock():
                     current = balance
-                    time.sleep(0.01)
+                    time.sleep(0.1)
                     balance = current - amount
 
             threads = [threading.Thread(target=withdraw, args=(a,)) for a in (30, 20)]
@@ -484,7 +569,7 @@ MODULES.append(dict(
                     return name
 
                 with ThreadPoolExecutor() as pool:
-                    futures = [pool.submit(job, n, d) for n, d in [("a", 0.15), ("b", 0.05), ("c", 0.1)]]
+                    futures = [pool.submit(job, n, d) for n, d in [("a", 0.3), ("b", 0.1), ("c", 0.2)]]
                     print([f.result() for f in as_completed(futures)])
                     print([f.result() for f in futures])""",
                 ["['a', 'b', 'c']\n['a', 'b', 'c']", "['b', 'c', 'a']\n['b', 'c', 'a']"], position=1,
@@ -502,8 +587,8 @@ MODULES.append(dict(
                         "Перемножить большие матрицы вложенными циклами на чистом Python": "Вычисления на чистом Python — нужны процессы или numpy."}),
         match("py_conc_007", "Словарь параллельности",
               ["GIL", "threading.Lock", "queue.Queue", "ThreadPoolExecutor", "ProcessPoolExecutor"],
-              rights=["Позволяет выполнять байт-код только одному потоку за раз",
-                      "Пускает в блок кода только один поток",
+              rights=["Блокировка внутри интерпретатора: из-за неё потоки не ускоряют вычисления на чистом Python",
+                      "Ваш замок для общих данных: with lock: …",
                       "Потокобезопасная очередь задач",
                       "Пул потоков для ожиданий: сеть, файлы",
                       "Пул процессов для вычислений на всех ядрах"],
@@ -528,19 +613,19 @@ MODULES.append(dict(
               for t in threads:
                   t.join()
               print(counter, len(threads))""",
-              topic="conc_threads", hint="Каждый поток прибавляет 5000, замок не даёт потерять ни одного увеличения.",
+              topic="conc_threads", hint="Сколько раз выполнится counter += 1 и может ли увеличение потеряться?",
               explanation="С общим Lock каждое counter += 1 выполняется целиком: 3 × 5000 = 15000.")),
         choice("py_conc_009", "Пул процессов", "Почему запуск ProcessPoolExecutor прячут под if __name__ == \"__main__\"?",
-               ["Новые процессы импортируют главный модуль, и без проверки каждый снова запустил бы пул",
+               ["Новые процессы импортируют главный модуль, и без проверки каждый попытался бы снова запустить пул",
                 "Без этой проверки процессы делят один GIL",
                 "Так быстрее: проверка включает оптимизацию байт-кода",
                 "ProcessPoolExecutor работает только внутри функций"], 0,
                topic="conc_processes", role="practice", difficulty=3,
-               hint="Что делает новый процесс на Windows и macOS первым делом?",
-               explanation="При запуске «с нуля» (spawn) процесс импортирует главный модуль. Код под if __name__ == \"__main__\" при импорте не выполняется — иначе пул запускался бы бесконечно.",
+               hint="Что делает новый процесс при запуске spawn (Windows, macOS, Linux 3.14+)?",
+               explanation="При запуске «с нуля» (spawn, forkserver) процесс импортирует главный модуль. Код под if __name__ == \"__main__\" при импорте не выполняется; без проверки дочерний процесс снова создал бы пул, и Python остановил бы это ошибкой RuntimeError.",
                feedback={"Без этой проверки процессы делят один GIL": "У каждого процесса свой GIL — проверка здесь ни при чём.",
                          "Так быстрее: проверка включает оптимизацию байт-кода": "Проверка не влияет на скорость — она защищает от повторного запуска.",
-                         "ProcessPoolExecutor работает только внутри функций": "Работает и на верхнем уровне — но только под проверкой __name__."}),
+                         "ProcessPoolExecutor работает только внутри функций": "Работает и на верхнем уровне; проверка нужна из-за повторного импорта модуля."}),
         native(predict("py_conc_010", "Босс: очередь задач", """\
                 import queue
                 import threading
@@ -608,11 +693,9 @@ MODULES.append(dict(
                 start = time.perf_counter()
                 total = sum(range(100_000))
                 elapsed = time.perf_counter() - start
-                print(total, elapsed > 0)
+                print(total, type(elapsed).__name__)
 
-                calls = []
-                timeit.timeit(lambda: calls.append(1), number=1000)
-                print(len(calls))""", "timeit вызвал функцию ровно number раз.")],
+                print(timeit.timeit("sum(range(100))", number=1000) < 60)""", "Время — дробное число секунд; сами значения от запуска к запуску разные.")],
               ["Сравнивать скорость по одному запуску — шум ОС и кэшей легко перекрывает разницу.",
                "Оптимизировать код, который выполняется редко, вместо найденного профилировщиком узкого места."]),
         topic("perf_tricks", "Быстрые идиомы и память",
@@ -629,22 +712,30 @@ MODULES.append(dict(
               __slots__ = ("x", "y") в классе убирает словарь __dict__ у каждого объекта: меньше памяти, но новые атрибуты добавлять нельзя.
 
               collections.Counter, deque, defaultdict, bisect, heapq — готовые быстрые структуры; не изобретайте их заново.
+
+              sys.getsizeof(объект) — сколько байт занимает сам объект (без вложенных).
               """,
               [("""\
-                import sys
+                from functools import cache
 
-                squares_list = [n * n for n in range(10_000)]
-                squares_gen = (n * n for n in range(10_000))
-                print(sys.getsizeof(squares_gen) < 1000 < sys.getsizeof(squares_list))
-                print(sum(squares_list) == sum(squares_gen))
-                print(sum(squares_gen))""", "Генератор крошечный, но одноразовый: второй sum получает пустоту.")],
+                @cache
+                def slow_square(n):
+                    print("считаю", n)
+                    return n * n
+
+                print(slow_square(4), slow_square(4), slow_square(5))
+                print(slow_square.cache_info())
+
+                parts = [str(n) for n in range(5)]
+                print("-".join(parts))""", "Второй вызов с 4 не печатает «считаю»: ответ взят из кэша.")],
               ["Передавать список в функцию с @cache — TypeError: unhashable type: 'list'.",
                "Кэшировать функции с побочными эффектами (print, запись в файл): при попадании в кэш они не выполнятся.",
+               "Ждать, что __slots__ уберёт __dict__, если у родителя слотов нет: словарь вернётся от родителя.",
                "Жертвовать читаемостью ради микроускорений, которых не видно в замерах."]),
     ],
     tasks=[
         task("t_perf_stairs", "Лестница с кэшем",
-             "Сколькими способами можно подняться на n ступенек, шагая на 1, 2 или 3 ступеньки за раз? Для 0 ступенек способ один (стоять на месте). Напишите рекурсивную функцию ways(n) с декоратором @functools.cache (или from functools import cache). Прочитайте n (до 300) и выведите ответ.",
+             "Сколькими способами можно подняться на n ступенек, шагая на 1, 2 или 3 ступеньки за раз? Для 0 ступенек способ один (стоять на месте). Напишите рекурсивную функцию ways(n) именно с декоратором @cache из functools (@functools.cache или from functools import cache). Прочитайте n (до 300) и выведите ответ.",
              solution="""\
                 from functools import cache
 
@@ -671,7 +762,7 @@ MODULES.append(dict(
              difficulty=3,
              requires=dict(defines=["ways"], recursive=["ways"], decorated={"ways": "cache"}, forbids=["loop"])),
         task("t_perf_join", "Быстрая сборка строки",
-             "Первая строка — n, дальше n слов по одному в строке. Выведите слова через «-» в обратном порядке, а на второй строке — длину получившейся строки. Соберите строку через str.join, без += в цикле.",
+             "Первая строка — n, дальше n слов по одному в строке. Выведите слова через «-» в обратном порядке, а на второй строке — длину получившейся строки. Соберите строку через str.join; циклы for/while не используйте — слова прочитайте включением.",
              solution="""\
                 n = int(input())
                 words = [input() for _ in range(n)]
@@ -686,8 +777,8 @@ MODULES.append(dict(
                 print(line)
                 print(len(line))""",
              tests=["3\nраз\nдва\nтри\n", "1\nодин\n", "4\na\nbb\nccc\ndddd\n", "2\nпривет\nмир\n"],
-             hint="Сначала соберите слова в список, потом \"-\".join(reversed(список)).",
-             difficulty=2, requires=dict(calls=["join"])),
+             hint="Соберите слова в список, разверните его, а соединитель передайте строке, у которой вызываете join.",
+             difficulty=2, requires=dict(calls=["join"], forbids=["loop"])),
     ],
     levels=[
         predict("py_perf_001", "Кэш в цифрах", """\
@@ -700,11 +791,11 @@ MODULES.append(dict(
                 print(fib(30))
                 info = fib.cache_info()
                 print(info.misses, info.hits)""",
-                ["832040\n1664079 0", "832040\n30 30", "832040\n31 30"], position=3, topic="perf_tricks",
+                ["832040\n2692537 0", "832040\n30 30", "832040\n31 30"], position=3, topic="perf_tricks",
                 role="practice", difficulty=3,
                 hint="Промах (miss) — первый расчёт для нового n, попадание (hit) — ответ из кэша. Какие вызовы повторяются?",
                 explanation="Каждое n от 0 до 30 считается один раз — 31 промах. fib(n) сначала вызывает fib(n - 1), и тот по пути вычисляет fib(n - 2). Поэтому второй вызов, fib(n - 2), при n от 3 до 30 берётся из кэша — 28 попаданий. Экспоненциальный счёт стал линейным.",
-                feedback={"832040\n1664079 0": "Это число вызовов без кэша. С кэшем каждое n считается один раз.",
+                feedback={"832040\n2692537 0": "Это число вызовов без кэша (2·fib(31) − 1). С кэшем каждое n считается один раз.",
                           "832040\n30 30": "Значений n от 0 до 30 — 31, каждое даёт один промах.",
                           "832040\n31 30": "Попаданий меньше: проверьте, какие вызовы реально повторяются."}),
         predict("py_perf_002", "Генератор экономит память", """\
@@ -741,31 +832,31 @@ MODULES.append(dict(
             hint="Кэш — это словарь, где ключ — аргументы. Каким должен быть ключ словаря?",
             explanation="lru_cache хранит результаты в словаре по аргументам, а список нехешируем: TypeError: unhashable type: 'list'. Передайте кортеж.",
             difficulty=2),
-        predict("py_perf_005", "__slots__", """\
+        predict("py_perf_005", "__slots__ и наследование", """\
                 class Point:
                     __slots__ = ("x", "y")
 
-                    def __init__(self, x, y):
-                        self.x, self.y = x, y
+                class Base:
+                    pass
 
-                p = Point(1, 2)
-                try:
-                    p.z = 3
-                except AttributeError:
-                    print("нельзя добавить z")
-                print(hasattr(p, "__dict__"), p.x + p.y)""",
-                ["False 3", "True 3", "нельзя добавить z\nTrue 3"], position=2, topic="perf_tricks",
+                class Tagged(Base):
+                    __slots__ = ("tag",)
+
+                p, t = Point(), Tagged()
+                t.extra = 1
+                print(hasattr(p, "__dict__"), hasattr(t, "__dict__"), t.extra)""",
+                ["False False 1", "True True 1", "AttributeError"], position=1, topic="perf_tricks",
                 role="practice", difficulty=3,
-                hint="__slots__ заменяет словарь атрибутов фиксированным набором ячеек.",
-                explanation="С __slots__ у объекта нет __dict__ — только ячейки x и y. Новый атрибут z добавить нельзя: AttributeError. Зато каждый объект занимает меньше памяти.",
-                feedback={"False 3": "Присваивание p.z падает с AttributeError — его ловит except.",
-                          "True 3": "__slots__ убирает __dict__, и новый атрибут добавить нельзя.",
-                          "нельзя добавить z\nTrue 3": "У объекта со __slots__ нет __dict__."}),
+                hint="__slots__ убирает __dict__ только если слоты объявлены во всей цепочке наследования.",
+                explanation="У Point есть только слоты x и y — словаря атрибутов нет. Tagged объявил слоты, но его родитель Base — нет, и __dict__ приходит от Base: новый атрибут extra добавляется, а экономия памяти пропадает.",
+                feedback={"False False 1": "Base без __slots__ даёт объектам Tagged словарь __dict__.",
+                          "True True 1": "У Point слоты во всей цепочке — __dict__ нет.",
+                          "AttributeError": "Благодаря __dict__ от Base атрибут extra добавляется без ошибки."}),
         multi("py_perf_006", "Что ускорит программу", "Какие изменения обычно ускоряют программу на CPython, не меняя результат?",
               list(SPEEDUPS), [i for i, ok in enumerate(SPEEDUPS.values()) if ok],
               check=lambda option: SPEEDUPS[option], topic="perf_tricks",
               hint="Ищите изменения, которые убирают лишнюю работу или переносят её в C.",
-              explanation="Множество ищет за O(1), join собирает строку за один проход, вынос из цикла убирает повторные вычисления. while не быстрее for, а встроенная sum (на C) быстрее ручного цикла.",
+              explanation="Множество ищет за O(1), join собирает строку за один проход, вынос из цикла убирает повторные вычисления. CPython иногда ускоряет += для строк на месте, но это не гарантировано (PEP 8 советует join). while не быстрее for, а встроенная sum (на C) быстрее ручного цикла.",
               feedback={"Заменить цикл for на while": "while обычно медленнее: счётчик приходится менять вручную на Python.",
                         "Переписать sum(nums) ручным циклом for": "sum написана на C — ручной цикл медленнее."}),
         match("py_perf_007", "Инструменты замера",
@@ -781,13 +872,13 @@ MODULES.append(dict(
 
                 calls = []
                 seconds = timeit.timeit(lambda: calls.append(len(calls)), number=500)
-                print(len(calls), calls[-1], seconds > 0)""",
-                ["1 0 True", "500 500 True", "500 499 False"], position=1, topic="perf_measure",
+                print(len(calls), calls[-1], type(seconds).__name__)""",
+                ["1 0 float", "500 500 float", "500 499 int"], position=1, topic="perf_measure",
                 hint="number — сколько раз вызвать функцию. Что добавляется на последнем вызове?",
-                explanation="timeit вызвал функцию 500 раз и вернул общее время в секундах (положительное число). На последнем вызове длина была 499.",
-                feedback={"1 0 True": "number=500 — функция вызвана 500 раз.",
-                          "500 500 True": "Последний вызов добавил len(calls) до добавления — 499.",
-                          "500 499 False": "timeit возвращает затраченное время — оно больше нуля."}),
+                explanation="timeit вызвал функцию 500 раз и вернул общее время в секундах — дробное число. На последнем вызове длина была 499.",
+                feedback={"1 0 float": "number=500 — функция вызвана 500 раз.",
+                          "500 500 float": "Последний вызов добавил len(calls) до добавления — 499.",
+                          "500 499 int": "timeit возвращает время в секундах — float."}),
         typed("py_perf_009", "Скрытый вложенный цикл", """\
               banned_list = list(range(0, 3000, 3))
               banned_set = set(banned_list)
@@ -800,10 +891,10 @@ MODULES.append(dict(
                           break
                   checks_set += 1
 
-              print(len(banned_list), checks_list > 400_000, checks_set)""",
+              print(len(banned_list), checks_list, checks_set)""",
               topic="perf_measure", role="practice", difficulty=3,
               hint="Цикл по banned_list — это то, что делает x in список. Множество отвечает за одну проверку.",
-              explanation="Поиск в списке из 1000 элементов для 3000 чисел — около миллиона сравнений (≈ n·m). Множество делает одну проверку на число — 3000. Вот почему x in список внутри цикла опасен."),
+              explanation="Для 2000 чисел, которых нет в списке, просматриваются все 1000 элементов — 2 000 000 сравнений; для найденных — в среднем половина, ещё 500 500. Всего около 2,5 миллиона против 3000 проверок множества. Вот почему x in список внутри цикла опасен."),
         predict("py_perf_010", "Босс: найти дубликат", """\
                 def has_dup_slow(items):
                     steps = 0
@@ -827,7 +918,7 @@ MODULES.append(dict(
                 print(has_dup_fast(data))""",
                 ["(True, 1001)\n(True, 1001)", "(True, 1000000)\n(True, 1001)", "(True, 500500)\n(True, 1000)"],
                 position=2, topic="perf_measure", role="boss", difficulty=4,
-                hint="Медленная версия перебирает пары: для первых i элементов — сколько пар до пары (999, 999)? Сумма 1000 + 999 + … + 1.",
+                hint="Сколько пар (i, j) проверит двойной цикл, если дубликат — последний элемент?",
                 explanation="Дубликат — последний элемент, поэтому медленная версия перебирает почти все пары: 1000 + 999 + … + 1 = 500 500 шагов (O(n²)). Быстрая проходит список один раз и находит повтор на 1001-м элементе (O(n)).",
                 feedback={"(True, 1001)\n(True, 1001)": "Вложенные циклы проверяют пары — шагов гораздо больше.",
                           "(True, 1000000)\n(True, 1001)": "Пары без повторов: j начинается с i + 1, это сумма 1000 + 999 + … + 1.",
@@ -889,11 +980,11 @@ MODULES.append(dict(
               """
               parser = argparse.ArgumentParser(description=...) — парсер. add_argument("file") — обязательный позиционный аргумент, add_argument("--limit", type=int, default=10) — необязательный с преобразованием типа, add_argument("-v", "--verbose", action="store_true") — флаг True/False, nargs="+" — один или больше значений, choices=[...] — допустимые значения. args = parser.parse_args() читает sys.argv; в тестах передают список: parse_args(["a.txt", "--limit", "5"]).
 
-              При ошибке (нет обязательного аргумента, не то значение) argparse печатает подсказку в stderr и завершает программу с кодом 2. --help генерируется сам.
+              При ошибке (нет обязательного аргумента, не то значение) argparse печатает подсказку в stderr и завершает программу с кодом 2 (SystemExit). --help генерируется сам. required=True делает опцию с -- обязательной. Подкоманды, как у git: sub = parser.add_subparsers(dest="command", required=True); sub.add_parser("add") — у каждой свои аргументы.
 
-              logging: уровни DEBUG < INFO < WARNING < ERROR < CRITICAL. logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s") настраивает вывод один раз в начале программы (force=True — перенастроить заново). В модулях берут свой логгер: log = logging.getLogger(__name__).
+              logging в проекте (основы — в модуле «Тестирование и отладка»): basicConfig вызывают один раз в точке входа (force=True — перенастроить заново), а в каждом модуле берут log = logging.getLogger(__name__). Логгеры образуют дерево по точкам в имени: app.db — потомок app. Уровень можно задать отдельному логгеру — log.setLevel(logging.WARNING), — и шумный модуль замолчит, не трогая остальные.
 
-              Сообщения ниже установленного уровня не печатаются. По умолчанию уровень WARNING, а вывод идёт в stderr. Аргументы передают отдельно: log.info("файл %s", name) — строка форматируется, только если сообщение реально пишется.
+              Аргументы передают отдельно: log.info("файл %s", name) — строка форматируется, только если сообщение реально пишется.
 
               print — для результата программы, logging — для диагностики.
               """,
@@ -919,7 +1010,7 @@ MODULES.append(dict(
     ],
     tasks=[
         task("t_proj_cli", "Своя командная строка",
-             "Прочитайте одну строку — это аргументы командной строки, разделённые пробелами. Разберите их через argparse: позиционный аргумент word, необязательный --times (целое, по умолчанию 1) и --sep (строка, по умолчанию пробел). Выведите word, повторённое times раз через sep. Код держите в функции main(argv), вызов — под if __name__ == \"__main__\":.",
+             "Прочитайте одну строку — это аргументы командной строки, разделённые пробелами. Разберите их через argparse: позиционный аргумент word, необязательный --times (целое, по умолчанию 1) и --sep (строка, по умолчанию пробел). Выведите word, повторённое times раз через sep. Код держите в функции main(argv). Учтите, что argparse понимает и --times=2, и сокращения вроде --ti 3.",
              solution="""\
                 import argparse
 
@@ -940,10 +1031,11 @@ MODULES.append(dict(
                     print(argv[0])
 
                 main(input().split())""",
-             tests=["привет --times 3 --sep -\n", "эхо\n", "ха --times 4\n", "--sep + да --times 2\n"],
+             tests=["привет --times 3 --sep -\n", "эхо\n", "ха --times 4\n", "--sep + да --times 2\n",
+                    "ой --times=2 --sep=,\n", "ха --ti 3\n"],
              hint="parse_args принимает список строк. Для повтора: sep.join([word] * times).",
              difficulty=3,
-             requires=dict(defines=["main"], calls=["ArgumentParser", "add_argument", "parse_args"])),
+             requires=dict(defines=["main"], calls_in={"main": ["ArgumentParser", "add_argument", "parse_args"]})),
     ],
     levels=[
         predict("py_proj_001", "Кто такой __main__", """\
@@ -1062,6 +1154,22 @@ MODULES.append(dict(
               prompt="Сопоставьте параметр и что он делает", topic="proj_cli_logging",
               hint="Все значения из командной строки — строки. Какой параметр это меняет?",
               explanation="nargs управляет количеством значений, store_true делает флаг, type преобразует строку, choices ограничивает значения, required делает опцию обязательной (по умолчанию опции с -- необязательны)."),
+        predict("py_proj_011", "Ошибка в аргументах", """\
+                import argparse
+
+                parser = argparse.ArgumentParser(prog="tool")
+                parser.add_argument("--limit", type=int)
+                try:
+                    parser.parse_args(["--limit", "много"])
+                except SystemExit as error:
+                    print("код выхода:", error.code)""",
+                ["ValueError", "код выхода: 1", "код выхода: 0"], position=3, topic="proj_cli_logging",
+                role="practice", difficulty=3,
+                hint="argparse сам сообщает об ошибке и завершает программу. Каким кодом?",
+                explanation="«много» не превращается в int: argparse печатает подсказку в stderr и вызывает sys.exit(2). Код 2 — стандарт для неверных аргументов командной строки. В тестах ловят SystemExit или создают парсер с exit_on_error=False.",
+                feedback={"ValueError": "argparse перехватывает ошибку преобразования и завершает программу через SystemExit.",
+                          "код выхода: 1": "Для неверных аргументов argparse использует код 2.",
+                          "код выхода: 0": "Код 0 означает успех — здесь ошибка."}),
         predict("py_proj_010", "Босс: мини-CLI", """\
                 import argparse
                 import logging

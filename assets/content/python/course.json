@@ -275,7 +275,7 @@
    "description": "async/await, задачи, gather, таймауты, очереди",
    "icon": "⏳",
    "file": "modules/async.json",
-   "timedRunSeconds": 830
+   "timedRunSeconds": 1040
   },
   {
    "id": "concurrency",
@@ -299,7 +299,7 @@
    "description": "__main__, argparse, logging, PEP 8, docstring",
    "icon": "🏗️",
    "file": "modules/project.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 830
   }
  ]
 }

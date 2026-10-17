@@ -14,9 +14,19 @@ import selectors
 import time
 
 
+def _deadlock_message(loop):
+    lines = ["asyncio: все задачи ждут, и разбудить их некому (взаимная блокировка)."]
+    for task in asyncio.all_tasks(loop) if loop is not None else ():
+        frames = [f for f in task.get_stack() if f.f_code.co_filename == "main.py"]
+        where = f"строка {frames[-1].f_lineno}" if frames else "?"
+        lines.append(f"  {task.get_coro().__qualname__}() ждёт: {where}")
+    return "\n".join(lines)
+
+
 class _SleepSelector(selectors.BaseSelector):
     def __init__(self):
         self._keys = {}
+        self.loop = None
 
     def register(self, fileobj, events, data=None):
         fd = fileobj if isinstance(fileobj, int) else fileobj.fileno()
@@ -32,9 +42,10 @@ class _SleepSelector(selectors.BaseSelector):
         if timeout is None:
             # Nothing is scheduled and no I/O can ever arrive: the program
             # waits for an event nobody will set.
-            raise RuntimeError("asyncio: программа ждёт событие, которое никогда не наступит")
-        if timeout > 0:
-            time.sleep(timeout)
+            raise RuntimeError(_deadlock_message(self.loop))
+        end = time.monotonic() + timeout
+        while (left := end - time.monotonic()) > 0:
+            time.sleep(min(left, 0.05))  # short naps: the stop button stays responsive
         return []
 
     def close(self):
@@ -46,7 +57,13 @@ class _SleepSelector(selectors.BaseSelector):
 
 class _SandboxLoop(asyncio.SelectorEventLoop):
     def __init__(self):
-        super().__init__(_SleepSelector())
+        selector = _SleepSelector()
+        super().__init__(selector)
+        selector.loop = self
+
+    def run_in_executor(self, executor, func, *args):
+        raise RuntimeError("asyncio: потоков во встроенном Python нет — to_thread и run_in_executor "
+                           "работают только в обычном Python на компьютере")
 
     # No self-pipe (socketpair is not available): wake-ups from other
     # threads are not needed in a single-threaded sandbox.
@@ -80,10 +97,14 @@ def run(main, *, debug=None, loop_factory=None):
     """asyncio.run on the sandbox loop. Pyodide replaces asyncio.run with a
     version that needs JavaScript stack switching (JSPI), which a WebView
     may not support, so the standard behaviour is restored here."""
-    if asyncio.events._get_running_loop() is not None:
+    outer = asyncio.events._get_running_loop()
+    if isinstance(outer, _SandboxLoop):
         raise RuntimeError("asyncio.run() cannot be called from a running event loop")
     if not asyncio.iscoroutine(main):
         raise ValueError(f"a coroutine was expected, got {main!r}")
+    # Pyodide marks its browser loop as always running; the program's own
+    # loop runs "inside" it, so that mark is lifted for the duration.
+    asyncio.events._set_running_loop(None)
     loop = (loop_factory or _SandboxLoop)()
     if debug is not None:
         loop.set_debug(debug)
@@ -97,6 +118,7 @@ def run(main, *, debug=None, loop_factory=None):
         finally:
             asyncio.set_event_loop(None)
             loop.close()
+            asyncio.events._set_running_loop(outer)
 
 
 asyncio.set_event_loop_policy(_SandboxPolicy())

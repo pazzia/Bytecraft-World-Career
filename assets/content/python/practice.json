@@ -1508,18 +1508,22 @@
     "uses": [
      "async"
     ],
-    "calls": [
-     "gather",
-     "sleep"
-    ]
+    "calls_in": {
+     "main": [
+      "gather"
+     ],
+     "fetch": [
+      "sleep"
+     ]
+    }
    },
-   "hint": "Соберите корутины в список и передайте их в gather через звёздочку: gather(*jobs).",
+   "hint": "Не ждите fetch сразу: сначала соберите корутины, потом дождитесь их одним вызовом.",
    "module": "async"
   },
   {
    "id": "t_perf_stairs",
    "title": "Лестница с кэшем",
-   "prompt": "Сколькими способами можно подняться на n ступенек, шагая на 1, 2 или 3 ступеньки за раз? Для 0 ступенек способ один (стоять на месте). Напишите рекурсивную функцию ways(n) с декоратором @functools.cache (или from functools import cache). Прочитайте n (до 300) и выведите ответ.",
+   "prompt": "Сколькими способами можно подняться на n ступенек, шагая на 1, 2 или 3 ступеньки за раз? Для 0 ступенек способ один (стоять на месте). Напишите рекурсивную функцию ways(n) именно с декоратором @cache из functools (@functools.cache или from functools import cache). Прочитайте n (до 300) и выведите ответ.",
    "starter": "def ways(n):\n    if n < 0:\n        return 0\n    if n == 0:\n        return 1\n    return ways(n - 1) + ways(n - 2) + ways(n - 3)\n\nprint(ways(int(input())))",
    "solution": "from functools import cache\n\n@cache\ndef ways(n):\n    if n < 0:\n        return 0\n    if n == 0:\n        return 1\n    return ways(n - 1) + ways(n - 2) + ways(n - 3)\n\nprint(ways(int(input())))",
    "tests": [
@@ -1565,7 +1569,7 @@
   {
    "id": "t_perf_join",
    "title": "Быстрая сборка строки",
-   "prompt": "Первая строка — n, дальше n слов по одному в строке. Выведите слова через «-» в обратном порядке, а на второй строке — длину получившейся строки. Соберите строку через str.join, без += в цикле.",
+   "prompt": "Первая строка — n, дальше n слов по одному в строке. Выведите слова через «-» в обратном порядке, а на второй строке — длину получившейся строки. Соберите строку через str.join; циклы for/while не используйте — слова прочитайте включением.",
    "starter": "n = int(input())\nline = \"\"\nfor _ in range(n):\n    line += input() + \"-\"\nprint(line)\nprint(len(line))",
    "solution": "n = int(input())\nwords = [input() for _ in range(n)]\nline = \"-\".join(reversed(words))\nprint(line)\nprint(len(line))",
    "tests": [
@@ -1590,15 +1594,18 @@
    "requires": {
     "calls": [
      "join"
+    ],
+    "forbids": [
+     "loop"
     ]
    },
-   "hint": "Сначала соберите слова в список, потом \"-\".join(reversed(список)).",
+   "hint": "Соберите слова в список, разверните его, а соединитель передайте строке, у которой вызываете join.",
    "module": "performance"
   },
   {
    "id": "t_proj_cli",
    "title": "Своя командная строка",
-   "prompt": "Прочитайте одну строку — это аргументы командной строки, разделённые пробелами. Разберите их через argparse: позиционный аргумент word, необязательный --times (целое, по умолчанию 1) и --sep (строка, по умолчанию пробел). Выведите word, повторённое times раз через sep. Код держите в функции main(argv), вызов — под if __name__ == \"__main__\":.",
+   "prompt": "Прочитайте одну строку — это аргументы командной строки, разделённые пробелами. Разберите их через argparse: позиционный аргумент word, необязательный --times (целое, по умолчанию 1) и --sep (строка, по умолчанию пробел). Выведите word, повторённое times раз через sep. Код держите в функции main(argv). Учтите, что argparse понимает и --times=2, и сокращения вроде --ti 3.",
    "starter": "def main(argv):\n    print(argv[0])\n\nmain(input().split())",
    "solution": "import argparse\n\n\ndef main(argv):\n    parser = argparse.ArgumentParser(prog=\"repeat\")\n    parser.add_argument(\"word\")\n    parser.add_argument(\"--times\", type=int, default=1)\n    parser.add_argument(\"--sep\", default=\" \")\n    args = parser.parse_args(argv)\n    print(args.sep.join([args.word] * args.times))\n\n\nif __name__ == \"__main__\":\n    main(input().split())",
    "tests": [
@@ -1617,6 +1624,14 @@
     {
      "stdin": "--sep + да --times 2\n",
      "expected": "да+да\n"
+    },
+    {
+     "stdin": "ой --times=2 --sep=,\n",
+     "expected": "ой,ой\n"
+    },
+    {
+     "stdin": "ха --ti 3\n",
+     "expected": "ха ха ха\n"
     }
    ],
    "difficulty": 3,
@@ -1624,11 +1639,13 @@
     "defines": [
      "main"
     ],
-    "calls": [
-     "ArgumentParser",
-     "add_argument",
-     "parse_args"
-    ]
+    "calls_in": {
+     "main": [
+      "ArgumentParser",
+      "add_argument",
+      "parse_args"
+     ]
+    }
    },
    "hint": "parse_args принимает список строк. Для повтора: sep.join([word] * times).",
    "module": "project"
