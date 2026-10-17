@@ -329,7 +329,8 @@ class CareerDashboardCalculator {
     final docker = projects.where((project) => project.hasDocker).length;
 
     return switch (id) {
-      CareerSkillId.pythonCore => (python * 3 + packages).clamp(0, 12),
+      CareerSkillId.pythonCore =>
+        (python * 3 + packages).clamp(0, 12).toInt(),
       CareerSkillId.oop => (packages * 2 +
               _keywordHits(projects, const {
                 'api',
@@ -342,7 +343,8 @@ class CareerDashboardCalculator {
                 'library',
               }) *
               2)
-          .clamp(0, 10),
+          .clamp(0, 10)
+          .toInt(),
       CareerSkillId.algorithms => (_keywordHits(projects, const {
                 'algorithm',
                 'algorithms',
@@ -352,8 +354,9 @@ class CareerDashboardCalculator {
                 'sorting',
               }) *
               4)
-          .clamp(0, 10),
-      CareerSkillId.testing => (tests * 5 + ci * 2).clamp(0, 12),
+          .clamp(0, 10)
+          .toInt(),
+      CareerSkillId.testing => (tests * 5 + ci * 2).clamp(0, 12).toInt(),
       CareerSkillId.async => (_keywordHits(projects, const {
                 'async',
                 'asyncio',
@@ -365,9 +368,10 @@ class CareerDashboardCalculator {
                 'kafka',
               }) *
               4)
-          .clamp(0, 10),
+          .clamp(0, 10)
+          .toInt(),
       CareerSkillId.production =>
-        (ci * 3 + docker * 4 + packages * 2).clamp(0, 12),
+        (ci * 3 + docker * 4 + packages * 2).clamp(0, 12).toInt(),
     };
   }
 
