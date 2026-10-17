@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/journal/presentation/journal_screen.dart';
 import '../../features/journal/presentation/topic_screen.dart';
 import '../../features/playground/presentation/playground_screen.dart';
 import '../../features/playground/presentation/practice_task_screen.dart';
@@ -103,7 +102,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: Routes.journal,
-                builder: (context, state) => const JournalScreen(),
+                builder: (context, state) => const MistakeDnaScreen(),
               ),
             ],
           ),
