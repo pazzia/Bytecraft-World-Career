@@ -35,6 +35,7 @@ class AppSettings {
     required this.activeCourseId,
     required this.theme,
     this.experience,
+    this.careerGoalId = 'python_backend',
   });
 
   factory AppSettings.initial(String defaultCourseId) => AppSettings(
@@ -48,11 +49,13 @@ class AppSettings {
     required String defaultCourseId,
   }) {
     final courseId = json['activeCourseId'];
+    final careerGoal = json['careerGoalId'];
     return AppSettings(
       onboardingCompleted: json['onboardingCompleted'] == true,
       activeCourseId: courseId is String ? courseId : defaultCourseId,
       theme: ThemePreference.fromId(json['theme'] as String?),
       experience: ExperienceLevel.fromId(json['experience'] as String?),
+      careerGoalId: careerGoal is String ? careerGoal : 'python_backend',
     );
   }
 
@@ -60,18 +63,21 @@ class AppSettings {
   final String activeCourseId;
   final ThemePreference theme;
   final ExperienceLevel? experience;
+  final String careerGoalId;
 
   AppSettings copyWith({
     bool? onboardingCompleted,
     String? activeCourseId,
     ThemePreference? theme,
     ExperienceLevel? experience,
+    String? careerGoalId,
   }) =>
       AppSettings(
         onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
         activeCourseId: activeCourseId ?? this.activeCourseId,
         theme: theme ?? this.theme,
         experience: experience ?? this.experience,
+        careerGoalId: careerGoalId ?? this.careerGoalId,
       );
 
   Map<String, dynamic> toJson() => {
@@ -79,5 +85,6 @@ class AppSettings {
         'activeCourseId': activeCourseId,
         'theme': theme.id,
         if (experience != null) 'experience': experience!.id,
+        'careerGoalId': careerGoalId,
       };
 }
