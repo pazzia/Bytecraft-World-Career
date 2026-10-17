@@ -26,8 +26,11 @@ class TypeOutputValidator implements AnswerValidator {
 }
 
 /// Output comparison that forgives what a phone keyboard or invisible
-/// whitespace changes, but nothing a program could print differently.
+/// whitespace changes: smart quotes, no-break spaces, «ё» typed as «е», a
+/// missing space after a comma ([1,2] for [1, 2]), trailing spaces.
 abstract final class OutputText {
+  static final RegExp _spaceAfterComma = RegExp(r',[ \u00A0]+');
+
   static const Map<String, String> _replacements = {
     '\r\n': '\n',
     '\r': '\n',
@@ -39,6 +42,8 @@ abstract final class OutputText {
     '»': '"',
     '‘': "'",
     '’': "'",
+    'ё': 'е',
+    'Ё': 'Е',
   };
 
   /// Lines with trailing spaces removed and trailing empty lines dropped.
@@ -47,6 +52,7 @@ abstract final class OutputText {
     _replacements.forEach((from, to) {
       normalized = normalized.replaceAll(from, to);
     });
+    normalized = normalized.replaceAll(_spaceAfterComma, ',');
     final result = normalized
         .split('\n')
         .map((line) => line.trimRight())

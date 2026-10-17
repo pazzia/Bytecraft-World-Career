@@ -1,57 +1,14 @@
-import 'dart:io';
-
-import 'package:bytecraft/app/app.dart';
-import 'package:bytecraft/app/di/providers.dart';
-import 'package:bytecraft/core/storage/key_value_store.dart';
-import 'package:bytecraft/core/time/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../helpers/app_harness.dart';
 
 /// End-to-end smoke test on a phone-sized screen with the real bundled
 /// course: onboarding → home → first level → rewards → map.
 /// Any layout overflow fails the test.
-/// Prints visible texts: CI only shows test output, so this is how a
-/// failing screen can be inspected.
-void dumpTexts(WidgetTester tester, String screen) {
-  final texts = tester
-      .widgetList<Text>(find.byType(Text))
-      .map((text) => text.data ?? text.textSpan?.toPlainText() ?? '')
-      .where((text) => text.isNotEmpty)
-      .join(' | ');
-  debugPrint('SCREEN[$screen]: $texts');
-}
-
 void main() {
   testWidgets('a new player completes the first level', (tester) async {
-    tester.view.physicalSize = const Size(390, 844);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-
-    final store = InMemoryKeyValueStore();
-    // Bundled content read up front: no real IO inside the fake-async test.
-    final assets = {
-      for (final file in Directory('assets/content')
-          .listSync(recursive: true)
-          .whereType<File>())
-        file.path.replaceAll(r'\', '/'): file.readAsStringSync(),
-    };
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          keyValueStoreProvider.overrideWithValue(store),
-          textAssetLoaderProvider.overrideWithValue((path) async {
-            final text = assets[path];
-            if (text == null) throw StateError('No asset $path');
-            return text;
-          }),
-          clockProvider.overrideWithValue(FixedClock(DateTime(2026, 10, 17, 12))),
-        ],
-        child: const BytecraftApp(),
-      ),
-    );
-
-    await tester.pumpAndSettle();
+    final store = await pumpBytecraft(tester);
 
     expect(find.text('Код за пару минут в день'), findsOneWidget);
     await tester.tap(find.text('Немного знаю'));

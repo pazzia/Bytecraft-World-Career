@@ -59,9 +59,13 @@ abstract interface class PythonRunner {
   /// Starts loading the interpreter if it isn't loaded yet.
   Future<void> start();
 
+  /// Runs [code] as main.py. With [echoInputPrompt] false, input("...")
+  /// does not print its prompt: tests compare only what the program prints
+  /// by the task, so a friendly prompt must not fail them.
   Future<RunResult> run(
     String code, {
     String stdin = '',
     Duration timeout = const Duration(seconds: 5),
+    bool echoInputPrompt = true,
   });
 }

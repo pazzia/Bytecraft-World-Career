@@ -206,14 +206,14 @@
    "topic": "str_fstring",
    "difficulty": 2,
    "hint": "Внутри фигурных скобок вычисляется выражение.",
-   "explanation": "f-строка подставляет name и результат age + 1.",
-   "code": "name = \"Ада\"\nage = 30\nprint(f\"{name}: {age + 1}\")",
+   "explanation": "f-строка подставляет city и результат выражения 2025 - year = 1020.",
+   "code": "city = \"Казань\"\nyear = 1005\nprint(f\"{city}: {2025 - year} лет\")",
    "payload": {
-    "expectedOutput": "Ада: 31"
+    "expectedOutput": "Казань: 1020 лет"
    },
    "solution": {
-    "code": "name = \"Ада\"\nage = 30\nprint(f\"{name}: {age + 1}\")",
-    "output": "Ада: 31\n"
+    "code": "city = \"Казань\"\nyear = 1005\nprint(f\"{city}: {2025 - year} лет\")",
+    "output": "Казань: 1020 лет\n"
    }
   },
   {
@@ -246,7 +246,7 @@
    "topic": "str_methods",
    "difficulty": 3,
    "hint": "Разберите каждое выражение по шагам: lower → count, срез → upper, find.",
-   "explanation": "В \"hello, world\" две «o». Срез с 7 — \"World\", в верхнем регистре WORLD. W стоит на позиции 7.",
+   "explanation": "В \"hello, world\" две «o». Срез с 7 — \"World\", в верхнем регистре WORLD. W имеет индекс 7.",
    "code": "s = \"Hello, World\"\nprint(s.lower().count(\"o\"), s[7:].upper(), s.find(\"W\"))",
    "payload": {
     "expectedOutput": "2 WORLD 7"

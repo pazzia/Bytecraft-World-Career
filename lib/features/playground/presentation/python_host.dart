@@ -16,7 +16,11 @@ class PythonHost extends ConsumerWidget {
     ref.watch(pythonRunnerStateProvider);
     final runner = ref.watch(pythonRunnerProvider);
     final controller = runner is PyodideRunner ? runner.controller : null;
-    if (controller == null) return const SizedBox.shrink();
+    if (controller == null) {
+      // Positioned even when empty: in the shell's expanding Stack a
+      // non-positioned child would cover the whole screen.
+      return const Positioned(left: 0, bottom: 0, width: 0, height: 0, child: SizedBox.shrink());
+    }
     return Positioned(
       left: 0,
       bottom: 0,

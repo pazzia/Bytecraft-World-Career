@@ -30,9 +30,12 @@ class MainShell extends ConsumerWidget {
         shell.currentIndex == mapBranch &&
         ref.watch(mapModeProvider) == MapMode.timed;
     final scaffold = Scaffold(
+      // StackFit.expand: the shell takes the whole body. With a loose Stack
+      // an empty PythonHost would size the Stack to 0×0 and hide the tabs.
       body: Stack(
+        fit: StackFit.expand,
         children: [
-          Positioned.fill(child: shell),
+          shell,
           const PythonHost(),
         ],
       ),

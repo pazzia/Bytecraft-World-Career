@@ -10,7 +10,7 @@
    "topic": "var_assign",
    "difficulty": 1,
    "hint": "После оператора = переменная получает значение справа.",
-   "explanation": "Оператор = записывает значение 5 в переменную x.",
+   "explanation": "Оператор = связывает имя x со значением 5.",
    "code": "x = 5",
    "payload": {
     "options": [
@@ -40,34 +40,34 @@
    "prompt": "Что выведет код?",
    "topic": "var_assign",
    "difficulty": 1,
-   "hint": "x += 2 — это короткая запись x = x + 2.",
-   "explanation": "Сначала x = 5, затем x увеличивается на 2 и становится 7.",
-   "code": "x = 5\nx += 2\nprint(x)",
+   "hint": "x *= 3 — это x = x * 3, x -= 2 — это x = x - 2.",
+   "explanation": "Сначала x = 4, затем 4 · 3 = 12, затем 12 − 2 = 10.",
+   "code": "x = 4\nx *= 3\nx -= 2\nprint(x)",
    "payload": {
     "options": [
-     "5",
-     "7",
-     "2",
+     "4",
+     "12",
+     "10",
      "Ошибка"
     ],
-    "correctIndex": 1,
+    "correctIndex": 2,
     "optionFeedback": [
-     "x += 2 изменяет переменную: значение уже не 5.",
+     "*= и -= изменяют переменную: значение уже не 4.",
+     "После умножения есть ещё x -= 2.",
      "",
-     "К x прибавляют 2, а не записывают 2.",
-     ""
+     "*= и -= — обычные составные операторы присваивания."
     ]
    },
    "solution": {
-    "code": "x = 5\nx += 2\nprint(x)",
-    "output": "7\n"
+    "code": "x = 4\nx *= 3\nx -= 2\nprint(x)",
+    "output": "10\n"
    }
   },
   {
    "id": "py_var_003",
    "type": "fill_code",
    "role": "lesson",
-   "title": "Присвоение значения",
+   "title": "Присваивание",
    "prompt": "Создайте переменную name со значением \"Ada\"",
    "topic": "var_assign",
    "difficulty": 1,
@@ -78,7 +78,7 @@
     "options": [
      "=",
      "==",
-     ":",
+     "=>",
      "->"
     ],
     "answers": [
@@ -86,7 +86,7 @@
     ],
     "variantResults": {
      "==": "NameError: name 'name' is not defined",
-     ":": "NameError: name 'name' is not defined",
+     "=>": "SyntaxError: invalid syntax",
      "->": "SyntaxError: invalid syntax"
     }
    },
@@ -104,14 +104,14 @@
    "topic": "var_assign",
    "difficulty": 2,
    "hint": "b получает значение a в момент присваивания.",
-   "explanation": "b = a связывает b с числом 3. Потом a связывают с 10, а b по-прежнему 3.",
-   "code": "a = 3\nb = a\na = 10\nprint(a, b)",
+   "explanation": "b = a связывает b с числом 7. Потом a связывают с новым числом 8, а b по-прежнему 7.",
+   "code": "a = 7\nb = a\na = a + 1\nprint(a, b)",
    "payload": {
-    "expectedOutput": "10 3"
+    "expectedOutput": "8 7"
    },
    "solution": {
-    "code": "a = 3\nb = a\na = 10\nprint(a, b)",
-    "output": "10 3\n"
+    "code": "a = 7\nb = a\na = a + 1\nprint(a, b)",
+    "output": "8 7\n"
    }
   },
   {
@@ -149,12 +149,12 @@
    "id": "py_var_007",
    "type": "multi_select",
    "role": "practice",
-   "title": "Хорошие имена",
+   "title": "Допустимые имена",
    "prompt": "Какие имена переменных допустимы в Python?",
    "topic": "var_names",
    "difficulty": 2,
    "hint": "Имя не начинается с цифры, не содержит дефис и не совпадает с ключевым словом.",
-   "explanation": "user_name, _count и totalSum допустимы. 2nd_place начинается с цифры, class — ключевое слово, my-var содержит минус.",
+   "explanation": "user_name, _count и totalSum допустимы (хотя по соглашению PEP 8 лучше total_sum). 2nd_place начинается с цифры, class — ключевое слово, my-var содержит минус.",
    "payload": {
     "options": [
      "user_name",
@@ -187,27 +187,27 @@
    "prompt": "Что выведет код?",
    "topic": "var_multi",
    "difficulty": 2,
-   "hint": "Справа сначала вычисляется пара (b, a), потом она распаковывается.",
-   "explanation": "Правая часть b, a вычисляется целиком как (2, 1), затем a = 2, b = 1.",
-   "code": "a, b = 1, 2\na, b = b, a\nprint(a, b)",
+   "hint": "Справа сначала вычисляется пара (c, a), потом она распаковывается в a и c.",
+   "explanation": "Правая часть c, a вычисляется целиком как (3, 1), затем a = 3, c = 1. b не меняется.",
+   "code": "a, b, c = 1, 2, 3\na, c = c, a\nprint(a, b, c)",
    "payload": {
     "options": [
-     "2 1",
-     "1 2",
-     "2 2",
-     "1 1"
+     "3 2 1",
+     "1 2 3",
+     "3 2 3",
+     "1 2 1"
     ],
     "correctIndex": 0,
     "optionFeedback": [
      "",
-     "",
-     "Так было бы при двух отдельных присваиваниях a = b; b = a.",
-     "Значения не теряются: справа сначала запоминается пара (2, 1)."
+     "Строка a, c = c, a меняет a и c местами.",
+     "Так было бы при двух отдельных присваиваниях a = c; c = a.",
+     "Значения не теряются: справа сначала запоминается пара (3, 1)."
     ]
    },
    "solution": {
-    "code": "a, b = 1, 2\na, b = b, a\nprint(a, b)",
-    "output": "2 1\n"
+    "code": "a, b, c = 1, 2, 3\na, c = c, a\nprint(a, b, c)",
+    "output": "3 2 1\n"
    }
   },
   {

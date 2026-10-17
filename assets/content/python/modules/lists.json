@@ -193,7 +193,7 @@
    "prompt": "Какие вызовы меняют список nums и возвращают None?",
    "topic": "list_methods",
    "difficulty": 2,
-   "hint": "sorted и + создают новые списки, copy — тоже.",
+   "hint": "Какие вызовы возвращают новый список, а какие меняют сам nums?",
    "explanation": "sort, append и reverse изменяют сам список и возвращают None. sorted, copy и + возвращают новые списки.",
    "payload": {
     "options": [
@@ -241,6 +241,37 @@
    }
   },
   {
+   "id": "py_list_010",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Размноженный список",
+   "prompt": "Что выведет код?",
+   "topic": "list_mutable",
+   "difficulty": 3,
+   "hint": "* 2 повторяет ссылку на один и тот же внутренний список.",
+   "explanation": "Внешний список содержит две ссылки на один и тот же список [0, 0]. Изменение через m[0] видно и через m[1]: [[1, 0], [1, 0]].",
+   "code": "m = [[0] * 2] * 2\nm[0][0] = 1\nprint(m)",
+   "payload": {
+    "options": [
+     "[[1, 0], [0, 0]]",
+     "[[1, 0], [1, 0]]",
+     "[[1, 1], [0, 0]]",
+     "TypeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Внутренний список один на двоих: изменение видно в обеих строках.",
+     "",
+     "Меняется только элемент с индексом 0 внутреннего списка.",
+     "Список можно умножать на число, а элементы — менять."
+    ]
+   },
+   "solution": {
+    "code": "m = [[0] * 2] * 2\nm[0][0] = 1\nprint(m)",
+    "output": "[[1, 0], [1, 0]]\n"
+   }
+  },
+  {
    "id": "py_list_009",
    "type": "type_output",
    "role": "boss",
@@ -249,7 +280,7 @@
    "topic": "list_methods",
    "difficulty": 3,
    "hint": "Выполните операции по очереди на бумаге.",
-   "explanation": "После sort — [1, 3, 5, 8], insert(0, 0) — [0, 1, 3, 5, 8], pop() убирает и возвращает 8. 5 стоит на позиции 3.",
+   "explanation": "После sort — [1, 3, 5, 8], insert(0, 0) — [0, 1, 3, 5, 8], pop() убирает и возвращает 8. Число 5 имеет индекс 3.",
    "code": "nums = [5, 3, 8, 1]\nnums.sort()\nnums.insert(0, 0)\nlast = nums.pop()\nprint(nums, last, nums.index(5))",
    "payload": {
     "expectedOutput": "[0, 1, 3, 5] 8 3"

@@ -74,7 +74,9 @@
     const job = queue.shift();
     current = { id: job.id, timedOut: false, startedAt: Date.now() };
     if (interruptBuffer) Atomics.store(interruptBuffer, 0, 0);
-    worker.postMessage({ type: 'run', id: job.id, code: job.code, stdin: job.stdin || '' });
+    worker.postMessage({
+      type: 'run', id: job.id, code: job.code, stdin: job.stdin || '', quietInput: !!job.quietInput,
+    });
     const limit = Math.max(500, job.timeoutMs || 5000);
     current.softTimer = setTimeout(function () {
       if (!current || current.id !== job.id) return;

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../../level/engine/validators/type_output_validator.dart';
 import 'python_runner.dart';
 
@@ -15,6 +17,8 @@ class PracticeTask {
     required this.solution,
     this.hint,
     this.difficulty = 1,
+    this.requires = const {},
+    this.checker,
   }) : tests = List.unmodifiable(tests);
 
   final String id;
@@ -28,6 +32,14 @@ class PracticeTask {
   final String solution;
   final String? hint;
   final int difficulty;
+
+  /// How the code must be written (recursion, a class, no loops...), in
+  /// the format of tool/content/requirements_checker.py.
+  final Map<String, Object?> requires;
+
+  /// Source of the requirement checker (a Python program), shared by all
+  /// tasks of the course. Null: requirements are not checked.
+  final String? checker;
 }
 
 class PracticeTest {
@@ -49,7 +61,24 @@ class TestOutcome {
   final bool passed;
 }
 
-/// Runs a task's tests against the player's code.
+/// Result of checking a solution: requirement problems (how the code is
+/// written) and test outcomes (what it prints).
+class PracticeReport {
+  const PracticeReport({this.problems = const [], this.outcomes = const []});
+
+  /// Requirements the code breaks, in plain Russian. Tests are not run
+  /// when this is not empty.
+  final List<String> problems;
+  final List<TestOutcome> outcomes;
+
+  bool passedAll(PracticeTask task) =>
+      problems.isEmpty &&
+      outcomes.length == task.tests.length &&
+      outcomes.every((outcome) => outcome.passed);
+}
+
+/// Runs a task's checks against the player's code: first the requirements
+/// (in Python, by the checker from the content), then every test.
 class PracticeChecker {
   const PracticeChecker(this._runner);
 
@@ -57,11 +86,40 @@ class PracticeChecker {
 
   static const Duration testTimeout = Duration(seconds: 5);
 
-  Future<List<TestOutcome>> check(PracticeTask task, String code) async {
+  Future<PracticeReport> check(PracticeTask task, String code) async {
+    final problems = await requirementProblems(task, code);
+    if (problems.isNotEmpty) return PracticeReport(problems: problems);
+    return PracticeReport(outcomes: await runTests(task, code));
+  }
+
+  /// Empty when the code is written as the task asks (or nothing to check).
+  Future<List<String>> requirementProblems(PracticeTask task, String code) async {
+    final checker = task.checker;
+    if (checker == null || task.requires.isEmpty) return const [];
+    final result = await _runner.run(
+      checker,
+      stdin: jsonEncode({'code': code, 'requires': task.requires}),
+      timeout: testTimeout,
+    );
+    if (!result.isOk) return const []; // A checker failure never blocks the player.
+    try {
+      final decoded = jsonDecode(result.stdout.trim());
+      if (decoded is List) return decoded.whereType<String>().toList();
+    } on FormatException {
+      return const [];
+    }
+    return const [];
+  }
+
+  Future<List<TestOutcome>> runTests(PracticeTask task, String code) async {
     final outcomes = <TestOutcome>[];
     for (final test in task.tests) {
-      final result =
-          await _runner.run(code, stdin: test.stdin, timeout: testTimeout);
+      final result = await _runner.run(
+        code,
+        stdin: test.stdin,
+        timeout: testTimeout,
+        echoInputPrompt: false,
+      );
       final passed = result.isOk &&
           OutputText.differentLines(
             expected: test.expected,

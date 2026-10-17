@@ -33,6 +33,10 @@ class PracticeRepository {
 
   static List<PracticeTask> parseTasks(Map<String, dynamic> json) {
     final result = <PracticeTask>[];
+    final checker = switch (json['checker']) {
+      final String source when source.trim().isNotEmpty => source,
+      _ => null,
+    };
     for (final task in JsonReader(json).requireObjectList('tasks')) {
       try {
         result.add(
@@ -45,6 +49,11 @@ class PracticeRepository {
             solution: task.requireString('solution'),
             hint: task.optionalString('hint'),
             difficulty: task.optionalInt('difficulty') ?? 1,
+            requires: switch (task.raw['requires']) {
+              final Map<String, dynamic> map => Map.unmodifiable(map),
+              _ => const {},
+            },
+            checker: checker,
             tests: [
               for (final test in task.requireObjectList('tests'))
                 PracticeTest(

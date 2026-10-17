@@ -167,6 +167,7 @@ class PyodideRunner implements PythonRunner {
     String code, {
     String stdin = '',
     Duration timeout = const Duration(seconds: 5),
+    bool echoInputPrompt = true,
   }) async {
     try {
       await start();
@@ -186,6 +187,7 @@ class PyodideRunner implements PythonRunner {
       'id': id,
       'code': code,
       'stdin': stdin,
+      'quietInput': !echoInputPrompt,
       'timeoutMs': timeout.inMilliseconds,
     });
     try {

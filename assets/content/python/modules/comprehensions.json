@@ -5,31 +5,31 @@
    "id": "py_comp_001",
    "type": "predict_output",
    "role": "lesson",
-   "title": "Удвоение",
+   "title": "Утроение",
    "prompt": "Что выведет код?",
    "topic": "comp_list",
    "difficulty": 1,
-   "hint": "range(4) — 0, 1, 2, 3.",
-   "explanation": "Каждое число от 0 до 3 умножается на 2.",
-   "code": "print([x * 2 for x in range(4)])",
+   "hint": "range(1, 4) — 1, 2, 3.",
+   "explanation": "Каждое число от 1 до 3 умножается на 3.",
+   "code": "print([x * 3 for x in range(1, 4)])",
    "payload": {
     "options": [
-     "[2, 4, 6, 8]",
-     "[0, 2, 4, 6]",
-     "[0, 1, 2, 3]",
-     "[0, 2, 4, 6, 8]"
+     "[1, 2, 3]",
+     "[3, 6, 9]",
+     "[0, 3, 6]",
+     "[3, 6, 9, 12]"
     ],
     "correctIndex": 1,
     "optionFeedback": [
-     "range(4) начинается с 0.",
+     "Каждый x умножается на 3.",
      "",
-     "Каждый x умножается на 2.",
-     "В range(4) нет числа 4."
+     "range(1, 4) начинается с 1.",
+     "В range(1, 4) нет числа 4."
     ]
    },
    "solution": {
-    "code": "print([x * 2 for x in range(4)])",
-    "output": "[0, 2, 4, 6]\n"
+    "code": "print([x * 3 for x in range(1, 4)])",
+    "output": "[3, 6, 9]\n"
    }
   },
   {
@@ -206,6 +206,37 @@
    "solution": {
     "code": "nums = [3, -1, 5]\nresult = [x if x > 0 else 0 for x in nums]\nprint(result)",
     "output": "[3, 0, 5]\n"
+   }
+  },
+  {
+   "id": "py_comp_009",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Одноразовый генератор",
+   "prompt": "Что выведет код?",
+   "topic": "comp_dict_set",
+   "difficulty": 3,
+   "hint": "Генераторное выражение выдаёт значения один раз.",
+   "explanation": "Первый sum забирает все значения 0 + 1 + 4 + 9 = 14. Генератор исчерпан, второй sum получает пустую последовательность — 0.",
+   "code": "g = (x * x for x in range(4))\nprint(sum(g), sum(g))",
+   "payload": {
+    "options": [
+     "14 14",
+     "14 0",
+     "0 14",
+     "TypeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Генератор нельзя пройти второй раз: он уже исчерпан.",
+     "",
+     "Первым считается первый sum — он получает все значения.",
+     "sum принимает генератор, ошибки нет."
+    ]
+   },
+   "solution": {
+    "code": "g = (x * x for x in range(4))\nprint(sum(g), sum(g))",
+    "output": "14 0\n"
    }
   },
   {

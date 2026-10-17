@@ -143,27 +143,48 @@
    "prompt": "Что выведет код?",
    "topic": "dict_basics",
    "difficulty": 2,
-   "hint": "Ключи в словаре уникальны.",
-   "explanation": "Второе значение для того же ключа перезаписывает первое.",
-   "code": "d = {\"x\": 1, \"x\": 2}\nprint(d)",
+   "hint": "Ключи в словаре уникальны. Где окажется перезаписанный ключ?",
+   "explanation": "Второе значение для ключа «a» перезаписывает первое, но ключ остаётся на своём первоначальном месте.",
+   "code": "d = {\"a\": 1, \"b\": 2, \"a\": 3}\nprint(d)",
    "payload": {
     "options": [
-     "{'x': 1}",
-     "{'x': 1, 'x': 2}",
-     "{'x': 2}",
+     "{'a': 1, 'b': 2}",
+     "{'a': 3, 'b': 2}",
+     "{'b': 2, 'a': 3}",
      "SyntaxError"
     ],
-    "correctIndex": 2,
+    "correctIndex": 1,
     "optionFeedback": [
-     "Последнее значение для ключа побеждает.",
-     "Одинаковых ключей в словаре не бывает.",
+     "Последнее значение для ключа побеждает: a = 3.",
      "",
+     "Перезапись значения не переносит ключ в конец: он остаётся первым.",
      "Это корректный код: ключ просто перезаписывается."
     ]
    },
    "solution": {
-    "code": "d = {\"x\": 1, \"x\": 2}\nprint(d)",
-    "output": "{'x': 2}\n"
+    "code": "d = {\"a\": 1, \"b\": 2, \"a\": 3}\nprint(d)",
+    "output": "{'a': 3, 'b': 2}\n"
+   }
+  },
+  {
+   "id": "py_dict_009",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Удаление на ходу",
+   "prompt": "Нужно удалить товары с нулевой ценой. Найдите строку с ошибкой",
+   "topic": "dict_methods",
+   "difficulty": 3,
+   "hint": "Можно ли менять размер словаря, пока по нему идёт цикл?",
+   "explanation": "Удаление ключа во время перебора словаря вызывает RuntimeError: dictionary changed size during iteration. list(prices) делает копию ключей, и перебор идёт по ней.",
+   "code": "prices = {\"чай\": 0, \"кофе\": 5, \"сок\": 0}\nfor name in prices:\n    if prices[name] == 0:\n        del prices[name]\nprint(prices)",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "prices = {\"чай\": 0, \"кофе\": 5, \"сок\": 0}\nfor name in list(prices):\n    if prices[name] == 0:\n        del prices[name]\nprint(prices)",
+    "output": "{'кофе': 5}\n"
    }
   },
   {

@@ -223,10 +223,14 @@ def order(level_id, title, prompt, lines, *, topic, hint, explanation, role="pra
 
 
 def bug(level_id, title, code, fixes, *, topic, hint, explanation, prompt="Найдите строку с ошибкой",
-        expect_error=None, role="challenge", difficulty=2):
+        expect_error=None, role="challenge", difficulty=2, alt_fixes=None):
     """Bug finder. `fixes` maps buggy line index -> fixed line. The code
     must fail (raise `expect_error`, or print something other than the
-    fixed program) and the fixed program must run."""
+    fixed program) and the fixed program must run.
+
+    `alt_fixes` maps OTHER line indexes to plausible edits a player might
+    think of; each of them alone must NOT repair the program — otherwise
+    the level would reject a player who found a real fix elsewhere."""
     code = dedent(code)
     lines = code.split("\n")
     fixed_lines = list(lines)
@@ -243,6 +247,12 @@ def bug(level_id, title, code, fixes, *, topic, hint, explanation, prompt="На�
                                              buggy.message)
     else:
         assert buggy.ok and buggy.out != good.out, (level_id, "bug does not show", buggy.out)
+    for index, edit in (alt_fixes or {}).items():
+        assert index not in fixes, (level_id, "alt fix on a buggy line", index)
+        patched = list(lines)
+        patched[index] = edit
+        other = run("\n".join(patched))
+        assert not (other.ok and other.out == good.out), (level_id, "another line fixes it too", index)
     # Each buggy line matters: fixing all but one keeps the program broken.
     if len(fixes) > 1:
         for skip in fixes:
@@ -335,41 +345,57 @@ def topic(topic_id, title, summary, body, examples, pitfalls=()):
     for item in examples:
         code, note = item[0], item[1]
         flags = item[2] if len(item) > 2 else {}
-        assert set(flags) <= {"native_only"}, (topic_id, "unknown flags", flags)
+        assert set(flags) <= {"native_only", "stdin"}, (topic_id, "unknown flags", flags)
         code = dedent(code)
-        result = run(code)
+        result = run(code, flags.get("stdin", ""))
         assert result.ok, (topic_id, "example fails", result.error, result.message, code)
         example = dict(code=code, output=result.out)
         if note:
             example["note"] = note
         if flags.get("native_only"):
             example["nativeOnly"] = True
+        if flags.get("stdin"):
+            example["stdin"] = flags["stdin"]
         built.append(example)
     assert built, (topic_id, "a topic needs an example")
     return dict(id=topic_id, title=title, summary=summary, body=dedent(body),
                 examples=built, pitfalls=list(pitfalls))
 
 
-def task(task_id, title, prompt, *, solution, tests, starter="", hint=None, difficulty=1):
+def task(task_id, title, prompt, *, solution, tests, starter="", hint=None, difficulty=1,
+         requires=None):
     """A coding exercise. Expected outputs are computed from the solution.
-    The starter must not pass, and the tests must not share one output (so
-    printing a constant can't pass)."""
+
+    * at least 4 tests, not all with the same output (printing a constant
+      can't pass);
+    * `requires` (see requirements_checker.py) states how the code must be
+      written — recursion, a class, no loops...; the app checks it before
+      running the tests, so an answer that only prints the right text fails;
+    * the reference solution must satisfy everything, the starter must not.
+    """
+    import requirements_checker
     solution = dedent(solution)
     starter = dedent(starter)
+    requires = requires or {}
+    requirements_checker.validate_spec(requires)
+    problems = requirements_checker.check(solution, requires)
+    assert not problems, (task_id, "solution breaks its own requirements", problems)
     built = []
     for stdin in tests:
         result = run(solution, stdin)
         assert result.ok, (task_id, "solution fails", stdin, result.error, result.message)
         assert result.out.strip(), (task_id, "solution prints nothing", stdin)
         built.append(dict(stdin=stdin, expected=result.out))
-    assert len(built) >= 3, (task_id, "need at least 3 tests")
+    assert len(built) >= 4, (task_id, "need at least 4 tests")
     assert len({test["expected"] for test in built}) >= 2, (task_id, "all tests print the same")
-    starter_passes = all(
+    starter_passes = not requirements_checker.check(starter, requires) and all(
         run(starter, test["stdin"]).ok and run(starter, test["stdin"]).out == test["expected"]
         for test in built)
     assert not starter_passes, (task_id, "starter already passes")
     item = dict(id=task_id, title=title, prompt=prompt, starter=starter, solution=solution,
                 tests=built, difficulty=difficulty)
+    if requires:
+        item["requires"] = requires
     if hint:
         item["hint"] = hint
     return item

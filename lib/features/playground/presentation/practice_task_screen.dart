@@ -25,7 +25,7 @@ class PracticeTaskScreen extends ConsumerStatefulWidget {
 
 class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
   TextEditingController? _code;
-  List<TestOutcome>? _outcomes;
+  PracticeReport? _report;
   RunResult? _lastRun;
   bool _checking = false;
   bool _showSolution = false;
@@ -49,15 +49,13 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
     FocusScope.of(context).unfocus();
     setState(() {
       _checking = true;
-      _outcomes = null;
+      _report = null;
       _lastRun = null;
     });
-    final outcomes = await PracticeChecker(ref.read(pythonRunnerProvider))
+    final report = await PracticeChecker(ref.read(pythonRunnerProvider))
         .check(task, _code!.text);
     if (!mounted) return;
-    final passed =
-        outcomes.length == task.tests.length && outcomes.every((o) => o.passed);
-    if (passed) {
+    if (report.passedAll(task)) {
       final courseId = await ref.read(activeCourseIdProvider.future);
       await ref.read(practiceRepositoryProvider).markSolved(courseId, task.id);
       ref.read(progressRevisionProvider.notifier).bump();
@@ -65,7 +63,7 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
     if (!mounted) return;
     setState(() {
       _checking = false;
-      _outcomes = outcomes;
+      _report = report;
     });
   }
 
@@ -80,7 +78,7 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
     setState(() {
       _checking = false;
       _lastRun = result;
-      _outcomes = null;
+      _report = null;
     });
   }
 
@@ -102,10 +100,9 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
       );
     }
     final code = _code ??= TextEditingController(text: task.starter);
-    final outcomes = _outcomes;
-    final passedAll = outcomes != null &&
-        outcomes.length == task.tests.length &&
-        outcomes.every((outcome) => outcome.passed);
+    final report = _report;
+    final outcomes = report?.outcomes;
+    final passedAll = report != null && report.passedAll(task);
     return Scaffold(
       appBar: AppBar(title: Text(task.title)),
       body: ListView(
@@ -128,6 +125,13 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
               ),
             ),
           Text(task.prompt, style: textTheme.bodyLarge),
+          const SizedBox(height: Spacing.sm),
+          Text(
+            'Проверка запускает программу на нескольких тестах: первый показан '
+            'ниже, остальные откроются, если не пройдут. Подсказка в input() '
+            'на проверку не влияет.',
+            style: textTheme.bodySmall?.copyWith(color: game.textMuted),
+          ),
           const SizedBox(height: Spacing.md),
           _ExampleTest(test: task.tests.first),
           const SizedBox(height: Spacing.lg),
@@ -161,7 +165,27 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
             const SizedBox(height: Spacing.sm),
             RunOutputView(result: _lastRun!),
           ],
-          if (outcomes != null) ...[
+          if (report != null && report.problems.isNotEmpty) ...[
+            const SizedBox(height: Spacing.xl),
+            Text(
+              'Решение написано не так, как требует задача',
+              style: textTheme.titleMedium?.copyWith(color: game.error),
+            ),
+            const SizedBox(height: Spacing.sm),
+            for (final problem in report.problems)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Spacing.xs),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.rule_rounded, size: 20, color: game.error),
+                    const SizedBox(width: Spacing.sm),
+                    Expanded(child: Text(problem, style: textTheme.bodyMedium)),
+                  ],
+                ),
+              ),
+          ],
+          if (outcomes != null && outcomes.isNotEmpty) ...[
             const SizedBox(height: Spacing.xl),
             Text(
               passedAll
@@ -197,7 +221,7 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
             const SizedBox(height: Spacing.sm),
             CodeBlock(code: task.solution),
           ] else if (solved.contains(task.id) ||
-              (outcomes != null && !passedAll))
+              (report != null && !passedAll))
             AppButton(
               label: 'Показать эталонное решение',
               variant: AppButtonVariant.quiet,

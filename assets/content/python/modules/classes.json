@@ -1,0 +1,274 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_cls_001",
+   "type": "multiple_choice",
+   "role": "lesson",
+   "title": "Кто такой self",
+   "prompt": "Что такое self в методе класса?",
+   "topic": "oop_class",
+   "difficulty": 1,
+   "hint": "При вызове d.bark() Python сам передаёт d первым аргументом.",
+   "explanation": "self — ссылка на конкретный объект, у которого вызвали метод. Через него метод читает и меняет атрибуты этого объекта.",
+   "payload": {
+    "options": [
+     "Имя класса",
+     "Объект, у которого вызван метод",
+     "Глобальная переменная",
+     "Ключевое слово для создания класса"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Класс передаётся в cls у методов класса. self — это объект.",
+     "",
+     "self — обычный параметр метода, первый по счёту.",
+     "Класс создаёт class. self — даже не ключевое слово, а соглашение об имени."
+    ]
+   }
+  },
+  {
+   "id": "py_cls_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Первый класс",
+   "prompt": "Что выведет код?",
+   "topic": "oop_class",
+   "difficulty": 1,
+   "hint": "В self.name сохранено имя, переданное при создании.",
+   "explanation": "Dog(\"Рекс\") вызывает __init__ и сохраняет «Рекс» в self.name. bark подставляет его в строку.",
+   "code": "class Dog:\n    def __init__(self, name):\n        self.name = name\n\n    def bark(self):\n        return f\"{self.name}: Гав!\"\n\nd = Dog(\"Рекс\")\nprint(d.bark())",
+   "payload": {
+    "options": [
+     "Рекс: Гав!",
+     "Dog: Гав!",
+     "name: Гав!",
+     "TypeError"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "self.name — имя объекта, а не класса.",
+     "f-строка подставляет значение self.name, а не его название.",
+     "d.bark() передаёт d как self автоматически, аргументы совпадают."
+    ]
+   },
+   "solution": {
+    "code": "class Dog:\n    def __init__(self, name):\n        self.name = name\n\n    def bark(self):\n        return f\"{self.name}: Гав!\"\n\nd = Dog(\"Рекс\")\nprint(d.bark())",
+    "output": "Рекс: Гав!\n"
+   }
+  },
+  {
+   "id": "py_cls_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Первый параметр",
+   "prompt": "Допишите первый параметр __init__",
+   "topic": "oop_class",
+   "difficulty": 1,
+   "hint": "Внутри метода используется имя self.",
+   "explanation": "Первый параметр получает создаваемый объект. Тело метода обращается к нему как self, значит параметр должен так называться.",
+   "payload": {
+    "template": "class Counter:\n    def __init__({{0}}):\n        self.value = 0\n\n    def inc(self):\n        self.value += 1\n\nc = Counter()\nc.inc()\nc.inc()\nprint(c.value)",
+    "options": [
+     "self",
+     "this",
+     "",
+     "cls"
+    ],
+    "answers": [
+     "self"
+    ],
+    "variantResults": {
+     "this": "NameError: name 'self' is not defined",
+     "": "TypeError: Counter.__init__() takes 0 positional arguments but 1 was given",
+     "cls": "NameError: name 'self' is not defined"
+    }
+   },
+   "solution": {
+    "code": "class Counter:\n    def __init__(self):\n        self.value = 0\n\n    def inc(self):\n        self.value += 1\n\nc = Counter()\nc.inc()\nc.inc()\nprint(c.value)",
+    "output": "2\n"
+   }
+  },
+  {
+   "id": "py_cls_004",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Два счёта",
+   "prompt": "Напишите, что выведет код",
+   "topic": "oop_class",
+   "difficulty": 2,
+   "hint": "У каждого объекта свой balance.",
+   "explanation": "a начинает с 0 и получает 50; b начинает со 100 и получает 25.",
+   "code": "class Account:\n    def __init__(self, owner, balance=0):\n        self.owner = owner\n        self.balance = balance\n\n    def deposit(self, amount):\n        self.balance += amount\n\na = Account(\"Ada\")\nb = Account(\"Bob\", 100)\na.deposit(50)\nb.deposit(25)\nprint(a.owner, a.balance)\nprint(b.owner, b.balance)",
+   "payload": {
+    "expectedOutput": "Ada 50\nBob 125"
+   },
+   "solution": {
+    "code": "class Account:\n    def __init__(self, owner, balance=0):\n        self.owner = owner\n        self.balance = balance\n\n    def deposit(self, amount):\n        self.balance += amount\n\na = Account(\"Ada\")\nb = Account(\"Bob\", 100)\na.deposit(50)\nb.deposit(25)\nprint(a.owner, a.balance)\nprint(b.owner, b.balance)",
+    "output": "Ada 50\nBob 125\n"
+   }
+  },
+  {
+   "id": "py_cls_005",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Потерянный self",
+   "prompt": "Найдите строку с ошибкой",
+   "topic": "oop_class",
+   "difficulty": 2,
+   "hint": "Как метод получает доступ к атрибутам объекта?",
+   "explanation": "r — параметр __init__, он существует только внутри __init__. В area радиус доступен как self.r, иначе NameError.",
+   "code": "class Circle:\n    def __init__(self, r):\n        self.r = r\n\n    def area(self):\n        return 3.14 * r * r\n\nprint(Circle(2).area())",
+   "payload": {
+    "buggyLines": [
+     5
+    ]
+   },
+   "solution": {
+    "code": "class Circle:\n    def __init__(self, r):\n        self.r = r\n\n    def area(self):\n        return 3.14 * self.r * self.r\n\nprint(Circle(2).area())",
+    "output": "12.56\n"
+   }
+  },
+  {
+   "id": "py_cls_006",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Атрибуты",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "oop_class_attrs",
+   "difficulty": 2,
+   "hint": "c.wheels = 3 создаёт атрибут объекта, класс не меняется.",
+   "explanation": "У объекта появился свой wheels = 3, а Car.wheels по-прежнему 4. type(c).__name__ — имя класса.",
+   "code": "class Car:\n    wheels = 4\n    def __init__(self, brand):\n        self.brand = brand\nc = Car(\"Lada\")\nc.wheels = 3",
+   "payload": {
+    "pairs": [
+     {
+      "left": "c.brand",
+      "right": "Lada"
+     },
+     {
+      "left": "c.wheels",
+      "right": "3"
+     },
+     {
+      "left": "Car.wheels",
+      "right": "4"
+     },
+     {
+      "left": "isinstance(c, Car)",
+      "right": "True"
+     },
+     {
+      "left": "type(c).__name__",
+      "right": "Car"
+     }
+    ]
+   },
+   "solution": {
+    "code": "class Car:\n    wheels = 4\n    def __init__(self, brand):\n        self.brand = brand\nc = Car(\"Lada\")\nc.wheels = 3\nprint(c.brand)\nprint(c.wheels)\nprint(Car.wheels)\nprint(isinstance(c, Car))\nprint(type(c).__name__)",
+    "output": "Lada\n3\n4\nTrue\nCar\n"
+   }
+  },
+  {
+   "id": "py_cls_007",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Общий список",
+   "prompt": "Что выведет код?",
+   "topic": "oop_class_attrs",
+   "difficulty": 3,
+   "hint": "Чей это список — класса или объекта?",
+   "explanation": "members объявлен в теле класса — это один список на все объекты. append через a меняет его, и b видит то же самое.",
+   "code": "class Team:\n    members = []\n\n    def add(self, name):\n        self.members.append(name)\n\na = Team()\nb = Team()\na.add(\"Ада\")\nprint(b.members)",
+   "payload": {
+    "options": [
+     "[]",
+     "AttributeError",
+     "['Ада', 'Ада']",
+     "['Ада']"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "У b нет своего списка: он видит общий список класса, в который a добавил «Ада».",
+     "Объект видит атрибуты класса.",
+     "Добавление было одно.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "class Team:\n    members = []\n\n    def add(self, name):\n        self.members.append(name)\n\na = Team()\nb = Team()\na.add(\"Ада\")\nprint(b.members)",
+    "output": "['Ада']\n"
+   }
+  },
+  {
+   "id": "py_cls_008",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Про __init__",
+   "prompt": "Какие утверждения верны?",
+   "topic": "oop_class",
+   "difficulty": 2,
+   "hint": "Попробуйте мысленно создать пустой класс class A: pass.",
+   "explanation": "__init__ только настраивает объект, который уже создан, и должен возвращать None. Класс без __init__ тоже можно создавать, а атрибуты можно добавлять в любой момент.",
+   "payload": {
+    "options": [
+     "__init__ вызывается автоматически при создании объекта",
+     "__init__ должен возвращать созданный объект",
+     "Атрибуты можно добавить объекту и вне __init__",
+     "Без __init__ объект создать нельзя",
+     "self — ссылка на текущий объект"
+    ],
+    "correctIndexes": [
+     0,
+     2,
+     4
+    ],
+    "optionFeedback": [
+     "",
+     "__init__ должен вернуть None, иначе TypeError.",
+     "",
+     "class A: pass — и A() отлично работает.",
+     ""
+    ]
+   }
+  },
+  {
+   "id": "py_cls_009",
+   "type": "code_ordering",
+   "role": "boss",
+   "title": "Босс: цепочка вызовов",
+   "prompt": "Соберите класс так, чтобы программа вывела 2",
+   "topic": "oop_class",
+   "difficulty": 3,
+   "hint": "push возвращает сам объект — поэтому вызовы можно сцепить.",
+   "explanation": "return self после append позволяет писать Stack().push(1).push(2): каждый push возвращает тот же стек.",
+   "payload": {
+    "lines": [
+     "class Stack:",
+     "    def __init__(self):",
+     "        self.items = []",
+     "    def push(self, x):",
+     "        self.items.append(x)",
+     "        return self",
+     "print(len(Stack().push(1).push(2).items))"
+    ],
+    "alternativeOrders": [
+     [
+      0,
+      3,
+      4,
+      5,
+      1,
+      2,
+      6
+     ]
+    ]
+   },
+   "solution": {
+    "code": "class Stack:\n    def __init__(self):\n        self.items = []\n    def push(self, x):\n        self.items.append(x)\n        return self\nprint(len(Stack().push(1).push(2).items))",
+    "output": "2\n"
+   }
+  }
+ ]
+}

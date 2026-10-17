@@ -11,10 +11,20 @@ let pyodide = null;
 // Runs user code as the file main.py with fresh globals; prints a
 // traceback without the runner's own frames.
 const RUNNER_PY = `
-import sys, traceback
+import builtins, sys, traceback
 
-def _bytecraft_run(code):
-    g = {"__name__": "__main__", "__builtins__": __builtins__}
+_bytecraft_input = builtins.input
+
+def _bytecraft_quiet_input(prompt=""):
+    # Like input(), but the prompt is not printed (practice tests).
+    line = sys.stdin.readline()
+    if not line:
+        raise EOFError("EOF when reading a line")
+    return line[:-1] if line.endswith("\n") else line
+
+def _bytecraft_run(code, quiet_input=False):
+    builtins.input = _bytecraft_quiet_input if quiet_input else _bytecraft_input
+    g = {"__name__": "__main__", "__builtins__": builtins}
     status = "ok"
     try:
         exec(compile(code, "main.py", "exec"), g)
@@ -86,7 +96,7 @@ function run(job) {
   let status;
   try {
     const runner = pyodide.globals.get('_bytecraft_run');
-    status = runner(job.code);
+    status = runner(job.code, !!job.quietInput);
     runner.destroy();
   } catch (error) {
     status = 'error';

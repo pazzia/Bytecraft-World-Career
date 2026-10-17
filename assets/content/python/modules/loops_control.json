@@ -9,58 +9,58 @@
    "prompt": "Что выведет код?",
    "topic": "loopx_break",
    "difficulty": 1,
-   "hint": "break завершает цикл сразу.",
-   "explanation": "Когда n стало 3, сработал break: 3 не добавилось и цикл закончился.",
-   "code": "result = []\nfor n in range(10):\n    if n == 3:\n        break\n    result.append(n)\nprint(result)",
+   "hint": "break завершает цикл сразу — даже текущий шаг не доделывается.",
+   "explanation": "Складываются 0, 1, 2 — это 3. Когда n стало 3, сработал break до total += n, и n так и осталось 3.",
+   "code": "total = 0\nfor n in range(10):\n    if n == 3:\n        break\n    total += n\nprint(total, n)",
    "payload": {
     "options": [
-     "[0, 1, 2]",
-     "[0, 1, 2, 3]",
-     "[3]",
-     "[0, 1, 2, 4, 5, 6, 7, 8, 9]"
+     "3 3",
+     "6 3",
+     "45 9",
+     "3 2"
     ],
     "correctIndex": 0,
     "optionFeedback": [
      "",
-     "break срабатывает до append, поэтому 3 не попадает в список.",
-     "",
-     "Так работал бы continue, а break завершает цикл."
+     "break срабатывает до total += n, поэтому 3 не прибавляется.",
+     "Так было бы без break: цикл прерывается на n = 3.",
+     "Переменная цикла сохраняет значение, на котором сработал break, — 3."
     ]
    },
    "solution": {
-    "code": "result = []\nfor n in range(10):\n    if n == 3:\n        break\n    result.append(n)\nprint(result)",
-    "output": "[0, 1, 2]\n"
+    "code": "total = 0\nfor n in range(10):\n    if n == 3:\n        break\n    total += n\nprint(total, n)",
+    "output": "3 3\n"
    }
   },
   {
    "id": "py_loopx_002",
    "type": "predict_output",
    "role": "lesson",
-   "title": "Пропуск чётных",
+   "title": "Пропуск кратных трём",
    "prompt": "Что выведет код?",
    "topic": "loopx_break",
    "difficulty": 1,
    "hint": "continue пропускает остаток шага.",
-   "explanation": "Чётные числа пропущены, складываются 1 + 3 + 5 = 9.",
-   "code": "total = 0\nfor n in range(6):\n    if n % 2 == 0:\n        continue\n    total += n\nprint(total)",
+   "explanation": "3 и 6 пропущены, складываются 1 + 2 + 4 + 5 + 7 = 19.",
+   "code": "total = 0\nfor n in range(1, 8):\n    if n % 3 == 0:\n        continue\n    total += n\nprint(total)",
    "payload": {
     "options": [
-     "6",
+     "28",
+     "19",
      "9",
-     "15",
      "0"
     ],
     "correctIndex": 1,
     "optionFeedback": [
-     "6 — сумма чётных 0 + 2 + 4, а их как раз пропускают.",
+     "28 — сумма всех чисел от 1 до 7, но кратные трём пропущены.",
      "",
-     "15 — сумма всех чисел, но чётные пропущены.",
-     "continue пропускает только чётные шаги."
+     "9 — это как раз пропущенные 3 + 6.",
+     "continue пропускает только кратные трём."
     ]
    },
    "solution": {
-    "code": "total = 0\nfor n in range(6):\n    if n % 2 == 0:\n        continue\n    total += n\nprint(total)",
-    "output": "9\n"
+    "code": "total = 0\nfor n in range(1, 8):\n    if n % 3 == 0:\n        continue\n    total += n\nprint(total)",
+    "output": "19\n"
    }
   },
   {
@@ -99,19 +99,19 @@
    "id": "py_loopx_004",
    "type": "type_output",
    "role": "practice",
-   "title": "Лесенка",
+   "title": "Лесенка вниз",
    "prompt": "Напишите, что выведет код",
-   "topic": "loopx_nested",
+   "topic": "loop_range",
    "difficulty": 2,
-   "hint": "\"*\" * i — строка из i звёздочек.",
-   "explanation": "На шагах i = 1, 2, 3 печатаются строки из одной, двух и трёх звёздочек.",
-   "code": "for i in range(1, 4):\n    print(\"*\" * i)",
+   "hint": "Шаг -1: i принимает значения 3, 2, 1. \"#\" * i — строка из i решёток.",
+   "explanation": "range(3, 0, -1) — это 3, 2, 1 (0 не входит). На каждом шаге печатается строка из i решёток.",
+   "code": "for i in range(3, 0, -1):\n    print(\"#\" * i)",
    "payload": {
-    "expectedOutput": "*\n**\n***"
+    "expectedOutput": "###\n##\n#"
    },
    "solution": {
-    "code": "for i in range(1, 4):\n    print(\"*\" * i)",
-    "output": "*\n**\n***\n"
+    "code": "for i in range(3, 0, -1):\n    print(\"#\" * i)",
+    "output": "###\n##\n#\n"
    }
   },
   {
@@ -234,6 +234,44 @@
    "solution": {
     "code": "total = 0\nfor i in range(1, 6):\n    total += i\nprint(total)",
     "output": "15\n"
+   }
+  },
+  {
+   "id": "py_loopx_011",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Таблица умножения",
+   "prompt": "Напишите, что выведет код",
+   "topic": "loopx_nested",
+   "difficulty": 2,
+   "hint": "Внутренний цикл собирает одну строку таблицы для каждого i.",
+   "explanation": "Для каждого i внутренний цикл проходит j = 1, 2, 3 и добавляет i · j. strip убирает лишний пробел в конце строки.",
+   "code": "for i in range(1, 4):\n    row = \"\"\n    for j in range(1, 4):\n        row += str(i * j) + \" \"\n    print(row.strip())",
+   "payload": {
+    "expectedOutput": "1 2 3\n2 4 6\n3 6 9"
+   },
+   "solution": {
+    "code": "for i in range(1, 4):\n    row = \"\"\n    for j in range(1, 4):\n        row += str(i * j) + \" \"\n    print(row.strip())",
+    "output": "1 2 3\n2 4 6\n3 6 9\n"
+   }
+  },
+  {
+   "id": "py_loopx_010",
+   "type": "type_output",
+   "role": "challenge",
+   "title": "while True и break",
+   "prompt": "Напишите, что выведет код",
+   "topic": "loopx_break",
+   "difficulty": 3,
+   "hint": "Чётное делим пополам, нечётное — 3n + 1. Считайте шаги до 1.",
+   "explanation": "6 → 3 → 10 → 5 → 16 → 8 → 4 → 2 → 1 — восемь шагов. while True повторяется бесконечно, пока break не прервёт цикл.",
+   "code": "n = 6\nsteps = 0\nwhile True:\n    if n == 1:\n        break\n    n = n // 2 if n % 2 == 0 else 3 * n + 1\n    steps += 1\nprint(steps)",
+   "payload": {
+    "expectedOutput": "8"
+   },
+   "solution": {
+    "code": "n = 6\nsteps = 0\nwhile True:\n    if n == 1:\n        break\n    n = n // 2 if n % 2 == 0 else 3 * n + 1\n    steps += 1\nprint(steps)",
+    "output": "8\n"
    }
   },
   {

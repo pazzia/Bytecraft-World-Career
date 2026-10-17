@@ -1,0 +1,267 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_dc_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Автоматический repr",
+   "prompt": "Что выведет код?",
+   "topic": "dc_basics",
+   "difficulty": 1,
+   "hint": "dataclass сам пишет __repr__ с именами полей.",
+   "explanation": "@dataclass создаёт __init__ (y по умолчанию 0) и __repr__ вида Point(x=3, y=0).",
+   "code": "from dataclasses import dataclass\n\n@dataclass\nclass Point:\n    x: int\n    y: int = 0\n\nprint(Point(3))",
+   "payload": {
+    "options": [
+     "Point(3)",
+     "(3, 0)",
+     "<Point object>",
+     "Point(x=3, y=0)"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "repr dataclass показывает все поля с именами.",
+     "Это не кортеж, а объект Point с понятным repr.",
+     "dataclass автоматически создаёт __repr__.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "from dataclasses import dataclass\n\n@dataclass\nclass Point:\n    x: int\n    y: int = 0\n\nprint(Point(3))",
+    "output": "Point(x=3, y=0)\n"
+   }
+  },
+  {
+   "id": "py_dc_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Равенство полей",
+   "prompt": "Что выведет код?",
+   "topic": "dc_basics",
+   "difficulty": 1,
+   "hint": "== сравнивает поля, is — один ли это объект.",
+   "explanation": "dataclass создаёт __eq__, сравнивающий поля, поэтому == даёт True. Но это два разных объекта: is — False.",
+   "code": "from dataclasses import dataclass\n\n@dataclass\nclass Point:\n    x: int\n    y: int\n\nprint(Point(1, 2) == Point(1, 2), Point(1, 2) is Point(1, 2))",
+   "payload": {
+    "options": [
+     "False False",
+     "True False",
+     "True True",
+     "False True"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "dataclass добавляет __eq__ по полям.",
+     "",
+     "Два вызова Point(...) создают два разных объекта.",
+     "Разные объекты не могут быть is-идентичны."
+    ]
+   },
+   "solution": {
+    "code": "from dataclasses import dataclass\n\n@dataclass\nclass Point:\n    x: int\n    y: int\n\nprint(Point(1, 2) == Point(1, 2), Point(1, 2) is Point(1, 2))",
+    "output": "True False\n"
+   }
+  },
+  {
+   "id": "py_dc_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Свой список у каждого",
+   "prompt": "Сделайте так, чтобы у каждой корзины был свой список",
+   "topic": "dc_basics",
+   "difficulty": 1,
+   "hint": "Нужна функция, которая создаёт новое значение для каждого объекта.",
+   "explanation": "default_factory=list вызывает list() для каждого нового объекта. default=list сделал бы значением сам тип list.",
+   "payload": {
+    "template": "from dataclasses import dataclass, field\n\n@dataclass\nclass Cart:\n    items: list = field({{0}}=list)\n\na, b = Cart(), Cart()\na.items.append(\"чай\")\nprint(len(a.items), len(b.items))",
+    "options": [
+     "default_factory",
+     "default",
+     "factory",
+     "init"
+    ],
+    "answers": [
+     "default_factory"
+    ],
+    "variantResults": {
+     "default": "TypeError: descriptor 'append' for 'list' objects doesn't apply to a 'str' object",
+     "factory": "TypeError: field() got an unexpected keyword argument 'factory'",
+     "init": "TypeError: Cart.__init__() missing 1 required positional argument: 'items'"
+    }
+   },
+   "solution": {
+    "code": "from dataclasses import dataclass, field\n\n@dataclass\nclass Cart:\n    items: list = field(default_factory=list)\n\na, b = Cart(), Cart()\na.items.append(\"чай\")\nprint(len(a.items), len(b.items))",
+    "output": "1 0\n"
+   }
+  },
+  {
+   "id": "py_dc_004",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Запрещённое значение",
+   "prompt": "Найдите строку с ошибкой",
+   "topic": "dc_basics",
+   "difficulty": 2,
+   "hint": "Можно ли в dataclass указать изменяемое значение по умолчанию?",
+   "explanation": "dataclass запрещает изменяемые значения по умолчанию (list, dict, set): ValueError при объявлении класса. Нужен field(default_factory=list).",
+   "code": "from dataclasses import dataclass, field\n\n@dataclass\nclass Team:\n    name: str\n    members: list = []\n\nprint(Team(\"A\").members)",
+   "payload": {
+    "buggyLines": [
+     5
+    ]
+   },
+   "solution": {
+    "code": "from dataclasses import dataclass, field\n\n@dataclass\nclass Team:\n    name: str\n    members: list = field(default_factory=list)\n\nprint(Team(\"A\").members)",
+    "output": "[]\n"
+   }
+  },
+  {
+   "id": "py_dc_005",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Сортировка версий",
+   "prompt": "Напишите, что выведет код",
+   "topic": "dc_basics",
+   "difficulty": 2,
+   "hint": "order=True сравнивает поля по очереди: сначала major, потом minor — как числа.",
+   "explanation": "Сравнение идёт как у кортежей (major, minor): (1, 10) > (1, 2) > (0, 9). Числа сравниваются численно, поэтому 1.10 больше 1.2.",
+   "code": "from dataclasses import dataclass\n\n@dataclass(order=True)\nclass Version:\n    major: int\n    minor: int\n\nvs = [Version(1, 10), Version(1, 2), Version(0, 9)]\nprint(max(vs))\nprint([f\"{v.major}.{v.minor}\" for v in sorted(vs)])",
+   "payload": {
+    "expectedOutput": "Version(major=1, minor=10)\n['0.9', '1.2', '1.10']"
+   },
+   "solution": {
+    "code": "from dataclasses import dataclass\n\n@dataclass(order=True)\nclass Version:\n    major: int\n    minor: int\n\nvs = [Version(1, 10), Version(1, 2), Version(0, 9)]\nprint(max(vs))\nprint([f\"{v.major}.{v.minor}\" for v in sorted(vs)])",
+    "output": "Version(major=1, minor=10)\n['0.9', '1.2', '1.10']\n"
+   }
+  },
+  {
+   "id": "py_dc_006",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Перечисление",
+   "prompt": "Что выведет код?",
+   "topic": "dc_enum",
+   "difficulty": 1,
+   "hint": "print элемента Enum показывает Класс.ИМЯ.",
+   "explanation": "str(Color.RED) — «Color.RED», name — «RED», value — 1, а Color(2) находит элемент по значению.",
+   "code": "from enum import Enum\n\nclass Color(Enum):\n    RED = 1\n    GREEN = 2\n\nprint(Color.RED, Color.RED.name, Color.RED.value, Color(2))",
+   "payload": {
+    "options": [
+     "Color.RED RED 1 Color.GREEN",
+     "RED RED 1 GREEN",
+     "1 RED 1 2",
+     "Color.RED red 1 Color.GREEN"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Элемент печатается вместе с именем класса: Color.RED.",
+     "print элемента показывает имя, а не значение.",
+     "name возвращает имя как в коде — заглавными."
+    ]
+   },
+   "solution": {
+    "code": "from enum import Enum\n\nclass Color(Enum):\n    RED = 1\n    GREEN = 2\n\nprint(Color.RED, Color.RED.name, Color.RED.value, Color(2))",
+    "output": "Color.RED RED 1 Color.GREEN\n"
+   }
+  },
+  {
+   "id": "py_dc_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Неизменяемый",
+   "prompt": "@dataclass(frozen=True) class P: x: int; p = P(1). Какие операции вызовут ошибку?",
+   "topic": "dc_basics",
+   "difficulty": 2,
+   "hint": "frozen запрещает менять объект, но не создавать новые.",
+   "explanation": "Присваивание и удаление атрибута у frozen-объекта дают FrozenInstanceError. Сравнение и хеш работают, а replace создаёт новый объект.",
+   "payload": {
+    "options": [
+     "p.x = 5",
+     "P(1) == P(1)",
+     "hash(P(1))",
+     "del p.x",
+     "replace(p, x=2)"
+    ],
+    "correctIndexes": [
+     0,
+     3
+    ],
+    "optionFeedback": [
+     "",
+     "Сравнение ничего не меняет — работает.",
+     "frozen dataclass как раз хешируемый.",
+     "",
+     "replace не меняет p, а создаёт новый объект."
+    ]
+   }
+  },
+  {
+   "id": "py_dc_008",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Enum изнутри",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "dc_enum",
+   "difficulty": 2,
+   "hint": "auto() нумерует с 1.",
+   "explanation": "auto даёт значения 1 и 2. Status['DONE'] ищет по имени, Status(1) — по значению; элементы Enum единственны, поэтому is даёт True.",
+   "code": "from enum import Enum, auto\nclass Status(Enum):\n    NEW = auto()\n    DONE = auto()",
+   "payload": {
+    "pairs": [
+     {
+      "left": "Status.NEW.value",
+      "right": "1"
+     },
+     {
+      "left": "Status['DONE']",
+      "right": "Status.DONE"
+     },
+     {
+      "left": "len(Status)",
+      "right": "2"
+     },
+     {
+      "left": "[s.name for s in Status]",
+      "right": "['NEW', 'DONE']"
+     },
+     {
+      "left": "Status.NEW is Status(1)",
+      "right": "True"
+     }
+    ]
+   },
+   "solution": {
+    "code": "from enum import Enum, auto\nclass Status(Enum):\n    NEW = auto()\n    DONE = auto()\nprint(Status.NEW.value)\nprint(Status['DONE'])\nprint(len(Status))\nprint([s.name for s in Status])\nprint(Status.NEW is Status(1))",
+    "output": "1\nStatus.DONE\n2\n['NEW', 'DONE']\nTrue\n"
+   }
+  },
+  {
+   "id": "py_dc_009",
+   "type": "code_ordering",
+   "role": "boss",
+   "title": "Босс: задачи по приоритету",
+   "prompt": "Соберите программу, которая выведет «тесты, код»",
+   "topic": "dc_basics",
+   "difficulty": 3,
+   "hint": "Порядок полей определяет порядок сравнения.",
+   "explanation": "order=True сравнивает сначала priority, затем title. Задача с приоритетом 1 идёт первой.",
+   "payload": {
+    "lines": [
+     "from dataclasses import dataclass",
+     "@dataclass(order=True)",
+     "class Task:",
+     "    priority: int",
+     "    title: str",
+     "tasks = sorted([Task(2, \"код\"), Task(1, \"тесты\")])",
+     "print(\", \".join(t.title for t in tasks))"
+    ]
+   },
+   "solution": {
+    "code": "from dataclasses import dataclass\n@dataclass(order=True)\nclass Task:\n    priority: int\n    title: str\ntasks = sorted([Task(2, \"код\"), Task(1, \"тесты\")])\nprint(\", \".join(t.title for t in tasks))",
+    "output": "тесты, код\n"
+   }
+  }
+ ]
+}

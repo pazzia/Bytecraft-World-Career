@@ -5,31 +5,31 @@
    "id": "py_rec_001",
    "type": "predict_output",
    "role": "lesson",
-   "title": "Факториал",
+   "title": "Сумма степеней",
    "prompt": "Что выведет код?",
    "topic": "rec_basics",
    "difficulty": 1,
-   "hint": "5! = 5 · 4 · 3 · 2 · 1.",
-   "explanation": "factorial(5) = 5 · factorial(4) = … = 5 · 4 · 3 · 2 · 1 · 1 = 120.",
-   "code": "def factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n - 1)\n\nprint(factorial(5))",
+   "hint": "total(4) = 16 + total(3) = 16 + 9 + total(2) …",
+   "explanation": "total(4) = 4² + 3² + 2² + 1² + 0 = 16 + 9 + 4 + 1 = 30.",
+   "code": "def total(n):\n    if n == 0:\n        return 0\n    return n * n + total(n - 1)\n\nprint(total(4))",
    "payload": {
     "options": [
-     "15",
-     "24",
-     "120",
+     "10",
+     "16",
+     "30",
      "RecursionError"
     ],
     "correctIndex": 2,
     "optionFeedback": [
-     "Это сумма 1..5, а функция умножает.",
-     "Это 4!. Умножение начинается с n = 5.",
+     "Это сумма 1..4, а функция складывает квадраты.",
+     "16 — только первое слагаемое 4²; дальше рекурсия добавляет 3², 2², 1².",
      "",
      "Базовый случай n == 0 есть, и n уменьшается до него."
     ]
    },
    "solution": {
-    "code": "def factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n - 1)\n\nprint(factorial(5))",
-    "output": "120\n"
+    "code": "def total(n):\n    if n == 0:\n        return 0\n    return n * n + total(n - 1)\n\nprint(total(4))",
+    "output": "30\n"
    }
   },
   {
@@ -180,12 +180,12 @@
    "type": "multiple_choice",
    "role": "practice",
    "title": "Быстрый Фибоначчи",
-   "prompt": "Почему fib(80) с @lru_cache считается мгновенно, а без него — практически бесконечно?",
+   "prompt": "Почему fib(70) с @lru_cache считается мгновенно, а без него — практически бесконечно?",
    "topic": "rec_memo",
    "difficulty": 2,
    "hint": "Сколько раз без кэша вычисляется fib(2) при расчёте fib(30)?",
    "explanation": "Без кэша одни и те же fib(k) пересчитываются экспоненциально много раз. Кэш хранит готовые ответы, и вызовов становится порядка n.",
-   "code": "from functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\nprint(fib(80))",
+   "code": "from functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\nprint(fib(70))",
    "payload": {
     "options": [
      "lru_cache переписывает рекурсию в цикл",
@@ -197,13 +197,13 @@
     "optionFeedback": [
      "Рекурсия остаётся, просто повторные вызовы берут ответ из кэша.",
      "",
-     "Лимит не меняется: глубина fib(80) и так около 80.",
+     "Лимит не меняется: глубина fib(70) и так около 70.",
      "Кэш не распараллеливает вычисления, он их не повторяет."
     ]
    },
    "solution": {
-    "code": "from functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\nprint(fib(80))",
-    "output": "23416728348467685\n"
+    "code": "from functools import lru_cache\n\n@lru_cache(maxsize=None)\ndef fib(n):\n    return n if n < 2 else fib(n - 1) + fib(n - 2)\n\nprint(fib(70))",
+    "output": "190392490709135\n"
    }
   },
   {
@@ -236,7 +236,7 @@
    "type": "multi_select",
    "role": "practice",
    "title": "Где закончится рекурсия",
-   "prompt": "Какие функции завершатся при вызове f(5)?",
+   "prompt": "Какие вызовы f(5) вернут результат без ошибки?",
    "topic": "rec_basics",
    "difficulty": 2,
    "hint": "Проверьте, достигает ли шаг базового случая из n = 5.",
@@ -264,34 +264,65 @@
    }
   },
   {
-   "id": "py_rec_009",
+   "id": "py_rec_010",
    "type": "predict_output",
-   "role": "boss",
-   "title": "Босс: расплющить список",
+   "role": "challenge",
+   "title": "Без хвостовой оптимизации",
    "prompt": "Что выведет код?",
-   "topic": "rec_structures",
+   "topic": "rec_memo",
    "difficulty": 3,
-   "hint": "Каждый вложенный список обрабатывается той же функцией.",
-   "explanation": "flatten рекурсивно разворачивает любую глубину: extend добавляет элементы уже плоского подсписка.",
-   "code": "def flatten(items):\n    result = []\n    for x in items:\n        if isinstance(x, list):\n            result.extend(flatten(x))\n        else:\n            result.append(x)\n    return result\n\nprint(flatten([1, [2, [3, 4]], 5]))",
+   "hint": "Python не превращает хвостовой вызов в цикл: каждый вызов занимает место в стеке.",
+   "explanation": "count(100) работает. Глубже лимита рекурсии (sys.getrecursionlimit()) Python не пускает даже хвостовую рекурсию — RecursionError. Для таких задач нужен цикл.",
+   "code": "import sys\n\ndef count(n, acc=0):\n    return acc if n == 0 else count(n - 1, acc + 1)\n\nprint(count(100))\ntry:\n    count(sys.getrecursionlimit() + 10)\nexcept RecursionError:\n    print(\"RecursionError\")",
    "payload": {
     "options": [
-     "[1, [2, [3, 4]], 5]",
-     "[1, 2, 3, 4, 5]",
-     "[1, 2, [3, 4], 5]",
-     "[1, 5]"
+     "100\n0",
+     "100\nRecursionError",
+     "100",
+     "RecursionError"
     ],
     "correctIndex": 1,
     "optionFeedback": [
-     "Вложенные списки разворачиваются рекурсивным вызовом.",
+     "Рекурсия глубже лимита не возвращает результат — она падает с RecursionError.",
      "",
-     "Рекурсия обрабатывает вложенность любой глубины, а не только первый уровень.",
-     "Элементы вложенных списков добавляются через extend, они не теряются."
+     "Второй вызов превышает лимит глубины, и except печатает сообщение.",
+     "count(100) намного меньше лимита и успешно возвращает 100."
     ]
    },
    "solution": {
-    "code": "def flatten(items):\n    result = []\n    for x in items:\n        if isinstance(x, list):\n            result.extend(flatten(x))\n        else:\n            result.append(x)\n    return result\n\nprint(flatten([1, [2, [3, 4]], 5]))",
-    "output": "[1, 2, 3, 4, 5]\n"
+    "code": "import sys\n\ndef count(n, acc=0):\n    return acc if n == 0 else count(n - 1, acc + 1)\n\nprint(count(100))\ntry:\n    count(sys.getrecursionlimit() + 10)\nexcept RecursionError:\n    print(\"RecursionError\")",
+    "output": "100\nRecursionError\n"
+   }
+  },
+  {
+   "id": "py_rec_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: сумма вложенного словаря",
+   "prompt": "Что выведет код?",
+   "topic": "rec_structures",
+   "difficulty": 3,
+   "hint": "Словарь — сумма его значений, число — само число. Вложенные словари обрабатываются той же функцией.",
+   "explanation": "total проходит любую глубину вложенности: 1 + (2 + 3) + 4 = 10. Так обходят JSON и деревья настроек.",
+   "code": "def total(data):\n    if isinstance(data, dict):\n        return sum(total(v) for v in data.values())\n    return data\n\nprint(total({\"a\": 1, \"b\": {\"c\": 2, \"d\": {\"e\": 3}}, \"f\": 4}))",
+   "payload": {
+    "options": [
+     "5",
+     "10",
+     "1",
+     "TypeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "5 — это 1 + 4 без вложенных словарей, а рекурсия заходит и внутрь них.",
+     "",
+     "Складываются все числа на любой глубине.",
+     "Вложенный словарь не складывается напрямую: для него вызывается total, и он возвращает число."
+    ]
+   },
+   "solution": {
+    "code": "def total(data):\n    if isinstance(data, dict):\n        return sum(total(v) for v in data.values())\n    return data\n\nprint(total({\"a\": 1, \"b\": {\"c\": 2, \"d\": {\"e\": 3}}, \"f\": 4}))",
+    "output": "10\n"
    }
   }
  ]

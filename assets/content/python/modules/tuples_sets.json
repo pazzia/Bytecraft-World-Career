@@ -156,25 +156,25 @@
    "topic": "set_ops",
    "difficulty": 2,
    "hint": "| — все, & — общие, - — только из a, ^ — ровно в одном.",
-   "explanation": "Объединение 1–4, пересечение 2 и 3, разность — только 1, симметрическая разность 1 и 4; 3 есть в a.",
-   "code": "a = {1, 2, 3}\nb = {2, 3, 4}",
+   "explanation": "Объединение — все шесть чисел, пересечение — 3 и 5, разность — 1 и 7, симметрическая разность — 1, 4 и 7; 3 есть в a.",
+   "code": "a = {1, 3, 5, 7}\nb = {3, 4, 5}",
    "payload": {
     "pairs": [
      {
       "left": "sorted(a | b)",
-      "right": "[1, 2, 3, 4]"
+      "right": "[1, 3, 4, 5, 7]"
      },
      {
       "left": "sorted(a & b)",
-      "right": "[2, 3]"
+      "right": "[3, 5]"
      },
      {
       "left": "sorted(a - b)",
-      "right": "[1]"
+      "right": "[1, 7]"
      },
      {
       "left": "sorted(a ^ b)",
-      "right": "[1, 4]"
+      "right": "[1, 4, 7]"
      },
      {
       "left": "3 in a",
@@ -183,8 +183,8 @@
     ]
    },
    "solution": {
-    "code": "a = {1, 2, 3}\nb = {2, 3, 4}\nprint(sorted(a | b))\nprint(sorted(a & b))\nprint(sorted(a - b))\nprint(sorted(a ^ b))\nprint(3 in a)",
-    "output": "[1, 2, 3, 4]\n[2, 3]\n[1]\n[1, 4]\nTrue\n"
+    "code": "a = {1, 3, 5, 7}\nb = {3, 4, 5}\nprint(sorted(a | b))\nprint(sorted(a & b))\nprint(sorted(a - b))\nprint(sorted(a ^ b))\nprint(3 in a)",
+    "output": "[1, 3, 4, 5, 7]\n[3, 5]\n[1, 7]\n[1, 4, 7]\nTrue\n"
    }
   },
   {

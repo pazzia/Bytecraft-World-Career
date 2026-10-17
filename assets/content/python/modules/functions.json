@@ -226,6 +226,68 @@
    }
   },
   {
+   "id": "py_func_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Два результата",
+   "prompt": "Что выведет код?",
+   "topic": "func_def",
+   "difficulty": 2,
+   "hint": "return a, b возвращает кортеж из двух значений.",
+   "explanation": "min_max возвращает кортеж (min, max). В первом вызове он распаковывается в lo и hi, во втором печатается целиком: (2, 2).",
+   "code": "def min_max(nums):\n    return min(nums), max(nums)\n\nlo, hi = min_max([4, 1, 9])\nprint(lo, hi)\nprint(min_max([2]))",
+   "payload": {
+    "options": [
+     "1 9\n2",
+     "1 9\n[2, 2]",
+     "1 9\n(2, 2)",
+     "Ошибка"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Функция всегда возвращает пару значений, даже если они совпадают.",
+     "Значения через запятую образуют кортеж, а не список.",
+     "",
+     "Вернуть несколько значений через запятую — обычное дело."
+    ]
+   },
+   "solution": {
+    "code": "def min_max(nums):\n    return min(nums), max(nums)\n\nlo, hi = min_max([4, 1, 9])\nprint(lo, hi)\nprint(min_max([2]))",
+    "output": "1 9\n(2, 2)\n"
+   }
+  },
+  {
+   "id": "py_func_011",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Функция как значение",
+   "prompt": "Что выведет код?",
+   "topic": "func_def",
+   "difficulty": 2,
+   "hint": "twice вызывает переданную функцию два раза подряд.",
+   "explanation": "Функцию можно передать аргументом. inc(inc(5)) = 7. str.upper(str.upper(\"ok\")) = «OK».",
+   "code": "def twice(f, x):\n    return f(f(x))\n\ndef inc(n):\n    return n + 1\n\nprint(twice(inc, 5), twice(str.upper, \"ok\"))",
+   "payload": {
+    "options": [
+     "6 ok",
+     "7 OK",
+     "7 OKOK",
+     "TypeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "f вызывается дважды: f(f(x)).",
+     "",
+     "upper не повторяет строку, он делает буквы заглавными — дважды заглавными остаются те же.",
+     "Функцию можно передать как обычное значение и вызвать внутри."
+    ]
+   },
+   "solution": {
+    "code": "def twice(f, x):\n    return f(f(x))\n\ndef inc(n):\n    return n + 1\n\nprint(twice(inc, 5), twice(str.upper, \"ok\"))",
+    "output": "7 OK\n"
+   }
+  },
+  {
    "id": "py_func_009",
    "type": "predict_output",
    "role": "boss",

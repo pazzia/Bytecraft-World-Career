@@ -107,7 +107,10 @@ def main(out_dir):
             all_tasks.append(dict(task, module=module["id"]))
     write_json(os.path.join(out_dir, "course.json"), manifest)
     write_json(os.path.join(out_dir, "topics.json"), dict(schemaVersion=1, topics=all_topics))
-    write_json(os.path.join(out_dir, "practice.json"), dict(schemaVersion=1, tasks=all_tasks))
+    with open(os.path.join(HERE, "requirements_checker.py"), encoding="utf-8") as f:
+        checker = f.read()
+    write_json(os.path.join(out_dir, "practice.json"),
+               dict(schemaVersion=1, checker=checker, tasks=all_tasks))
     kinds = {}
     for module in modules:
         for level in module["levels"]:

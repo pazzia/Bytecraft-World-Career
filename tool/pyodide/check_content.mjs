@@ -45,12 +45,21 @@ for (const file of readdirSync(join(root, 'modules')).sort()) {
 for (const topic of read('topics.json').topics) {
   topic.examples.forEach((example, i) => {
     if (example.nativeOnly) return;
-    items.push({ id: `${topic.id}#${i + 1}`, code: example.code, stdin: '', expected: example.output });
+    items.push({ id: `${topic.id}#${i + 1}`, code: example.code, stdin: example.stdin || '', expected: example.output });
   });
 }
-for (const task of read('practice.json').tasks) {
+const practice = read('practice.json');
+for (const task of practice.tasks) {
   task.tests.forEach((test, i) => {
     items.push({ id: `${task.id}#${i + 1}`, code: task.solution, stdin: test.stdin, expected: test.expected });
+  });
+  // The requirement checker (run by the app before the tests) must accept
+  // the reference solution in Pyodide too.
+  items.push({
+    id: `${task.id}#requirements`,
+    code: practice.checker,
+    stdin: JSON.stringify({ code: task.solution, requires: task.requires || {} }),
+    expected: '[]\n',
   });
 }
 

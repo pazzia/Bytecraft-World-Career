@@ -1,0 +1,265 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_inh_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Переопределение",
+   "prompt": "Что выведет код?",
+   "topic": "inh_basics",
+   "difficulty": 1,
+   "hint": "У Fish нет своего speak — какой будет использован?",
+   "explanation": "Cat переопределяет speak. У Fish своего метода нет, и Python берёт метод родителя Animal.",
+   "code": "class Animal:\n    def speak(self):\n        return \"...\"\n\nclass Cat(Animal):\n    def speak(self):\n        return \"Мяу\"\n\nclass Fish(Animal):\n    pass\n\nprint(Cat().speak(), Fish().speak())",
+   "payload": {
+    "options": [
+     "Мяу Мяу",
+     "Мяу ...",
+     "Мяу",
+     "... ..."
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Fish наследует от Animal, а не от Cat.",
+     "",
+     "Fish().speak() тоже работает: метод унаследован.",
+     "Cat переопределяет speak и возвращает «Мяу»."
+    ]
+   },
+   "solution": {
+    "code": "class Animal:\n    def speak(self):\n        return \"...\"\n\nclass Cat(Animal):\n    def speak(self):\n        return \"Мяу\"\n\nclass Fish(Animal):\n    pass\n\nprint(Cat().speak(), Fish().speak())",
+    "output": "Мяу ...\n"
+   }
+  },
+  {
+   "id": "py_inh_002",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Вызов родителя",
+   "prompt": "Вызовите __init__ родителя",
+   "topic": "inh_basics",
+   "difficulty": 1,
+   "hint": "Функция, которая даёт доступ к методам родителя с уже привязанным self.",
+   "explanation": "super().__init__(name) вызывает Person.__init__ для текущего объекта. Person.__init__(name) не передаёт self, а self.__init__ вызвал бы Student.__init__ снова.",
+   "payload": {
+    "template": "class Person:\n    def __init__(self, name):\n        self.name = name\n\nclass Student(Person):\n    def __init__(self, name, group):\n        {{0}}.__init__(name)\n        self.group = group\n\ns = Student(\"Ада\", \"П-1\")\nprint(s.name, s.group)",
+    "options": [
+     "super()",
+     "self",
+     "Person",
+     "Student"
+    ],
+    "answers": [
+     "super()"
+    ],
+    "variantResults": {
+     "self": "TypeError: Student.__init__() missing 1 required positional argument: 'group'",
+     "Person": "TypeError: Person.__init__() missing 1 required positional argument: 'name'",
+     "Student": "TypeError: Student.__init__() missing 2 required positional arguments: 'name' and 'group'"
+    }
+   },
+   "solution": {
+    "code": "class Person:\n    def __init__(self, name):\n        self.name = name\n\nclass Student(Person):\n    def __init__(self, name, group):\n        super().__init__(name)\n        self.group = group\n\ns = Student(\"Ада\", \"П-1\")\nprint(s.name, s.group)",
+    "output": "Ада П-1\n"
+   }
+  },
+  {
+   "id": "py_inh_003",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Полиморфизм",
+   "prompt": "Напишите, что выведет код",
+   "topic": "inh_poly",
+   "difficulty": 2,
+   "hint": "Каждый класс считает площадь по-своему, Shape возвращает 0.",
+   "explanation": "Один и тот же вызов s.area() даёт разный результат: 3² = 9, π·1² ≈ 3.1, и 0 у базового класса.",
+   "code": "class Shape:\n    def area(self):\n        return 0\n\nclass Square(Shape):\n    def __init__(self, a):\n        self.a = a\n    def area(self):\n        return self.a ** 2\n\nclass Circle(Shape):\n    def __init__(self, r):\n        self.r = r\n    def area(self):\n        return round(3.14159 * self.r ** 2, 1)\n\nfor s in [Square(3), Circle(1), Shape()]:\n    print(type(s).__name__, s.area())",
+   "payload": {
+    "expectedOutput": "Square 9\nCircle 3.1\nShape 0"
+   },
+   "solution": {
+    "code": "class Shape:\n    def area(self):\n        return 0\n\nclass Square(Shape):\n    def __init__(self, a):\n        self.a = a\n    def area(self):\n        return self.a ** 2\n\nclass Circle(Shape):\n    def __init__(self, r):\n        self.r = r\n    def area(self):\n        return round(3.14159 * self.r ** 2, 1)\n\nfor s in [Square(3), Circle(1), Shape()]:\n    print(type(s).__name__, s.area())",
+    "output": "Square 9\nCircle 3.1\nShape 0\n"
+   }
+  },
+  {
+   "id": "py_inh_004",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Родство",
+   "prompt": "class A: ..., class B(A): ..., class C: .... Какие выражения истинны?",
+   "topic": "inh_poly",
+   "difficulty": 2,
+   "hint": "Объект подкласса — это и объект родителя, но не наоборот.",
+   "explanation": "B — подкласс A, поэтому объект B — это и A. Объект A не является B. Все классы — наследники object. C с A не связан.",
+   "payload": {
+    "options": [
+     "isinstance(B(), A)",
+     "isinstance(A(), B)",
+     "issubclass(B, A)",
+     "issubclass(A, object)",
+     "isinstance(C(), A)"
+    ],
+    "correctIndexes": [
+     0,
+     2,
+     3
+    ],
+    "optionFeedback": [
+     "",
+     "Наследование работает в одну сторону: A не знает про B.",
+     "",
+     "",
+     "C не наследует A."
+    ]
+   }
+  },
+  {
+   "id": "py_inh_005",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Забытый вызов",
+   "prompt": "Найдите строку с ошибкой",
+   "topic": "inh_basics",
+   "difficulty": 2,
+   "hint": "Base.__init__ без скобок — это вызов?",
+   "explanation": "Base.__init__ без скобок только упоминает функцию, но не вызывает её. Атрибут items не создаётся, и add падает с AttributeError. Нужно super().__init__().",
+   "code": "class Base:\n    def __init__(self):\n        self.items = []\n\nclass Log(Base):\n    def __init__(self, title):\n        Base.__init__\n        self.title = title\n\n    def add(self, x):\n        self.items.append(x)\n\nlog = Log(\"день\")\nlog.add(\"старт\")\nprint(log.title, log.items)",
+   "payload": {
+    "buggyLines": [
+     6
+    ]
+   },
+   "solution": {
+    "code": "class Base:\n    def __init__(self):\n        self.items = []\n\nclass Log(Base):\n    def __init__(self, title):\n        super().__init__()\n        self.title = title\n\n    def add(self, x):\n        self.items.append(x)\n\nlog = Log(\"день\")\nlog.add(\"старт\")\nprint(log.title, log.items)",
+    "output": "день ['старт']\n"
+   }
+  },
+  {
+   "id": "py_inh_006",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Наследуемый атрибут",
+   "prompt": "Что выведет код?",
+   "topic": "inh_basics",
+   "difficulty": 2,
+   "hint": "Child.color = ... создаёт атрибут у Child, Base не меняется.",
+   "explanation": "Сначала c видит color из Base. Присваивание Child.color создаёт свой атрибут подкласса, и c видит его, а у Base остаётся «red».",
+   "code": "class Base:\n    color = \"red\"\n\nclass Child(Base):\n    pass\n\nc = Child()\nprint(c.color)\nChild.color = \"blue\"\nprint(Base.color, c.color)",
+   "payload": {
+    "options": [
+     "red\nblue blue",
+     "red\nred blue",
+     "red\nred red",
+     "blue\nred blue"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Присваивание у Child не меняет атрибут Base.",
+     "",
+     "После Child.color = \"blue\" объект c видит атрибут своего класса.",
+     "Первый print выполняется до изменения."
+    ]
+   },
+   "solution": {
+    "code": "class Base:\n    color = \"red\"\n\nclass Child(Base):\n    pass\n\nc = Child()\nprint(c.color)\nChild.color = \"blue\"\nprint(Base.color, c.color)",
+    "output": "red\nred blue\n"
+   }
+  },
+  {
+   "id": "py_inh_007",
+   "type": "multiple_choice",
+   "role": "practice",
+   "title": "Абстрактный класс",
+   "prompt": "Что произойдёт при вызове Shape()?",
+   "topic": "inh_mro",
+   "difficulty": 2,
+   "hint": "Зачем методу пометка @abstractmethod?",
+   "explanation": "Класс с нереализованным абстрактным методом нельзя создать: TypeError. Его подклассы обязаны реализовать area.",
+   "code": "from abc import ABC, abstractmethod\n\nclass Shape(ABC):\n    @abstractmethod\n    def area(self): ...\n\ns = Shape()",
+   "payload": {
+    "options": [
+     "Создастся объект Shape",
+     "TypeError: абстрактный класс нельзя создать",
+     "NameError",
+     "Вернётся None"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "У Shape есть абстрактный метод — создать объект нельзя.",
+     "",
+     "Все имена импортированы и определены.",
+     "Вызов класса либо создаёт объект, либо вызывает исключение."
+    ]
+   }
+  },
+  {
+   "id": "py_inh_008",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Утиная типизация",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "inh_poly",
+   "difficulty": 2,
+   "hint": "play не проверяет тип, только вызывает sound.",
+   "explanation": "play работает с любым объектом, у которого есть sound. Robot не наследует Duck, но метод у него есть.",
+   "code": "class Duck:\n    def sound(self):\n        return \"кря\"\nclass Robot:\n    def sound(self):\n        return \"бип\"\ndef play(x):\n    return x.sound()",
+   "payload": {
+    "pairs": [
+     {
+      "left": "play(Duck())",
+      "right": "кря"
+     },
+     {
+      "left": "play(Robot())",
+      "right": "бип"
+     },
+     {
+      "left": "isinstance(Robot(), Duck)",
+      "right": "False"
+     },
+     {
+      "left": "hasattr(Robot(), 'sound')",
+      "right": "True"
+     }
+    ]
+   },
+   "solution": {
+    "code": "class Duck:\n    def sound(self):\n        return \"кря\"\nclass Robot:\n    def sound(self):\n        return \"бип\"\ndef play(x):\n    return x.sound()\nprint(play(Duck()))\nprint(play(Robot()))\nprint(isinstance(Robot(), Duck))\nprint(hasattr(Robot(), 'sound'))",
+    "output": "кря\nбип\nFalse\nTrue\n"
+   }
+  },
+  {
+   "id": "py_inh_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: порядок MRO",
+   "prompt": "Что выведет код?",
+   "topic": "inh_mro",
+   "difficulty": 4,
+   "hint": "Порядок поиска для D: D, B, C, A. super() идёт по этому порядку.",
+   "explanation": "MRO класса D — D, B, C, A. super() в B ведёт к C (следующему в MRO), а не к A. A вызывается один раз.",
+   "code": "class A:\n    def who(self):\n        return \"A\"\n\nclass B(A):\n    def who(self):\n        return \"B\" + super().who()\n\nclass C(A):\n    def who(self):\n        return \"C\" + super().who()\n\nclass D(B, C):\n    def who(self):\n        return \"D\" + super().who()\n\nprint(D().who())",
+   "payload": {
+    "options": [
+     "DBA",
+     "DCBA",
+     "DBACA",
+     "DBCA"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "super() в B вызывает следующий класс в MRO объекта D — это C.",
+     "B стоит в списке родителей первым: порядок D, B, C, A.",
+     "A входит в MRO один раз.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "class A:\n    def who(self):\n        return \"A\"\n\nclass B(A):\n    def who(self):\n        return \"B\" + super().who()\n\nclass C(A):\n    def who(self):\n        return \"C\" + super().who()\n\nclass D(B, C):\n    def who(self):\n        return \"D\" + super().who()\n\nprint(D().who())",
+    "output": "DBCA\n"
+   }
+  }
+ ]
+}

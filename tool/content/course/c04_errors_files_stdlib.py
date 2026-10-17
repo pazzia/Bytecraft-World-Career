@@ -111,8 +111,9 @@ MODULES.append(dict(
                 for _ in range(n):
                     a, b = input().split()
                     print(round(float(a) / float(b), 2))""",
-             tests=["2\n1 4\n10 3\n", "3\n5 0\nx 2\n9 3\n", "1\n7 abc\n"],
-             hint="Два блока except: для ZeroDivisionError и для ValueError.", difficulty=2),
+             tests=["2\n1 4\n10 3\n", "3\n5 0\nx 2\n9 3\n", "1\n7 abc\n", "2\n-9 2\n0 0\n"],
+             hint="Два блока except: для ZeroDivisionError и для ValueError.", difficulty=2,
+             requires=dict(uses=["try"])),
     ],
     levels=[
         predict("py_exc_001", "Перехват", """\
@@ -290,8 +291,9 @@ MODULES.append(dict(
                         f.write(input() + "\\n")
                 with open("lines.txt", encoding="utf-8") as f:
                     print(f.read())""",
-             tests=["3\nраз\nдва\nтри\n", "1\nодин\n", "2\nab\ncd\n"],
-             hint="Прочитанные строки содержат \\n в конце — уберите его через rstrip.", difficulty=2),
+             tests=["3\nраз\nдва\nтри\n", "1\nодин\n", "2\nab\ncd\n", "4\n1\n2\n3\n4\n"],
+             hint="Прочитанные строки содержат \\n в конце — уберите его через rstrip.", difficulty=2,
+             requires=dict(uses=["with"])),
     ],
     levels=[
         choice("py_files_001", "Режим «a»", "Что делает режим \"a\" в open(\"log.txt\", \"a\")?",
@@ -470,7 +472,7 @@ MODULES.append(dict(
              starter="""\
                 words = input().split()
                 print(" ".join(words))""",
-             tests=["кот ток окт сон нос\n", "a b a\n", "listen silent enlist google\n"],
+             tests=["кот ток окт сон нос\n", "a b a\n", "listen silent enlist google\n", "abc cab bca xyz zyx q\n"],
              hint="Ключ группы — буквы слова, отсортированные по алфавиту.", difficulty=3),
     ],
     levels=[
@@ -625,7 +627,8 @@ MODULES.append(dict(
                 print(0)""",
              tests=["было 10 яблок, съели 3, осталось 7\n", "температура -5, завтра -2\n", "без чисел\n",
                     "a1b22c333\n"],
-             hint="Шаблон r\"-?\\d+\": необязательный минус и одна или больше цифр.", difficulty=2),
+             hint="Шаблон r\"-?\\d+\": необязательный минус и одна или больше цифр.", difficulty=2,
+             requires=dict(uses=["import"])),
     ],
     levels=[
         predict("py_data_001", "Python → JSON", """\

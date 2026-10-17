@@ -1,0 +1,268 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_prop_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Вычисляемый атрибут",
+   "prompt": "Что выведет код?",
+   "topic": "prop_property",
+   "difficulty": 1,
+   "hint": "Свойство вычисляется заново при каждом обращении.",
+   "explanation": "r.area вызывает метод area без скобок. К этому моменту w = 5, поэтому площадь 5 · 3 = 15.",
+   "code": "class Rect:\n    def __init__(self, w, h):\n        self.w, self.h = w, h\n\n    @property\n    def area(self):\n        return self.w * self.h\n\nr = Rect(2, 3)\nr.w = 5\nprint(r.area)",
+   "payload": {
+    "options": [
+     "6",
+     "15",
+     "<bound method>",
+     "TypeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Свойство не запоминает значение: оно считает площадь в момент обращения, когда w уже 5.",
+     "",
+     "@property делает так, что r.area возвращает результат, а не сам метод.",
+     "Скобки не нужны: area — свойство."
+    ]
+   },
+   "solution": {
+    "code": "class Rect:\n    def __init__(self, w, h):\n        self.w, self.h = w, h\n\n    @property\n    def area(self):\n        return self.w * self.h\n\nr = Rect(2, 3)\nr.w = 5\nprint(r.area)",
+    "output": "15\n"
+   }
+  },
+  {
+   "id": "py_prop_002",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Проверка при записи",
+   "prompt": "Добавьте сеттер для свойства c",
+   "topic": "prop_property",
+   "difficulty": 1,
+   "hint": "Метод для записи значения.",
+   "explanation": "@c.setter регистрирует функцию, которая вызывается при t.c = 25. Без сеттера присваивание даёт AttributeError.",
+   "payload": {
+    "template": "class Temp:\n    def __init__(self):\n        self._c = 0\n\n    @property\n    def c(self):\n        return self._c\n\n    @c.{{0}}\n    def c(self, value):\n        if value < -273:\n            raise ValueError(\"ниже абсолютного нуля\")\n        self._c = value\n\nt = Temp()\nt.c = 25\nprint(t.c)",
+    "options": [
+     "setter",
+     "getter",
+     "deleter",
+     "property"
+    ],
+    "answers": [
+     "setter"
+    ],
+    "variantResults": {
+     "getter": "AttributeError: property 'c' of 'Temp' object has no setter",
+     "deleter": "AttributeError: property 'c' of 'Temp' object has no setter",
+     "property": "AttributeError: 'property' object has no attribute 'property'"
+    }
+   },
+   "solution": {
+    "code": "class Temp:\n    def __init__(self):\n        self._c = 0\n\n    @property\n    def c(self):\n        return self._c\n\n    @c.setter\n    def c(self, value):\n        if value < -273:\n            raise ValueError(\"ниже абсолютного нуля\")\n        self._c = value\n\nt = Temp()\nt.c = 25\nprint(t.c)",
+    "output": "25\n"
+   }
+  },
+  {
+   "id": "py_prop_003",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Альтернативный конструктор",
+   "prompt": "Напишите, что выведет код",
+   "topic": "prop_classmethod",
+   "difficulty": 2,
+   "hint": ":02 дополняет число нулём до двух цифр.",
+   "explanation": "parse разбирает «день.месяц.год» и создаёт Date через cls. __str__ печатает год-месяц-день с ведущими нулями.",
+   "code": "class Date:\n    def __init__(self, y, m, d):\n        self.y, self.m, self.d = y, m, d\n\n    @classmethod\n    def parse(cls, text):\n        d, m, y = map(int, text.split(\".\"))\n        return cls(y, m, d)\n\n    def __str__(self):\n        return f\"{self.y}-{self.m:02}-{self.d:02}\"\n\nprint(Date.parse(\"05.03.2024\"))\nprint(Date(2024, 12, 1))",
+   "payload": {
+    "expectedOutput": "2024-03-05\n2024-12-01"
+   },
+   "solution": {
+    "code": "class Date:\n    def __init__(self, y, m, d):\n        self.y, self.m, self.d = y, m, d\n\n    @classmethod\n    def parse(cls, text):\n        d, m, y = map(int, text.split(\".\"))\n        return cls(y, m, d)\n\n    def __str__(self):\n        return f\"{self.y}-{self.m:02}-{self.d:02}\"\n\nprint(Date.parse(\"05.03.2024\"))\nprint(Date(2024, 12, 1))",
+    "output": "2024-03-05\n2024-12-01\n"
+   }
+  },
+  {
+   "id": "py_prop_004",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Виды методов",
+   "prompt": "Сопоставьте объявление и его смысл",
+   "topic": "prop_classmethod",
+   "difficulty": 2,
+   "hint": "Смотрите на первый параметр.",
+   "explanation": "Обычный метод получает self, метод класса — cls, статический — ничего, а свойство вызывается без скобок.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "def m(self)",
+      "right": "Метод объекта: получает экземпляр"
+     },
+     {
+      "left": "@classmethod def m(cls)",
+      "right": "Получает класс: альтернативные конструкторы"
+     },
+     {
+      "left": "@staticmethod def m()",
+      "right": "Не получает ни объект, ни класс"
+     },
+     {
+      "left": "@property def m(self)",
+      "right": "Читается как атрибут, без скобок"
+     }
+    ]
+   }
+  },
+  {
+   "id": "py_prop_005",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Бесконечное свойство",
+   "prompt": "Найдите строку с ошибкой",
+   "topic": "prop_property",
+   "difficulty": 2,
+   "hint": "Что происходит, когда свойство name читает self.name?",
+   "explanation": "self.name снова вызывает свойство name, и так бесконечно — RecursionError. Значение хранится в self._name.",
+   "code": "class User:\n    def __init__(self, name):\n        self._name = name\n    @property\n    def name(self):\n        return self.name.title()\n\nprint(User(\"ada lovelace\").name)",
+   "payload": {
+    "buggyLines": [
+     5
+    ]
+   },
+   "solution": {
+    "code": "class User:\n    def __init__(self, name):\n        self._name = name\n    @property\n    def name(self):\n        return self._name.title()\n\nprint(User(\"ada lovelace\").name)",
+    "output": "Ada Lovelace\n"
+   }
+  },
+  {
+   "id": "py_prop_006",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Искажение имени",
+   "prompt": "Что выведет код?",
+   "topic": "prop_private",
+   "difficulty": 3,
+   "hint": "Два подчёркивания в начале имени внутри класса меняют его название.",
+   "explanation": "self.__code внутри класса Safe сохраняется под именем _Safe__code. Атрибута __code у объекта нет, а по искажённому имени он доступен.",
+   "code": "class Safe:\n    def __init__(self):\n        self.__code = 42\n\ns = Safe()\nprint(hasattr(s, \"__code\"), s._Safe__code)",
+   "payload": {
+    "options": [
+     "True 42",
+     "False 42",
+     "False AttributeError",
+     "AttributeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Атрибута с именем «__code» нет: имя искажено.",
+     "",
+     "",
+     "s._Safe__code существует: это и есть искажённое имя."
+    ]
+   },
+   "solution": {
+    "code": "class Safe:\n    def __init__(self):\n        self.__code = 42\n\ns = Safe()\nprint(hasattr(s, \"__code\"), s._Safe__code)",
+    "output": "False 42\n"
+   }
+  },
+  {
+   "id": "py_prop_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Как вызвать",
+   "prompt": "Какие вызовы сработают?",
+   "topic": "prop_classmethod",
+   "difficulty": 2,
+   "hint": "Обычному методу нужен объект.",
+   "explanation": "Статические методы и методы класса работают и через класс, и через объект. Обычный метод через класс без объекта не получит self: M.inst(2) — TypeError.",
+   "code": "class M:\n    @staticmethod\n    def st(x):\n        return x\n\n    @classmethod\n    def cm(cls, x):\n        return x\n\n    def inst(self, x):\n        return x",
+   "payload": {
+    "options": [
+     "M.st(2)",
+     "M().st(2)",
+     "M.cm(2)",
+     "M.inst(2)",
+     "M().inst(2)"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     2,
+     4
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "",
+     "2 попадёт в self, а для x значения не останется: TypeError.",
+     ""
+    ]
+   }
+  },
+  {
+   "id": "py_prop_008",
+   "type": "multiple_choice",
+   "role": "practice",
+   "title": "__slots__",
+   "prompt": "Что произойдёт при p.z = 3?",
+   "topic": "prop_private",
+   "difficulty": 2,
+   "hint": "__slots__ фиксирует набор атрибутов.",
+   "explanation": "Объекты с __slots__ не имеют __dict__ и могут хранить только перечисленные атрибуты. Новый атрибут вызывает AttributeError.",
+   "code": "class P:\n    __slots__ = (\"x\", \"y\")\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n\np = P(1, 2)\np.z = 3",
+   "payload": {
+    "options": [
+     "Появится атрибут z",
+     "AttributeError",
+     "z запишется в __slots__",
+     "Ничего, присваивание проигнорируется"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Так было бы без __slots__.",
+     "",
+     "__slots__ задаётся при создании класса и не меняется.",
+     "Python не игнорирует ошибки молча."
+    ]
+   }
+  },
+  {
+   "id": "py_prop_009",
+   "type": "code_ordering",
+   "role": "boss",
+   "title": "Босс: счётчик билетов",
+   "prompt": "Соберите класс так, чтобы программа вывела 2 2",
+   "topic": "prop_classmethod",
+   "difficulty": 3,
+   "hint": "Счётчик общий для класса, номер — у каждого билета свой.",
+   "explanation": "issued — атрибут класса: каждый новый билет увеличивает его и запоминает текущее значение как свой number. Второй билет получает номер 2.",
+   "payload": {
+    "lines": [
+     "class Ticket:",
+     "    issued = 0",
+     "    def __init__(self):",
+     "        Ticket.issued += 1",
+     "        self.number = Ticket.issued",
+     "a, b = Ticket(), Ticket()",
+     "print(b.number, Ticket.issued)"
+    ],
+    "alternativeOrders": [
+     [
+      0,
+      2,
+      3,
+      4,
+      1,
+      5,
+      6
+     ]
+    ]
+   },
+   "solution": {
+    "code": "class Ticket:\n    issued = 0\n    def __init__(self):\n        Ticket.issued += 1\n        self.number = Ticket.issued\na, b = Ticket(), Ticket()\nprint(b.number, Ticket.issued)",
+    "output": "2 2\n"
+   }
+  }
+ ]
+}

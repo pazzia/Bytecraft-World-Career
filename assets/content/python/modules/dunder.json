@@ -1,0 +1,272 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_dun_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Красивый вывод",
+   "prompt": "Что выведет код?",
+   "topic": "dunder_str",
+   "difficulty": 1,
+   "hint": "print использует __str__.",
+   "explanation": "print(obj) вызывает obj.__str__(), который возвращает «(1, 2)».",
+   "code": "class Point:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n\n    def __str__(self):\n        return f\"({self.x}, {self.y})\"\n\nprint(Point(1, 2))",
+   "payload": {
+    "options": [
+     "(1, 2)",
+     "Point(1, 2)",
+     "1 2",
+     "<Point object>"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Такой текст вернул бы __repr__, а здесь определён __str__.",
+     "__str__ возвращает строку со скобками и запятой.",
+     "Стандартный вид был бы без __str__. Здесь он определён."
+    ]
+   },
+   "solution": {
+    "code": "class Point:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n\n    def __str__(self):\n        return f\"({self.x}, {self.y})\"\n\nprint(Point(1, 2))",
+    "output": "(1, 2)\n"
+   }
+  },
+  {
+   "id": "py_dun_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "str или repr",
+   "prompt": "Что выведет код?",
+   "topic": "dunder_str",
+   "difficulty": 1,
+   "hint": "Внутри списка Python показывает repr элементов.",
+   "explanation": "Сам объект печатается через __str__, а список показывает элементы через __repr__.",
+   "code": "class Point:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n    def __str__(self):\n        return f\"({self.x}, {self.y})\"\n    def __repr__(self):\n        return f\"Point({self.x}, {self.y})\"\n\np = Point(1, 2)\nprint(p, [p])",
+   "payload": {
+    "options": [
+     "(1, 2) [(1, 2)]",
+     "(1, 2) [Point(1, 2)]",
+     "Point(1, 2) [Point(1, 2)]",
+     "Point(1, 2) [(1, 2)]"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Список использует __repr__ своих элементов.",
+     "",
+     "print(p) вызывает __str__, если он есть.",
+     "Наоборот: снаружи __str__, в списке __repr__."
+    ]
+   },
+   "solution": {
+    "code": "class Point:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n    def __str__(self):\n        return f\"({self.x}, {self.y})\"\n    def __repr__(self):\n        return f\"Point({self.x}, {self.y})\"\n\np = Point(1, 2)\nprint(p, [p])",
+    "output": "(1, 2) [Point(1, 2)]\n"
+   }
+  },
+  {
+   "id": "py_dun_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Равенство по сумме",
+   "prompt": "Сделайте так, чтобы == сравнивал суммы",
+   "topic": "dunder_ops",
+   "difficulty": 1,
+   "hint": "eq — от equal.",
+   "explanation": "Оператор == вызывает __eq__. С другими именами метод не используется, и == сравнивает объекты по идентичности — получилось бы False.",
+   "payload": {
+    "template": "class Money:\n    def __init__(self, amount):\n        self.amount = amount\n\n    def {{0}}(self, other):\n        return self.amount == other.amount\n\nprint(Money(5) == Money(5))",
+    "options": [
+     "__eq__",
+     "__equals__",
+     "__cmp__",
+     "__is__"
+    ],
+    "answers": [
+     "__eq__"
+    ],
+    "variantResults": {
+     "__equals__": "False",
+     "__cmp__": "False",
+     "__is__": "False"
+    }
+   },
+   "solution": {
+    "code": "class Money:\n    def __init__(self, amount):\n        self.amount = amount\n\n    def __eq__(self, other):\n        return self.amount == other.amount\n\nprint(Money(5) == Money(5))",
+    "output": "True\n"
+   }
+  },
+  {
+   "id": "py_dun_004",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Вектора",
+   "prompt": "Напишите, что выведет код",
+   "topic": "dunder_ops",
+   "difficulty": 2,
+   "hint": "+ вызывает __add__, * — __mul__.",
+   "explanation": "Vec(1, 2) + Vec(3, 4) = Vec(4, 6); умножение на 2 даёт Vec(8, 12). print использует __repr__, так как __str__ нет.",
+   "code": "class Vec:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n    def __add__(self, o):\n        return Vec(self.x + o.x, self.y + o.y)\n    def __mul__(self, k):\n        return Vec(self.x * k, self.y * k)\n    def __repr__(self):\n        return f\"Vec({self.x}, {self.y})\"\n\nv = Vec(1, 2) + Vec(3, 4)\nprint(v)\nprint(v * 2)",
+   "payload": {
+    "expectedOutput": "Vec(4, 6)\nVec(8, 12)"
+   },
+   "solution": {
+    "code": "class Vec:\n    def __init__(self, x, y):\n        self.x, self.y = x, y\n    def __add__(self, o):\n        return Vec(self.x + o.x, self.y + o.y)\n    def __mul__(self, k):\n        return Vec(self.x * k, self.y * k)\n    def __repr__(self):\n        return f\"Vec({self.x}, {self.y})\"\n\nv = Vec(1, 2) + Vec(3, 4)\nprint(v)\nprint(v * 2)",
+    "output": "Vec(4, 6)\nVec(8, 12)\n"
+   }
+  },
+  {
+   "id": "py_dun_005",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Колода",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "dunder_protocols",
+   "difficulty": 2,
+   "hint": "__len__ и __getitem__ превращают объект в последовательность.",
+   "explanation": "len вызывает __len__, индексы — __getitem__. in и reversed тоже работают через __getitem__ и __len__.",
+   "code": "class Deck:\n    def __init__(self):\n        self.cards = [\"A\", \"K\", \"Q\"]\n    def __len__(self):\n        return len(self.cards)\n    def __getitem__(self, i):\n        return self.cards[i]\nd = Deck()",
+   "payload": {
+    "pairs": [
+     {
+      "left": "len(d)",
+      "right": "3"
+     },
+     {
+      "left": "d[0]",
+      "right": "A"
+     },
+     {
+      "left": "d[-1]",
+      "right": "Q"
+     },
+     {
+      "left": "'K' in d",
+      "right": "True"
+     },
+     {
+      "left": "list(reversed(d))",
+      "right": "['Q', 'K', 'A']"
+     }
+    ]
+   },
+   "solution": {
+    "code": "class Deck:\n    def __init__(self):\n        self.cards = [\"A\", \"K\", \"Q\"]\n    def __len__(self):\n        return len(self.cards)\n    def __getitem__(self, i):\n        return self.cards[i]\nd = Deck()\nprint(len(d))\nprint(d[0])\nprint(d[-1])\nprint('K' in d)\nprint(list(reversed(d)))",
+    "output": "3\nA\nQ\nTrue\n['Q', 'K', 'A']\n"
+   }
+  },
+  {
+   "id": "py_dun_006",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Двойники в множестве",
+   "prompt": "Одинаковые теги должны считаться одним — программа должна вывести 1. Найдите строку с ошибкой",
+   "topic": "dunder_ops",
+   "difficulty": 3,
+   "hint": "Что должно быть у равных объектов?",
+   "explanation": "Равные объекты обязаны иметь одинаковый хеш. id у разных объектов разный, поэтому множество даже не сравнивает их через __eq__. Хеш нужно считать от name.",
+   "code": "class Tag:\n    def __init__(self, name):\n        self.name = name\n    def __eq__(self, other):\n        return self.name == other.name\n    def __hash__(self):\n        return id(self)\n\ntags = {Tag(\"py\"), Tag(\"py\")}\nprint(len(tags))",
+   "payload": {
+    "buggyLines": [
+     6
+    ]
+   },
+   "solution": {
+    "code": "class Tag:\n    def __init__(self, name):\n        self.name = name\n    def __eq__(self, other):\n        return self.name == other.name\n    def __hash__(self):\n        return hash(self.name)\n\ntags = {Tag(\"py\"), Tag(\"py\")}\nprint(len(tags))",
+    "output": "1\n"
+   }
+  },
+  {
+   "id": "py_dun_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Ложный объект",
+   "prompt": "В каких классах if X(): посчитает объект ложным?",
+   "topic": "dunder_protocols",
+   "difficulty": 2,
+   "hint": "__bool__ главнее __len__, а без обоих объект истинен.",
+   "explanation": "Сначала проверяется __bool__, если его нет — __len__ (0 — ложь). Объект без них всегда истинен.",
+   "payload": {
+    "options": [
+     "class X:\n    def __len__(self):\n        return 0",
+     "class X:\n    def __bool__(self):\n        return False",
+     "class X:\n    pass",
+     "class X:\n    def __len__(self):\n        return 3",
+     "class X:\n    def __bool__(self):\n        return True\n    def __len__(self):\n        return 0"
+    ],
+    "correctIndexes": [
+     0,
+     1
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "Без __bool__ и __len__ объект истинен.",
+     "Длина 3 — истина.",
+     "Если есть __bool__, __len__ для истинности не используется."
+    ]
+   }
+  },
+  {
+   "id": "py_dun_008",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Сортировка карт",
+   "prompt": "Что выведет код?",
+   "topic": "dunder_ops",
+   "difficulty": 3,
+   "hint": "sorted сравнивает элементы оператором <, то есть __lt__.",
+   "explanation": "__lt__ сравнивает позиции ранга в строке order: 7 < T < K < A. Для sorted этого достаточно.",
+   "code": "class Card:\n    order = \"6789TJQKA\"\n    def __init__(self, rank):\n        self.rank = rank\n    def __lt__(self, other):\n        return self.order.index(self.rank) < self.order.index(other.rank)\n    def __repr__(self):\n        return self.rank\n\nprint(sorted([Card(\"K\"), Card(\"7\"), Card(\"A\"), Card(\"T\")]))",
+   "payload": {
+    "options": [
+     "[A, K, T, 7]",
+     "[7, T, K, A]",
+     "[7, A, K, T]",
+     "TypeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "sorted сортирует по возрастанию: от младшей карты к старшей.",
+     "",
+     "Сравнение идёт не по алфавиту, а по позиции в строке order.",
+     "Для сортировки достаточно __lt__."
+    ]
+   },
+   "solution": {
+    "code": "class Card:\n    order = \"6789TJQKA\"\n    def __init__(self, rank):\n        self.rank = rank\n    def __lt__(self, other):\n        return self.order.index(self.rank) < self.order.index(other.rank)\n    def __repr__(self):\n        return self.rank\n\nprint(sorted([Card(\"K\"), Card(\"7\"), Card(\"A\"), Card(\"T\")]))",
+    "output": "[7, T, K, A]\n"
+   }
+  },
+  {
+   "id": "py_dun_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: вызываемый объект",
+   "prompt": "Что выведет код?",
+   "topic": "dunder_protocols",
+   "difficulty": 3,
+   "hint": "Каждый вызов triple(...) увеличивает calls. map тоже вызывает его.",
+   "explanation": "После двух вызовов calls = 2. map вызывает объект ещё дважды, и к моменту печати calls = 4.",
+   "code": "class Multiplier:\n    def __init__(self, k):\n        self.k = k\n        self.calls = 0\n\n    def __call__(self, x):\n        self.calls += 1\n        return x * self.k\n\ntriple = Multiplier(3)\nprint(triple(2), triple(5), triple.calls)\nprint(list(map(triple, [1, 2])), triple.calls)",
+   "payload": {
+    "options": [
+     "6 15 0\n[3, 6] 2",
+     "6 15 2\n[3, 6] 2",
+     "6 15 2\n[3, 6] 4",
+     "TypeError"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Аргументы print вычисляются слева направо: к моменту triple.calls вызовов уже два.",
+     "map вызывает triple для каждого элемента: ещё два вызова.",
+     "",
+     "__call__ делает объект вызываемым."
+    ]
+   },
+   "solution": {
+    "code": "class Multiplier:\n    def __init__(self, k):\n        self.k = k\n        self.calls = 0\n\n    def __call__(self, x):\n        self.calls += 1\n        return x * self.k\n\ntriple = Multiplier(3)\nprint(triple(2), triple(5), triple.calls)\nprint(list(map(triple, [1, 2])), triple.calls)",
+    "output": "6 15 2\n[3, 6] 4\n"
+   }
+  }
+ ]
+}

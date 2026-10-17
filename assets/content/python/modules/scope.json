@@ -74,14 +74,14 @@
    "difficulty": 3,
    "hint": "Python падает на строке с if, но причина ниже: что делает присваивание внутри функции?",
    "explanation": "Из-за присваивания balance = ... имя balance становится локальным во всей функции. Тогда уже в if читается локальная переменная, которой ещё нет: UnboundLocalError. Достаточно вернуть balance - amount.",
-   "code": "balance = 100\n\ndef withdraw(amount):\n    if amount > balance:\n        return \"мало средств\"\n    balance = balance - amount\n    return balance\n\nprint(withdraw(30))",
+   "code": "balance = 100\n\ndef withdraw(amount):\n    if amount > balance:\n        return \"мало средств\"\n    balance = balance - amount\n\nprint(withdraw(30))",
    "payload": {
     "buggyLines": [
      5
     ]
    },
    "solution": {
-    "code": "balance = 100\n\ndef withdraw(amount):\n    if amount > balance:\n        return \"мало средств\"\n    return balance - amount\n    return balance\n\nprint(withdraw(30))",
+    "code": "balance = 100\n\ndef withdraw(amount):\n    if amount > balance:\n        return \"мало средств\"\n    return balance - amount\n\nprint(withdraw(30))",
     "output": "70\n"
    }
   },
@@ -180,7 +180,7 @@
    "payload": {
     "options": [
      "Функция может читать глобальную переменную без global",
-     "Присваивание внутри функции создаёт локальную переменную",
+     "Присваивание внутри функции (без global и nonlocal) создаёт локальную переменную",
      "nonlocal можно применить к переменной модуля",
      "Замыкание помнит переменные внешней функции после её завершения",
      "global нужен, чтобы прочитать глобальную переменную"
@@ -208,8 +208,8 @@
    "topic": "scope_closure",
    "difficulty": 3,
    "hint": "Функция читает i в момент вызова, а не в момент создания.",
-   "explanation": "Все три функции читают одну и ту же переменную i. К моменту вызова цикл закончился и i = 2.",
-   "code": "funcs = []\nfor i in range(3):\n    def f():\n        return i\n    funcs.append(f)\n\nprint([f() for f in funcs])",
+   "explanation": "Все три замыкания ссылаются на одну и ту же переменную i функции make_funcs. К моменту вызова цикл закончился и i = 2. Исправление — def f(i=i): значение по умолчанию вычисляется в момент создания.",
+   "code": "def make_funcs():\n    funcs = []\n    for i in range(3):\n        def f():\n            return i\n        funcs.append(f)\n    return funcs\n\nprint([f() for f in make_funcs()])",
    "payload": {
     "options": [
      "[0, 1, 2]",
@@ -226,8 +226,29 @@
     ]
    },
    "solution": {
-    "code": "funcs = []\nfor i in range(3):\n    def f():\n        return i\n    funcs.append(f)\n\nprint([f() for f in funcs])",
+    "code": "def make_funcs():\n    funcs = []\n    for i in range(3):\n        def f():\n            return i\n        funcs.append(f)\n    return funcs\n\nprint([f() for f in make_funcs()])",
     "output": "[2, 2, 2]\n"
+   }
+  },
+  {
+   "id": "py_scope_010",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Занятое имя",
+   "prompt": "Найдите строку, из-за которой падает программа (вывод исправленной версии может отличаться)",
+   "topic": "scope_legb",
+   "difficulty": 2,
+   "hint": "Где Python найдёт имя list — среди встроенных или в модуле?",
+   "explanation": "Переменная list на уровне модуля перекрыла встроенную функцию list (правило LEGB: Global раньше Built-in). list(\"ab\") пытается вызвать список: TypeError. Не занимайте имена встроенных функций.",
+   "code": "list = [3, 1, 2]\nletters = list(\"ab\")\nprint(list, letters)",
+   "payload": {
+    "buggyLines": [
+     0
+    ]
+   },
+   "solution": {
+    "code": "nums = [3, 1, 2]\nletters = list(\"ab\")\nprint(list, letters)",
+    "output": "<class 'list'> ['a', 'b']\n"
    }
   },
   {

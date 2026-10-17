@@ -9,27 +9,27 @@
    "prompt": "Что выведет код?",
    "topic": "args_star",
    "difficulty": 1,
-   "hint": "Без аргументов nums — пустой кортеж. Чему равна сумма пустой последовательности?",
-   "explanation": "*nums собирает аргументы в кортеж: (1, 2, 3) и (). sum(()) = 0.",
-   "code": "def total(*nums):\n    return sum(nums)\n\nprint(total(1, 2, 3), total())",
+   "hint": "Без аргументов items — пустой кортеж. Какая у него длина?",
+   "explanation": "*items собирает аргументы в кортеж: ('a', 'b') и (). Длина пустого кортежа — 0.",
+   "code": "def count(*items):\n    return len(items)\n\nprint(count(\"a\", \"b\"), count())",
    "payload": {
     "options": [
-     "6 0",
-     "6",
-     "6 None",
+     "2 0",
+     "2",
+     "2 None",
      "TypeError"
     ],
     "correctIndex": 0,
     "optionFeedback": [
      "",
-     "print выводит два значения: второе — total() = 0.",
-     "sum пустого кортежа — 0, а не None.",
-     "*nums принимает и ноль аргументов."
+     "print выводит два значения: второе — count() = 0.",
+     "len пустого кортежа — 0, а не None.",
+     "*items принимает и ноль аргументов."
     ]
    },
    "solution": {
-    "code": "def total(*nums):\n    return sum(nums)\n\nprint(total(1, 2, 3), total())",
-    "output": "6 0\n"
+    "code": "def count(*items):\n    return len(items)\n\nprint(count(\"a\", \"b\"), count())",
+    "output": "2 0\n"
    }
   },
   {
@@ -152,23 +152,33 @@
   },
   {
    "id": "py_args_006",
-   "type": "bug_finder",
+   "type": "predict_output",
    "role": "challenge",
    "title": "Общий список",
-   "prompt": "Каждый вызов должен вернуть новый список из одного элемента. Найдите строку с ошибкой",
+   "prompt": "Что выведет код?",
    "topic": "args_mutable_default",
    "difficulty": 3,
-   "hint": "Когда создаётся значение по умолчанию?",
-   "explanation": "Список [] по умолчанию создаётся один раз при def и общий для всех вызовов. Поэтому второй вызов вернёт ['a', 'b']. Нужен None по умолчанию — проверка ниже уже есть.",
-   "code": "def add_item(item, items=[]):\n    if items is None:\n        items = []\n    items.append(item)\n    return items\n\nprint(add_item(\"a\"))\nprint(add_item(\"b\"))",
+   "hint": "Когда создаётся значение по умолчанию — при def или при каждом вызове?",
+   "explanation": "Список [] по умолчанию создаётся один раз при def и общий для всех вызовов. Первый вызов печатает ['a'], второй добавляет «b» в тот же список.",
+   "code": "def add_item(item, items=[]):\n    items.append(item)\n    return items\n\nprint(add_item(\"a\"))\nprint(add_item(\"b\"))",
    "payload": {
-    "buggyLines": [
-     0
+    "options": [
+     "['a']\n['b']",
+     "['a']\n['a', 'b']",
+     "['a', 'b']\n['a', 'b']",
+     "TypeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Значение по умолчанию создаётся один раз, и второй вызов получает тот же список.",
+     "",
+     "Первый print срабатывает сразу после первого вызова — тогда в списке только «a».",
+     "Список по умолчанию — допустимый, хоть и опасный код."
     ]
    },
    "solution": {
-    "code": "def add_item(item, items=None):\n    if items is None:\n        items = []\n    items.append(item)\n    return items\n\nprint(add_item(\"a\"))\nprint(add_item(\"b\"))",
-    "output": "['a']\n['b']\n"
+    "code": "def add_item(item, items=[]):\n    items.append(item)\n    return items\n\nprint(add_item(\"a\"))\nprint(add_item(\"b\"))",
+    "output": "['a']\n['a', 'b']\n"
    }
   },
   {
@@ -208,7 +218,7 @@
    "type": "multiple_choice",
    "role": "practice",
    "title": "Только позиционные",
-   "prompt": "Что выведет вызов div(a=7, b=2)?",
+   "prompt": "Что произойдёт при вызове div(a=7, b=2)?",
    "topic": "args_kwonly",
    "difficulty": 2,
    "hint": "Что означает / в списке параметров?",
@@ -228,6 +238,25 @@
      "",
      "Синтаксис корректен, ошибка возникает при вызове: TypeError."
     ]
+   }
+  },
+  {
+   "id": "py_args_010",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Звёздочка в print",
+   "prompt": "Напишите, что выведет код",
+   "topic": "args_unpack",
+   "difficulty": 2,
+   "hint": "*nums превращает список в три отдельных аргумента.",
+   "explanation": "print(*nums) получает три аргумента и ставит между ними sep. Без звёздочки аргумент один — сам список, разделителю ставить нечего.",
+   "code": "nums = [1, 2, 3]\nprint(*nums, sep=\"-\")\nprint(nums, sep=\"-\")",
+   "payload": {
+    "expectedOutput": "1-2-3\n[1, 2, 3]"
+   },
+   "solution": {
+    "code": "nums = [1, 2, 3]\nprint(*nums, sep=\"-\")\nprint(nums, sep=\"-\")",
+    "output": "1-2-3\n[1, 2, 3]\n"
    }
   },
   {

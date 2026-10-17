@@ -67,7 +67,7 @@
    "description": "break, continue, else, вложенные циклы",
    "icon": "🎛️",
    "file": "modules/loops_control.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 830
   },
   {
    "id": "lists",
@@ -75,7 +75,7 @@
    "description": "Изменяемые последовательности",
    "icon": "📋",
    "file": "modules/lists.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "tuples_sets",
@@ -91,15 +91,15 @@
    "description": "Ключ → значение",
    "icon": "📒",
    "file": "modules/dicts.json",
-   "timedRunSeconds": 620
+   "timedRunSeconds": 690
   },
   {
    "id": "comprehensions",
-   "title": "Генераторы коллекций",
-   "description": "Списки, словари и множества в одну строку",
+   "title": "Включения",
+   "description": "Списки, словари и множества в одну строку (comprehensions)",
    "icon": "⚡",
    "file": "modules/comprehensions.json",
-   "timedRunSeconds": 620
+   "timedRunSeconds": 690
   },
   {
    "id": "functions",
@@ -107,7 +107,7 @@
    "description": "def, параметры и return",
    "icon": "🧩",
    "file": "modules/functions.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 830
   },
   {
    "id": "args",
@@ -115,7 +115,7 @@
    "description": "*args, **kwargs и распаковка",
    "icon": "🎛️",
    "file": "modules/args.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "scope",
@@ -123,7 +123,7 @@
    "description": "LEGB, global, nonlocal, замыкания",
    "icon": "🔭",
    "file": "modules/scope.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "functional",
@@ -131,7 +131,7 @@
    "description": "lambda, sorted, map, filter, functools",
    "icon": "λ",
    "file": "modules/functional.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "recursion",
@@ -139,7 +139,7 @@
    "description": "Функция вызывает саму себя",
    "icon": "🪆",
    "file": "modules/recursion.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "exceptions",
@@ -171,6 +171,46 @@
    "description": "json, регулярные выражения, даты",
    "icon": "🗂️",
    "file": "modules/textdata.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "classes",
+   "title": "Классы и объекты",
+   "description": "class, __init__, self",
+   "icon": "🏗️",
+   "file": "modules/classes.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "inheritance",
+   "title": "Наследование",
+   "description": "super, полиморфизм, ABC",
+   "icon": "🌳",
+   "file": "modules/inheritance.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "dunder",
+   "title": "Магические методы",
+   "description": "__str__, __eq__, __add__, __len__",
+   "icon": "✨",
+   "file": "modules/dunder.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "properties",
+   "title": "Свойства и методы класса",
+   "description": "@property, @classmethod, @staticmethod",
+   "icon": "🔐",
+   "file": "modules/properties.json",
+   "timedRunSeconds": 690
+  },
+  {
+   "id": "dataclasses",
+   "title": "Dataclasses и Enum",
+   "description": "Классы данных и перечисления",
+   "icon": "🗃️",
+   "file": "modules/dataclasses.json",
    "timedRunSeconds": 690
   }
  ]

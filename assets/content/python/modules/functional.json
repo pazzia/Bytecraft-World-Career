@@ -5,31 +5,31 @@
    "id": "py_fn_001",
    "type": "predict_output",
    "role": "lesson",
-   "title": "Короткая функция",
+   "title": "Ключ сортировки",
    "prompt": "Что выведет код?",
    "topic": "fn_lambda_key",
    "difficulty": 1,
-   "hint": "lambda x: x * x — функция, которая возвращает x * x.",
-   "explanation": "square(5) вызывает лямбду с x = 5 и возвращает 25.",
-   "code": "square = lambda x: x * x\nprint(square(5))",
+   "hint": "key только вычисляет, по чему сравнивать. В результате — сами элементы.",
+   "explanation": "Ключи -3, -1, -2: по возрастанию ключа порядок 3, 2, 1. В результат попадают исходные числа, а не ключи.",
+   "code": "nums = [3, 1, 2]\nprint(sorted(nums, key=lambda x: -x))",
    "payload": {
     "options": [
-     "10",
-     "25",
-     "x * x",
-     "lambda"
+     "[1, 2, 3]",
+     "[3, 2, 1]",
+     "[-3, -2, -1]",
+     "[-1, -2, -3]"
     ],
     "correctIndex": 1,
     "optionFeedback": [
-     "x * x — умножение на себя: 5 * 5.",
+     "Сравниваются ключи -x: наибольшее число даёт наименьший ключ.",
      "",
-     "Вызов функции возвращает значение выражения, а не его текст.",
-     "square(5) — вызов, результат — число."
+     "key не меняет элементы, он только задаёт порядок.",
+     "key не меняет элементы, он только задаёт порядок."
     ]
    },
    "solution": {
-    "code": "square = lambda x: x * x\nprint(square(5))",
-    "output": "25\n"
+    "code": "nums = [3, 1, 2]\nprint(sorted(nums, key=lambda x: -x))",
+    "output": "[3, 2, 1]\n"
    }
   },
   {
@@ -139,19 +139,19 @@
    "id": "py_fn_005",
    "type": "type_output",
    "role": "practice",
-   "title": "Номера и пары",
+   "title": "Второй проход",
    "prompt": "Напишите, что выведет код",
    "topic": "fn_builtins",
    "difficulty": 2,
-   "hint": "zip даёт пары (имя, год), enumerate нумерует их с 1.",
-   "explanation": "zip соединяет списки попарно, enumerate(start=1) добавляет номер, а распаковка (name, year) разбирает пару.",
-   "code": "names = [\"Ada\", \"Linus\"]\nyears = [1815, 1969]\nfor i, (name, year) in enumerate(zip(names, years), start=1):\n    print(f\"{i}. {name} - {year}\")",
+   "hint": "zip возвращает итератор. Сколько раз по нему можно пройти?",
+   "explanation": "Первый проход: 1·4 + 2·5 + 3·6 = 32. zip — итератор, после первого прохода он исчерпан, и второй sum получает пустую последовательность — 0.",
+   "code": "pairs = zip([1, 2, 3], [4, 5, 6])\nprint(sum(x * y for x, y in pairs))\nprint(sum(x * y for x, y in pairs))",
    "payload": {
-    "expectedOutput": "1. Ada - 1815\n2. Linus - 1969"
+    "expectedOutput": "32\n0"
    },
    "solution": {
-    "code": "names = [\"Ada\", \"Linus\"]\nyears = [1815, 1969]\nfor i, (name, year) in enumerate(zip(names, years), start=1):\n    print(f\"{i}. {name} - {year}\")",
-    "output": "1. Ada - 1815\n2. Linus - 1969\n"
+    "code": "pairs = zip([1, 2, 3], [4, 5, 6])\nprint(sum(x * y for x, y in pairs))\nprint(sum(x * y for x, y in pairs))",
+    "output": "32\n0\n"
    }
   },
   {
@@ -159,20 +159,20 @@
    "type": "bug_finder",
    "role": "challenge",
    "title": "Пропавшая сортировка",
-   "prompt": "Нужно вывести наибольший балл. Найдите строку с ошибкой",
+   "prompt": "Нужно вывести наибольший балл и не испортить исходный порядок scores. Найдите строку с ошибкой",
    "topic": "fn_lambda_key",
    "difficulty": 2,
    "hint": "Что возвращает метод sort?",
    "explanation": "list.sort() сортирует список на месте и возвращает None, поэтому top[0] — TypeError. sorted возвращает новый список.",
-   "code": "scores = [70, 95, 82]\ntop = scores.sort(reverse=True)\nprint(top[0])",
+   "code": "scores = [70, 95, 82]\ntop = scores.sort(reverse=True)\nprint(top[0], scores)",
    "payload": {
     "buggyLines": [
      1
     ]
    },
    "solution": {
-    "code": "scores = [70, 95, 82]\ntop = sorted(scores, reverse=True)\nprint(top[0])",
-    "output": "95\n"
+    "code": "scores = [70, 95, 82]\ntop = sorted(scores, reverse=True)\nprint(top[0], scores)",
+    "output": "95 [70, 95, 82]\n"
    }
   },
   {
@@ -183,27 +183,27 @@
    "prompt": "Что выведет код?",
    "topic": "fn_functools",
    "difficulty": 2,
-   "hint": "reduce здесь перемножает. int с base=2 читает двоичную запись.",
-   "explanation": "1·2·3·4 = 24. partial фиксирует base=2, и «1010» читается как двоичное 10.",
-   "code": "from functools import reduce, partial\n\nprint(reduce(lambda acc, x: acc * x, [1, 2, 3, 4]))\nfrom_binary = partial(int, base=2)\nprint(from_binary(\"1010\"))",
+   "hint": "Лямбда приклеивает новый элемент слева от накопленного. int с base=16 читает шестнадцатеричную запись.",
+   "explanation": "acc: \"\" → \"a\" → \"ba\" → \"cba\". partial фиксирует base=16, и «ff» читается как 255.",
+   "code": "from functools import reduce, partial\n\nprint(reduce(lambda acc, s: s + acc, [\"a\", \"b\", \"c\"], \"\"))\nfrom_hex = partial(int, base=16)\nprint(from_hex(\"ff\"))",
    "payload": {
     "options": [
-     "10\n1010",
-     "24\n10",
-     "24\n1010",
-     "10\n10"
+     "abc\n255",
+     "cba\n255",
+     "cba\nff",
+     "abc\nff"
     ],
     "correctIndex": 1,
     "optionFeedback": [
-     "Лямбда умножает, а не складывает. И int читает строку в двоичной системе.",
+     "s + acc ставит новый элемент перед накопленным: строка собирается задом наперёд.",
      "",
-     "from_binary возвращает число: двоичное 1010 — это 10.",
-     "acc * x — умножение: результат 24."
+     "from_hex возвращает число: шестнадцатеричное ff — это 255.",
+     "Порядок склейки — s + acc, а int возвращает число."
     ]
    },
    "solution": {
-    "code": "from functools import reduce, partial\n\nprint(reduce(lambda acc, x: acc * x, [1, 2, 3, 4]))\nfrom_binary = partial(int, base=2)\nprint(from_binary(\"1010\"))",
-    "output": "24\n10\n"
+    "code": "from functools import reduce, partial\n\nprint(reduce(lambda acc, s: s + acc, [\"a\", \"b\", \"c\"], \"\"))\nfrom_hex = partial(int, base=16)\nprint(from_hex(\"ff\"))",
+    "output": "cba\n255\n"
    }
   },
   {
@@ -236,6 +236,37 @@
      "map применяет условие к каждому: [False, True, False, True].",
      ""
     ]
+   }
+  },
+  {
+   "id": "py_fn_010",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "lambda в цикле",
+   "prompt": "Что выведет код?",
+   "topic": "fn_lambda_key",
+   "difficulty": 3,
+   "hint": "Значение по умолчанию вычисляется при создании функции, а тело — при вызове.",
+   "explanation": "Лямбды из fs читают i при вызове, когда i уже 2. В gs значение i сохранено в параметре по умолчанию в момент создания каждой лямбды.",
+   "code": "fs = [lambda: i for i in range(3)]\ngs = [lambda i=i: i for i in range(3)]\nprint([f() for f in fs], [g() for g in gs])",
+   "payload": {
+    "options": [
+     "[0, 1, 2] [0, 1, 2]",
+     "[2, 2, 2] [0, 1, 2]",
+     "[2, 2, 2] [2, 2, 2]",
+     "[0, 1, 2] [2, 2, 2]"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Тело lambda: i читает переменную в момент вызова — тогда i = 2.",
+     "",
+     "i=i сохраняет значение при создании функции.",
+     "Наоборот: без i=i все лямбды видят последнее значение."
+    ]
+   },
+   "solution": {
+    "code": "fs = [lambda: i for i in range(3)]\ngs = [lambda i=i: i for i in range(3)]\nprint([f() for f in fs], [g() for g in gs])",
+    "output": "[2, 2, 2] [0, 1, 2]\n"
    }
   },
   {

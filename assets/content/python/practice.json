@@ -1,58 +1,7 @@
 {
  "schemaVersion": 1,
+ "checker": "\"\"\"Checks that a solution of a coding exercise is written the way the task\nasks (recursion, no loops, a class, nonlocal...), not only that it prints\nthe right thing.\n\nOne source of truth for two places:\n* the content generator imports check() to verify reference solutions;\n* the app runs this file's source in the bundled Python (Pyodide) with\n  {\"code\": ..., \"requires\": ...} as JSON on stdin and reads a JSON list of\n  problems from stdout (empty list = all good).\n\nRequirement keys (all optional):\n  defines:   names of functions/classes that must be defined\n  recursive: functions that must call themselves\n  uses:      constructs that must appear (see USES)\n  forbids:   constructs that must not appear (see USES)\n  no_calls:  built-in functions that must not be called\n\"\"\"\nimport ast\nimport json\nimport sys\n\nLOOPS = (ast.For, ast.While, ast.AsyncFor)\nCOMPREHENSIONS = (ast.ListComp, ast.SetComp, ast.DictComp, ast.GeneratorExp)\n\n\ndef _has_star_args(tree):\n    return any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.args.vararg\n               for n in ast.walk(tree))\n\n\ndef _has_star_kwargs(tree):\n    return any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.args.kwarg\n               for n in ast.walk(tree))\n\n\ndef _has_decorator(tree):\n    return any(isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)) and n.decorator_list\n               for n in ast.walk(tree))\n\n\ndef _any(*types):\n    return lambda tree: any(isinstance(n, types) for n in ast.walk(tree))\n\n\n# construct -> (test(tree), how it is called in messages)\nUSES = {\n    \"for\": (_any(ast.For, ast.AsyncFor), \"цикл for\"),\n    \"while\": (_any(ast.While), \"цикл while\"),\n    \"loop\": (_any(*LOOPS), \"циклы\"),\n    \"comprehension\": (_any(*COMPREHENSIONS), \"включения (comprehensions)\"),\n    \"lambda\": (_any(ast.Lambda), \"lambda\"),\n    \"def\": (_any(ast.FunctionDef, ast.AsyncFunctionDef), \"def (свою функцию)\"),\n    \"class\": (_any(ast.ClassDef), \"class (свой класс)\"),\n    \"nonlocal\": (_any(ast.Nonlocal), \"nonlocal\"),\n    \"global\": (_any(ast.Global), \"global\"),\n    \"yield\": (_any(ast.Yield, ast.YieldFrom), \"yield (генератор)\"),\n    \"with\": (_any(ast.With, ast.AsyncWith), \"with\"),\n    \"try\": (_any(ast.Try, ast.TryStar), \"try/except\"),\n    \"raise\": (_any(ast.Raise), \"raise\"),\n    \"star_args\": (_has_star_args, \"*args\"),\n    \"star_kwargs\": (_has_star_kwargs, \"**kwargs\"),\n    \"decorator\": (_has_decorator, \"декоратор (@...)\"),\n    \"async\": (_any(ast.AsyncFunctionDef, ast.Await), \"async/await\"),\n    \"match\": (_any(ast.Match), \"match/case\"),\n    \"import\": (_any(ast.Import, ast.ImportFrom), \"import\"),\n}\n\n\ndef _defined(tree):\n    return {n.name for n in ast.walk(tree)\n            if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))}\n\n\ndef _calls_itself(tree, name):\n    for node in ast.walk(tree):\n        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name:\n            for inner in ast.walk(node):\n                if (isinstance(inner, ast.Call) and isinstance(inner.func, ast.Name)\n                        and inner.func.id == name):\n                    return True\n    return False\n\n\ndef _called_names(tree):\n    return {n.func.id for n in ast.walk(tree)\n            if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)}\n\n\ndef check(code, requires):\n    \"\"\"Returns a list of problems (in Russian), empty when all is fine.\"\"\"\n    try:\n        tree = ast.parse(code)\n    except SyntaxError as error:\n        return [f\"Синтаксическая ошибка в строке {error.lineno}: {error.msg}\"]\n    problems = []\n    defined = _defined(tree)\n    for name in requires.get(\"defines\", []):\n        if name not in defined:\n            problems.append(f\"Объявите {name} — задача требует именно это имя.\")\n    for name in requires.get(\"recursive\", []):\n        if name in defined and not _calls_itself(tree, name):\n            problems.append(f\"Функция {name} должна быть рекурсивной: вызывать саму себя.\")\n    for key in requires.get(\"uses\", []):\n        test, title = USES[key]\n        if not test(tree):\n            problems.append(f\"В решении нужно использовать: {title}.\")\n    for key in requires.get(\"forbids\", []):\n        test, title = USES[key]\n        if test(tree):\n            problems.append(f\"В этой задаче нельзя использовать: {title}.\")\n    called = _called_names(tree)\n    for name in requires.get(\"no_calls\", []):\n        if name in called:\n            problems.append(f\"В этой задаче нельзя вызывать {name}().\")\n    return problems\n\n\ndef validate_spec(requires):\n    \"\"\"For the generator: unknown keys or constructs are content bugs.\"\"\"\n    allowed = {\"defines\", \"recursive\", \"uses\", \"forbids\", \"no_calls\"}\n    assert set(requires) <= allowed, (\"unknown requirement\", set(requires) - allowed)\n    for key in requires.get(\"uses\", []) + requires.get(\"forbids\", []):\n        assert key in USES, (\"unknown construct\", key)\n\n\nif __name__ == \"__main__\":\n    request = json.loads(sys.stdin.read())\n    print(json.dumps(check(request[\"code\"], request.get(\"requires\", {})), ensure_ascii=False))\n",
  "tasks": [
-  {
-   "id": "t_str_reverse_words",
-   "title": "Слова наоборот",
-   "prompt": "Прочитайте строку и выведите её слова в обратном порядке через пробел.",
-   "starter": "line = input()\nprint(line)",
-   "solution": "words = input().split()\nprint(' '.join(reversed(words)))",
-   "tests": [
-    {
-     "stdin": "я люблю python\n",
-     "expected": "python люблю я\n"
-    },
-    {
-     "stdin": "один\n",
-     "expected": "один\n"
-    },
-    {
-     "stdin": "a b c d\n",
-     "expected": "d c b a\n"
-    }
-   ],
-   "difficulty": 1,
-   "hint": "split() разобьёт строку на слова, reversed() перевернёт список, ' '.join() склеит.",
-   "module": "strings"
-  },
-  {
-   "id": "t_str_palindrome",
-   "title": "Палиндром",
-   "prompt": "Прочитайте слово и выведите «да», если оно читается одинаково с обеих сторон (без учёта регистра), иначе «нет».",
-   "starter": "word = input()",
-   "solution": "word = input().strip().lower()\nprint('да' if word == word[::-1] else 'нет')",
-   "tests": [
-    {
-     "stdin": "Шалаш\n",
-     "expected": "да\n"
-    },
-    {
-     "stdin": "python\n",
-     "expected": "нет\n"
-    },
-    {
-     "stdin": "Level\n",
-     "expected": "да\n"
-    },
-    {
-     "stdin": "ab\n",
-     "expected": "нет\n"
-    }
-   ],
-   "difficulty": 1,
-   "hint": "Сравните слово в нижнем регистре с word[::-1].",
-   "module": "strings"
-  },
   {
    "id": "t_io_sum",
    "title": "Сумма двух чисел",
@@ -99,6 +48,10 @@
     {
      "stdin": "Мир\n",
      "expected": "Привет, Мир!\n"
+    },
+    {
+     "stdin": "Python\n",
+     "expected": "Привет, Python!\n"
     }
    ],
    "difficulty": 1,
@@ -108,8 +61,8 @@
   {
    "id": "t_io_minutes",
    "title": "Часы и минуты",
-   "prompt": "Прочитайте количество минут и выведите его в формате «H ч M мин». Например, 135 → «2 ч 15 мин».",
-   "starter": "",
+   "prompt": "Прочитайте количество минут и выведите его в формате «H ч M мин». Часы и минуты выводите всегда, даже если они равны 0: 135 → «2 ч 15 мин», 59 → «0 ч 59 мин», 60 → «1 ч 0 мин».",
+   "starter": "m = int(input())\nprint(m)",
    "solution": "m = int(input())\nprint(f'{m // 60} ч {m % 60} мин')",
    "tests": [
     {
@@ -155,6 +108,10 @@
     {
      "stdin": "2023\n",
      "expected": "обычный\n"
+    },
+    {
+     "stdin": "2100\n",
+     "expected": "обычный\n"
     }
    ],
    "difficulty": 2,
@@ -165,7 +122,7 @@
    "id": "t_cond_sign",
    "title": "Знак числа",
    "prompt": "Прочитайте целое число и выведите «положительное», «отрицательное» или «ноль».",
-   "starter": "",
+   "starter": "n = int(input())\nprint('ноль')",
    "solution": "n = int(input())\nif n > 0:\n    print('положительное')\nelif n < 0:\n    print('отрицательное')\nelse:\n    print('ноль')",
    "tests": [
     {
@@ -179,10 +136,78 @@
     {
      "stdin": "0\n",
      "expected": "ноль\n"
+    },
+    {
+     "stdin": "100\n",
+     "expected": "положительное\n"
     }
    ],
    "difficulty": 1,
    "hint": "Нужна цепочка if / elif / else.",
+   "module": "conditions"
+  },
+  {
+   "id": "t_cond_palindrome",
+   "title": "Палиндром",
+   "prompt": "Прочитайте слово и выведите «да», если оно читается одинаково с обеих сторон (без учёта регистра), иначе «нет».",
+   "starter": "word = input()\nprint('да')",
+   "solution": "word = input().strip().lower()\nprint('да' if word == word[::-1] else 'нет')",
+   "tests": [
+    {
+     "stdin": "Шалаш\n",
+     "expected": "да\n"
+    },
+    {
+     "stdin": "python\n",
+     "expected": "нет\n"
+    },
+    {
+     "stdin": "Level\n",
+     "expected": "да\n"
+    },
+    {
+     "stdin": "ab\n",
+     "expected": "нет\n"
+    },
+    {
+     "stdin": "abca\n",
+     "expected": "нет\n"
+    },
+    {
+     "stdin": "Аргентина\n",
+     "expected": "нет\n"
+    }
+   ],
+   "difficulty": 1,
+   "hint": "Сравните слово в нижнем регистре с word[::-1].",
+   "module": "conditions"
+  },
+  {
+   "id": "t_cond_reverse_words",
+   "title": "Слова наоборот",
+   "prompt": "Прочитайте строку и выведите её слова в обратном порядке через пробел.",
+   "starter": "line = input()\nprint(line)",
+   "solution": "words = input().split()\nprint(' '.join(words[::-1]))",
+   "tests": [
+    {
+     "stdin": "я люблю python\n",
+     "expected": "python люблю я\n"
+    },
+    {
+     "stdin": "один\n",
+     "expected": "один\n"
+    },
+    {
+     "stdin": "a b c d\n",
+     "expected": "d c b a\n"
+    },
+    {
+     "stdin": "  много   пробелов  \n",
+     "expected": "пробелов много\n"
+    }
+   ],
+   "difficulty": 2,
+   "hint": "split() даст список слов, срез [::-1] перевернёт его, ' '.join() склеит слова через пробел.",
    "module": "conditions"
   },
   {
@@ -203,6 +228,10 @@
     {
      "stdin": "100\n",
      "expected": "5050\n"
+    },
+    {
+     "stdin": "10\n",
+     "expected": "55\n"
     }
    ],
    "difficulty": 1,
@@ -213,7 +242,7 @@
    "id": "t_loop_fizzbuzz",
    "title": "FizzBuzz",
    "prompt": "Прочитайте n и выведите числа от 1 до n, каждое на своей строке. Вместо чисел, кратных 3, выведите Fizz, кратных 5 — Buzz, кратных 15 — FizzBuzz.",
-   "starter": "",
+   "starter": "n = int(input())\nfor i in range(1, n + 1):\n    print(i)",
    "solution": "n = int(input())\nfor i in range(1, n + 1):\n    if i % 15 == 0:\n        print('FizzBuzz')\n    elif i % 3 == 0:\n        print('Fizz')\n    elif i % 5 == 0:\n        print('Buzz')\n    else:\n        print(i)",
    "tests": [
     {
@@ -227,6 +256,10 @@
     {
      "stdin": "3\n",
      "expected": "1\n2\nFizz\n"
+    },
+    {
+     "stdin": "16\n",
+     "expected": "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n16\n"
     }
    ],
    "difficulty": 2,
@@ -237,8 +270,8 @@
    "id": "t_loopx_first_negative",
    "title": "Первое отрицательное",
    "prompt": "В строке записаны целые числа через пробел. Выведите первое отрицательное число или «нет», если таких нет.",
-   "starter": "",
-   "solution": "nums = [int(x) for x in input().split()]\nfor n in nums:\n    if n < 0:\n        print(n)\n        break\nelse:\n    print('нет')",
+   "starter": "for x in input().split():\n    print(x)",
+   "solution": "for x in input().split():\n    n = int(x)\n    if n < 0:\n        print(n)\n        break\nelse:\n    print('нет')",
    "tests": [
     {
      "stdin": "4 7 -2 5 -9\n",
@@ -251,6 +284,10 @@
     {
      "stdin": "-1\n",
      "expected": "-1\n"
+    },
+    {
+     "stdin": "0 0 -3\n",
+     "expected": "-3\n"
     }
    ],
    "difficulty": 2,
@@ -261,7 +298,7 @@
    "id": "t_loopx_triangle",
    "title": "Треугольник",
    "prompt": "Прочитайте n и выведите треугольник: в строке i (от 1 до n) — i звёздочек.",
-   "starter": "",
+   "starter": "n = int(input())\nprint('*' * n)",
    "solution": "n = int(input())\nfor i in range(1, n + 1):\n    print('*' * i)",
    "tests": [
     {
@@ -275,6 +312,10 @@
     {
      "stdin": "5\n",
      "expected": "*\n**\n***\n****\n*****\n"
+    },
+    {
+     "stdin": "2\n",
+     "expected": "*\n**\n"
     }
    ],
    "difficulty": 1,
@@ -286,7 +327,7 @@
    "title": "Минимум и максимум",
    "prompt": "В строке — целые числа через пробел. Выведите минимум и максимум через пробел.",
    "starter": "nums = input().split()\nprint(min(nums), max(nums))",
-   "solution": "nums = [int(x) for x in input().split()]\nprint(min(nums), max(nums))",
+   "solution": "nums = list(map(int, input().split()))\nprint(min(nums), max(nums))",
    "tests": [
     {
      "stdin": "3 9 1 7\n",
@@ -299,6 +340,10 @@
     {
      "stdin": "-2 -8 0\n",
      "expected": "-8 0\n"
+    },
+    {
+     "stdin": "9 10 2\n",
+     "expected": "2 10\n"
     }
    ],
    "difficulty": 1,
@@ -309,8 +354,8 @@
    "id": "t_list_second_max",
    "title": "Второй максимум",
    "prompt": "В строке — целые числа через пробел (различных чисел минимум два). Выведите второе по величине различное число.",
-   "starter": "",
-   "solution": "nums = sorted(set(int(x) for x in input().split()))\nprint(nums[-2])",
+   "starter": "nums = sorted(map(int, input().split()))\nprint(nums[-2])",
+   "solution": "nums = sorted(map(int, input().split()))\nbiggest = nums[-1]\nfor x in reversed(nums):\n    if x < biggest:\n        print(x)\n        break",
    "tests": [
     {
      "stdin": "3 9 1 7\n",
@@ -323,17 +368,25 @@
     {
      "stdin": "10 -1 10 3\n",
      "expected": "3\n"
+    },
+    {
+     "stdin": "1 2\n",
+     "expected": "1\n"
+    },
+    {
+     "stdin": "7 7 7 2\n",
+     "expected": "2\n"
     }
    ],
    "difficulty": 2,
-   "hint": "Уберите повторы через set, отсортируйте и возьмите предпоследний.",
+   "hint": "Отсортируйте числа и идите с конца до первого числа, которое меньше максимума.",
    "module": "lists"
   },
   {
    "id": "t_set_common",
    "title": "Общие слова",
-   "prompt": "В двух строках — слова через пробел. Выведите общие слова в алфавитном порядке через пробел или «нет», если общих нет.",
-   "starter": "",
+   "prompt": "В двух строках — слова через пробел. Выведите общие слова через пробел в порядке sorted() или «нет», если общих нет.",
+   "starter": "a = input().split()\nb = input().split()\nprint('нет')",
    "solution": "a = set(input().split())\nb = set(input().split())\ncommon = sorted(a & b)\nprint(' '.join(common) if common else 'нет')",
    "tests": [
     {
@@ -347,6 +400,10 @@
     {
      "stdin": "x\nx\n",
      "expected": "x\n"
+    },
+    {
+     "stdin": "c b a\na b z\n",
+     "expected": "a b\n"
     }
    ],
    "difficulty": 2,
@@ -356,9 +413,9 @@
   {
    "id": "t_dict_word_count",
    "title": "Самое частое слово",
-   "prompt": "Прочитайте строку слов через пробел. Выведите самое частое слово и сколько раз оно встретилось. Если таких несколько — то, что раньше по алфавиту.",
-   "starter": "",
-   "solution": "counts = {}\nfor w in input().split():\n    counts[w] = counts.get(w, 0) + 1\nbest = min(counts, key=lambda w: (-counts[w], w))\nprint(best, counts[best])",
+   "prompt": "Прочитайте строку слов через пробел. Выведите самое частое слово и сколько раз оно встретилось. Если таких несколько — то, которое идёт первым в порядке sorted().",
+   "starter": "words = input().split()\nprint(words[0], 1)",
+   "solution": "counts = {}\nfor w in input().split():\n    counts[w] = counts.get(w, 0) + 1\nbest = None\nfor w in sorted(counts):\n    if best is None or counts[w] > counts[best]:\n        best = w\nprint(best, counts[best])",
    "tests": [
     {
      "stdin": "кот пёс кот\n",
@@ -378,14 +435,14 @@
     }
    ],
    "difficulty": 3,
-   "hint": "Посчитайте слова в словаре; для выбора — сортировка по (-частота, слово).",
+   "hint": "Посчитайте слова в словаре, затем пройдите по sorted(counts) и запоминайте слово, у которого частота строго больше лучшей.",
    "module": "dicts"
   },
   {
    "id": "t_dict_phonebook",
    "title": "Телефонная книга",
    "prompt": "В первой строке n — число записей, затем n строк «имя номер», затем строка с именем для поиска. Выведите номер или «не найдено».",
-   "starter": "",
+   "starter": "n = int(input())\nfor _ in range(n):\n    input()\nprint('не найдено')",
    "solution": "n = int(input())\nbook = {}\nfor _ in range(n):\n    name, phone = input().split()\n    book[name] = phone\nprint(book.get(input().strip(), 'не найдено'))",
    "tests": [
     {
@@ -399,17 +456,21 @@
     {
      "stdin": "3\na 1\nb 2\nc 3\na\n",
      "expected": "1\n"
+    },
+    {
+     "stdin": "2\nx 1\nx 2\nx\n",
+     "expected": "2\n"
     }
    ],
    "difficulty": 2,
-   "hint": "Сохраните записи в словарь и используйте get с значением по умолчанию.",
+   "hint": "Сохраните записи в словарь и используйте get со значением по умолчанию.",
    "module": "dicts"
   },
   {
    "id": "t_comp_even_squares",
    "title": "Квадраты чётных",
    "prompt": "Прочитайте n и выведите через пробел квадраты всех чётных чисел от 0 до n включительно.",
-   "starter": "",
+   "starter": "n = int(input())\nprint(n * n)",
    "solution": "n = int(input())\nprint(' '.join(str(x * x) for x in range(0, n + 1, 2)))",
    "tests": [
     {
@@ -423,16 +484,25 @@
     {
      "stdin": "9\n",
      "expected": "0 4 16 36 64\n"
+    },
+    {
+     "stdin": "2\n",
+     "expected": "0 4\n"
     }
    ],
    "difficulty": 2,
+   "requires": {
+    "uses": [
+     "comprehension"
+    ]
+   },
    "hint": "Включение + ' '.join(str(...)).",
    "module": "comprehensions"
   },
   {
    "id": "t_func_clamp",
    "title": "Ограничить число",
-   "prompt": "Напишите функцию clamp(x, lo, hi), которая возвращает x, но не меньше lo и не больше hi. Прочитайте три целых числа x lo hi из одной строки и выведите clamp(x, lo, hi).",
+   "prompt": "Напишите функцию clamp(x, lo, hi), которая возвращает x, но не меньше lo и не больше hi (гарантируется lo ≤ hi). Прочитайте три целых числа x lo hi из одной строки и выведите clamp(x, lo, hi).",
    "starter": "def clamp(x, lo, hi):\n    pass\n\nx, lo, hi = map(int, input().split())\nprint(clamp(x, lo, hi))",
    "solution": "def clamp(x, lo, hi):\n    return max(lo, min(x, hi))\n\nx, lo, hi = map(int, input().split())\nprint(clamp(x, lo, hi))",
    "tests": [
@@ -451,9 +521,18 @@
     {
      "stdin": "7 7 7\n",
      "expected": "7\n"
+    },
+    {
+     "stdin": "-50 -10 -5\n",
+     "expected": "-10\n"
     }
    ],
    "difficulty": 1,
+   "requires": {
+    "defines": [
+     "clamp"
+    ]
+   },
    "hint": "min(x, hi) срезает сверху, max(lo, ...) — снизу.",
    "module": "functions"
   },
@@ -479,16 +558,25 @@
     {
      "stdin": "a\n",
      "expected": "да\n"
+    },
+    {
+     "stdin": "abca\n",
+     "expected": "нет\n"
     }
    ],
    "difficulty": 2,
+   "requires": {
+    "defines": [
+     "is_palindrome"
+    ]
+   },
    "hint": "Срез [::-1] разворачивает строку.",
    "module": "functions"
   },
   {
    "id": "t_args_average",
    "title": "Среднее любого количества",
-   "prompt": "Напишите функцию average(*nums), которая возвращает среднее арифметическое аргументов, а для пустого вызова — 0. Прочитайте числа из строки (через пробел, строка может быть пустой) и выведите average(*числа), округлив до 2 знаков.",
+   "prompt": "Напишите функцию average(*nums), которая возвращает среднее арифметическое аргументов, а для пустого вызова — целое 0. Прочитайте числа из строки (через пробел, строка может быть пустой) и выведите результат так, как в заготовке: print(round(average(*числа), 2)).",
    "starter": "def average(*nums):\n    return sum(nums)\n\nnumbers = [float(x) for x in input().split()]\nprint(round(average(*numbers), 2))",
    "solution": "def average(*nums):\n    if not nums:\n        return 0\n    return sum(nums) / len(nums)\n\nnumbers = [float(x) for x in input().split()]\nprint(round(average(*numbers), 2))",
    "tests": [
@@ -507,16 +595,28 @@
     {
      "stdin": "2.5 3.5\n",
      "expected": "3.0\n"
+    },
+    {
+     "stdin": "1 2 2\n",
+     "expected": "1.67\n"
     }
    ],
    "difficulty": 2,
+   "requires": {
+    "defines": [
+     "average"
+    ],
+    "uses": [
+     "star_args"
+    ]
+   },
    "hint": "Пустой кортеж — это ложь: if not nums.",
    "module": "args"
   },
   {
    "id": "t_scope_running_total",
    "title": "Накопитель",
-   "prompt": "Напишите функцию make_acc(), которая возвращает функцию add(x): add прибавляет x к накопленной сумме и возвращает новую сумму. Прочитайте числа через пробел и выведите накопленную сумму после каждого числа, через пробел.",
+   "prompt": "Напишите функцию make_acc(), которая возвращает функцию add(x): add прибавляет x к накопленной сумме и возвращает новую сумму. Прочитайте целые числа через пробел и выведите накопленную сумму после каждого числа, через пробел.",
    "starter": "def make_acc():\n    def add(x):\n        return x\n    return add\n\nadd = make_acc()\nprint(\" \".join(str(add(int(x))) for x in input().split()))",
    "solution": "def make_acc():\n    total = 0\n    def add(x):\n        nonlocal total\n        total += x\n        return total\n    return add\n\nadd = make_acc()\nprint(\" \".join(str(add(int(x))) for x in input().split()))",
    "tests": [
@@ -531,9 +631,21 @@
     {
      "stdin": "10 -4 7 1\n",
      "expected": "10 6 13 14\n"
+    },
+    {
+     "stdin": "0 0 7\n",
+     "expected": "0 0 7\n"
     }
    ],
    "difficulty": 3,
+   "requires": {
+    "defines": [
+     "make_acc"
+    ],
+    "uses": [
+     "nonlocal"
+    ]
+   },
    "hint": "Сумму храните в переменной make_acc и меняйте её через nonlocal.",
    "module": "scope"
   },
@@ -555,9 +667,18 @@
     {
      "stdin": "1\nsolo 3\n",
      "expected": "solo\n"
+    },
+    {
+     "stdin": "4\nd 1\nc 1\nb 2\na 1\n",
+     "expected": "b\na\nc\nd\n"
     }
    ],
    "difficulty": 3,
+   "requires": {
+    "uses": [
+     "lambda"
+    ]
+   },
    "hint": "Ключ сортировки может быть кортежем: (-баллы, имя).",
    "module": "functional"
   },
@@ -583,16 +704,35 @@
     {
      "stdin": "909\n",
      "expected": "18\n"
+    },
+    {
+     "stdin": "999999999999999999\n",
+     "expected": "162\n"
     }
    ],
    "difficulty": 2,
+   "requires": {
+    "defines": [
+     "digit_sum"
+    ],
+    "recursive": [
+     "digit_sum"
+    ],
+    "forbids": [
+     "loop",
+     "comprehension"
+    ],
+    "no_calls": [
+     "str"
+    ]
+   },
    "hint": "Последняя цифра — n % 10, остальные — n // 10.",
    "module": "recursion"
   },
   {
    "id": "t_rec_hanoi",
    "title": "Ханойская башня",
-   "prompt": "Выведите ходы для переноса n дисков со стержня A на стержень C через B. Каждый ход — строка вида «A -> C».",
+   "prompt": "В строке — целое n (1 ≤ n ≤ 10). Выведите ходы минимального решения задачи о Ханойской башне: перенос n дисков со стержня A на стержень C через B. Каждый ход — строка вида «A -> C».",
    "starter": "def hanoi(n, src, via, dst):\n    print(f\"{src} -> {dst}\")\n\nhanoi(int(input()), \"A\", \"B\", \"C\")",
    "solution": "def hanoi(n, src, via, dst):\n    if n == 0:\n        return\n    hanoi(n - 1, src, dst, via)\n    print(f\"{src} -> {dst}\")\n    hanoi(n - 1, via, src, dst)\n\nhanoi(int(input()), \"A\", \"B\", \"C\")",
    "tests": [
@@ -607,9 +747,25 @@
     {
      "stdin": "3\n",
      "expected": "A -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\n"
+    },
+    {
+     "stdin": "5\n",
+     "expected": "A -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\nA -> B\nC -> B\nC -> A\nB -> A\nC -> B\nA -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\nB -> A\nC -> B\nC -> A\nB -> A\nB -> C\nA -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\n"
+    },
+    {
+     "stdin": "7\n",
+     "expected": "A -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\nA -> B\nC -> B\nC -> A\nB -> A\nC -> B\nA -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\nB -> A\nC -> B\nC -> A\nB -> A\nB -> C\nA -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\nA -> B\nC -> B\nC -> A\nB -> A\nC -> B\nA -> C\nA -> B\nC -> B\nC -> A\nB -> A\nB -> C\nA -> C\nB -> A\nC -> B\nC -> A\nB -> A\nC -> B\nA -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\nA -> B\nC -> B\nC -> A\nB -> A\nC -> B\nA -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\nB -> A\nC -> B\nC -> A\nB -> A\nB -> C\nA -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\nB -> A\nC -> B\nC -> A\nB -> A\nC -> B\nA -> C\nA -> B\nC -> B\nC -> A\nB -> A\nB -> C\nA -> C\nB -> A\nC -> B\nC -> A\nB -> A\nB -> C\nA -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\nA -> B\nC -> B\nC -> A\nB -> A\nC -> B\nA -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\nB -> A\nC -> B\nC -> A\nB -> A\nB -> C\nA -> C\nA -> B\nC -> B\nA -> C\nB -> A\nB -> C\nA -> C\n"
     }
    ],
    "difficulty": 3,
+   "requires": {
+    "defines": [
+     "hanoi"
+    ],
+    "recursive": [
+     "hanoi"
+    ]
+   },
    "hint": "Перенесите n - 1 дисков на вспомогательный стержень, самый большой — на цель, затем n - 1 дисков сверху.",
    "module": "recursion"
   },
@@ -631,9 +787,18 @@
     {
      "stdin": "1\n7 abc\n",
      "expected": "не число\n"
+    },
+    {
+     "stdin": "2\n-9 2\n0 0\n",
+     "expected": "-4.5\nделение на ноль\n"
     }
    ],
    "difficulty": 2,
+   "requires": {
+    "uses": [
+     "try"
+    ]
+   },
    "hint": "Два блока except: для ZeroDivisionError и для ValueError.",
    "module": "exceptions"
   },
@@ -655,9 +820,18 @@
     {
      "stdin": "2\nab\ncd\n",
      "expected": "cd\nab\n"
+    },
+    {
+     "stdin": "4\n1\n2\n3\n4\n",
+     "expected": "4\n3\n2\n1\n"
     }
    ],
    "difficulty": 2,
+   "requires": {
+    "uses": [
+     "with"
+    ]
+   },
    "hint": "Прочитанные строки содержат \\n в конце — уберите его через rstrip.",
    "module": "files"
   },
@@ -679,6 +853,10 @@
     {
      "stdin": "listen silent enlist google\n",
      "expected": "enlist listen silent\ngoogle\n"
+    },
+    {
+     "stdin": "abc cab bca xyz zyx q\n",
+     "expected": "abc bca cab\nq\nxyz zyx\n"
     }
    ],
    "difficulty": 3,
@@ -710,8 +888,189 @@
     }
    ],
    "difficulty": 2,
+   "requires": {
+    "uses": [
+     "import"
+    ]
+   },
    "hint": "Шаблон r\"-?\\d+\": необязательный минус и одна или больше цифр.",
    "module": "textdata"
+  },
+  {
+   "id": "t_oop_rectangle",
+   "title": "Прямоугольник",
+   "prompt": "Создайте класс Rectangle с атрибутами w и h и методами area() и perimeter(). Прочитайте w и h из одной строки и выведите площадь и периметр через пробел.",
+   "starter": "class Rectangle:\n    def __init__(self, w, h):\n        pass\n\nw, h = map(int, input().split())\nr = Rectangle(w, h)\nprint(r.area(), r.perimeter())",
+   "solution": "class Rectangle:\n    def __init__(self, w, h):\n        self.w = w\n        self.h = h\n\n    def area(self):\n        return self.w * self.h\n\n    def perimeter(self):\n        return 2 * (self.w + self.h)\n\nw, h = map(int, input().split())\nr = Rectangle(w, h)\nprint(r.area(), r.perimeter())",
+   "tests": [
+    {
+     "stdin": "2 3\n",
+     "expected": "6 10\n"
+    },
+    {
+     "stdin": "5 5\n",
+     "expected": "25 20\n"
+    },
+    {
+     "stdin": "1 10\n",
+     "expected": "10 22\n"
+    },
+    {
+     "stdin": "7 4\n",
+     "expected": "28 22\n"
+    }
+   ],
+   "difficulty": 1,
+   "requires": {
+    "defines": [
+     "Rectangle"
+    ]
+   },
+   "hint": "Сохраните w и h в self.",
+   "module": "classes"
+  },
+  {
+   "id": "t_inh_shapes",
+   "title": "Фигуры",
+   "prompt": "Создайте базовый класс Shape с методом area() и подклассы Square(a) и Circle(r) (π = 3.14159). Прочитайте n и n строк вида «square 3» или «circle 2» и выведите площадь каждой фигуры, округлив до 2 знаков.",
+   "starter": "class Shape:\n    def area(self):\n        return 0\n\nfor _ in range(int(input())):\n    kind, size = input().split()\n    print(Shape().area())",
+   "solution": "class Shape:\n    def area(self):\n        raise NotImplementedError\n\nclass Square(Shape):\n    def __init__(self, a):\n        self.a = a\n    def area(self):\n        return self.a ** 2\n\nclass Circle(Shape):\n    def __init__(self, r):\n        self.r = r\n    def area(self):\n        return 3.14159 * self.r ** 2\n\nkinds = {\"square\": Square, \"circle\": Circle}\nfor _ in range(int(input())):\n    kind, size = input().split()\n    print(round(kinds[kind](float(size)).area(), 2))",
+   "tests": [
+    {
+     "stdin": "2\nsquare 3\ncircle 1\n",
+     "expected": "9.0\n3.14\n"
+    },
+    {
+     "stdin": "1\ncircle 2\n",
+     "expected": "12.57\n"
+    },
+    {
+     "stdin": "3\nsquare 1.5\nsquare 2\ncircle 0.5\n",
+     "expected": "2.25\n4.0\n0.79\n"
+    },
+    {
+     "stdin": "1\nsquare 10\n",
+     "expected": "100.0\n"
+    }
+   ],
+   "difficulty": 2,
+   "requires": {
+    "defines": [
+     "Shape",
+     "Square",
+     "Circle"
+    ]
+   },
+   "hint": "Словарь «название → класс» избавит от цепочки if.",
+   "module": "inheritance"
+  },
+  {
+   "id": "t_dunder_fraction",
+   "title": "Дроби",
+   "prompt": "Создайте класс Fraction(num, den) с методом __add__ и методом __str__, который печатает дробь в несократимом виде «a/b» (или просто «a», если знаменатель 1). Прочитайте строку «a/b c/d» и выведите сумму дробей.",
+   "starter": "class Fraction:\n    def __init__(self, num, den):\n        self.num, self.den = num, den\n\na, b = (Fraction(*map(int, part.split(\"/\"))) for part in input().split())\nprint(a.num + b.num)",
+   "solution": "from math import gcd\n\nclass Fraction:\n    def __init__(self, num, den):\n        g = gcd(num, den)\n        self.num, self.den = num // g, den // g\n    def __add__(self, other):\n        return Fraction(self.num * other.den + other.num * self.den, self.den * other.den)\n    def __str__(self):\n        return str(self.num) if self.den == 1 else f\"{self.num}/{self.den}\"\n\na, b = (Fraction(*map(int, part.split(\"/\"))) for part in input().split())\nprint(a + b)",
+   "tests": [
+    {
+     "stdin": "1/2 1/3\n",
+     "expected": "5/6\n"
+    },
+    {
+     "stdin": "1/4 3/4\n",
+     "expected": "1\n"
+    },
+    {
+     "stdin": "2/6 1/6\n",
+     "expected": "1/2\n"
+    },
+    {
+     "stdin": "5/3 2/7\n",
+     "expected": "41/21\n"
+    }
+   ],
+   "difficulty": 3,
+   "requires": {
+    "defines": [
+     "Fraction",
+     "__add__",
+     "__str__"
+    ]
+   },
+   "hint": "Сокращайте в __init__ через math.gcd.",
+   "module": "dunder"
+  },
+  {
+   "id": "t_prop_temperature",
+   "title": "Термометр",
+   "prompt": "Создайте класс Thermometer со свойством celsius (с проверкой: не ниже -273.15, иначе ValueError) и свойством fahrenheit только для чтения. Прочитайте числа через пробел; для каждого выведите градусы Фаренгейта с одним знаком после запятой или «ошибка», если значение недопустимо.",
+   "starter": "class Thermometer:\n    def __init__(self, celsius):\n        self.celsius = celsius\n\nfor x in input().split():\n    print(Thermometer(float(x)).celsius)",
+   "solution": "class Thermometer:\n    def __init__(self, celsius):\n        self.celsius = celsius\n\n    @property\n    def celsius(self):\n        return self._celsius\n\n    @celsius.setter\n    def celsius(self, value):\n        if value < -273.15:\n            raise ValueError(\"слишком холодно\")\n        self._celsius = value\n\n    @property\n    def fahrenheit(self):\n        return self._celsius * 9 / 5 + 32\n\nfor x in input().split():\n    try:\n        print(f\"{Thermometer(float(x)).fahrenheit:.1f}\")\n    except ValueError:\n        print(\"ошибка\")",
+   "tests": [
+    {
+     "stdin": "0 100 -40\n",
+     "expected": "32.0\n212.0\n-40.0\n"
+    },
+    {
+     "stdin": "36.6\n",
+     "expected": "97.9\n"
+    },
+    {
+     "stdin": "-300 20\n",
+     "expected": "ошибка\n68.0\n"
+    },
+    {
+     "stdin": "-273.15 -273.16\n",
+     "expected": "-459.7\nошибка\n"
+    }
+   ],
+   "difficulty": 3,
+   "requires": {
+    "defines": [
+     "Thermometer"
+    ],
+    "uses": [
+     "decorator",
+     "raise"
+    ]
+   },
+   "hint": "Конструктор присваивает self.celsius — проверка в сеттере сработает и там.",
+   "module": "properties"
+  },
+  {
+   "id": "t_dc_inventory",
+   "title": "Склад",
+   "prompt": "Объявите dataclass Item(name: str, qty: int, price: float). Прочитайте n и n строк «название количество цена». Выведите общую стоимость склада (с двумя знаками после запятой) и название позиции с наибольшей стоимостью (qty * price).",
+   "starter": "from dataclasses import dataclass\n\n@dataclass\nclass Item:\n    name: str\n    qty: int\n    price: float\n\nfor _ in range(int(input())):\n    print(input())",
+   "solution": "from dataclasses import dataclass\n\n@dataclass\nclass Item:\n    name: str\n    qty: int\n    price: float\n\n    @property\n    def total(self):\n        return self.qty * self.price\n\nitems = []\nfor _ in range(int(input())):\n    name, qty, price = input().split()\n    items.append(Item(name, int(qty), float(price)))\nprint(f\"{sum(i.total for i in items):.2f}\")\nprint(max(items, key=lambda i: i.total).name)",
+   "tests": [
+    {
+     "stdin": "2\nчай 10 2.5\nкофе 3 12\n",
+     "expected": "61.00\nкофе\n"
+    },
+    {
+     "stdin": "1\nхлеб 2 40\n",
+     "expected": "80.00\nхлеб\n"
+    },
+    {
+     "stdin": "3\na 1 1\nb 2 2\nc 1 3.5\n",
+     "expected": "8.50\nb\n"
+    },
+    {
+     "stdin": "2\nx 0 100\ny 1 0.5\n",
+     "expected": "0.50\ny\n"
+    }
+   ],
+   "difficulty": 2,
+   "requires": {
+    "defines": [
+     "Item"
+    ],
+    "uses": [
+     "decorator"
+    ]
+   },
+   "hint": "Стоимость позиции удобно сделать свойством.",
+   "module": "dataclasses"
   }
  ]
 }
