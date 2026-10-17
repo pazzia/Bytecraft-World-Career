@@ -10,7 +10,6 @@ import '../../../shared/widgets/app_card.dart';
 import '../../../shared/widgets/app_progress_bar.dart';
 import '../../../shared/widgets/async_value_view.dart';
 import '../../../shared/widgets/segmented_switch.dart';
-import '../../learning_map/domain/learning_map_model.dart';
 import '../../learning_map/presentation/learning_map_providers.dart';
 import '../../settings/presentation/settings_controller.dart';
 import '../domain/career_dashboard.dart';
