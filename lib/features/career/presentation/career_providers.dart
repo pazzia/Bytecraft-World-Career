@@ -17,7 +17,8 @@ final careerDashboardProvider = FutureProvider<CareerDashboard>((ref) async {
   final course = await ref.watch(activeCourseProvider.future);
   final progress = await ref.watch(activeCourseProgressProvider.future);
   final settings = await ref.watch(settingsControllerProvider.future);
-  final portfolio = await ref.watch(githubPortfolioProvider.future);
+  final portfolio =
+      ref.watch(githubPortfolioProvider).value ?? GitHubPortfolio.disconnected();
   return const CareerDashboardCalculator().build(
     course: course,
     progress: progress,
