@@ -9,8 +9,10 @@ import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_card.dart';
 import '../../../shared/widgets/app_progress_bar.dart';
 import '../../../shared/widgets/async_value_view.dart';
+import '../../../shared/widgets/segmented_switch.dart';
 import '../../learning_map/domain/learning_map_model.dart';
 import '../../learning_map/presentation/learning_map_providers.dart';
+import '../../settings/presentation/settings_controller.dart';
 import '../domain/career_dashboard.dart';
 import 'career_providers.dart';
 
@@ -34,6 +36,20 @@ class CareerScreen extends ConsumerWidget {
           ),
           children: [
             _CareerHero(vm: vm),
+            const SizedBox(height: Spacing.xl),
+            const _SectionHeader(title: 'Карьерная цель'),
+            SegmentedSwitch<CareerTargetId>(
+              semanticLabel: 'Карьерная цель',
+              selected: vm.targetId,
+              onChanged: (value) => ref
+                  .read(settingsControllerProvider.notifier)
+                  .setCareerGoal(value.id),
+              options: const [
+                SegmentOption(CareerTargetId.junior, 'Junior'),
+                SegmentOption(CareerTargetId.pythonBackend, 'Backend'),
+                SegmentOption(CareerTargetId.strongMiddle, 'Middle'),
+              ],
+            ),
             const SizedBox(height: Spacing.xl),
             _SectionHeader(
               title: 'Skill Passport',
@@ -62,7 +78,13 @@ class CareerScreen extends ConsumerWidget {
             const SizedBox(height: Spacing.xl),
             const _SectionHeader(title: 'Совпадение с карьерными целями'),
             for (final match in vm.roleMatches) ...[
-              _RoleMatchCard(match: match),
+              _RoleMatchCard(
+                match: match,
+                selected: match.id == vm.targetId,
+                onTap: () => ref
+                    .read(settingsControllerProvider.notifier)
+                    .setCareerGoal(match.id.id),
+              ),
               const SizedBox(height: Spacing.md),
             ],
             const SizedBox(height: Spacing.lg),
@@ -268,18 +290,32 @@ class _AssessmentCard extends StatelessWidget {
 }
 
 class _RoleMatchCard extends StatelessWidget {
-  const _RoleMatchCard({required this.match});
+  const _RoleMatchCard({
+    required this.match,
+    required this.selected,
+    required this.onTap,
+  });
 
   final RoleMatch match;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => AppCard(
+        onTap: onTap,
+        semanticLabel: '${match.title}: совпадение ${match.match} процентов',
+        borderColor:
+            selected ? Theme.of(context).colorScheme.primary : context.gameColors.keyBorder,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Expanded(child: Text(match.title, style: Theme.of(context).textTheme.titleMedium)),
+                if (selected) ...[
+                  Icon(Icons.flag_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: Spacing.xs),
+                ],
                 Text(
                   '${match.match}%',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
