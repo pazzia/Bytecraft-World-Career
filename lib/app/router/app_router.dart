@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/career/presentation/career_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/journal/presentation/journal_screen.dart';
 import '../../features/journal/presentation/topic_screen.dart';
@@ -161,6 +162,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootKey,
         builder: (context, state) => const PremiumScreen(),
       ),
+      GoRoute(
+        path: Routes.career,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const CareerScreen(),
+      ),
     ],
   );
   ref.onDispose(() {
@@ -169,4 +175,3 @@ final routerProvider = Provider<GoRouter>((ref) {
   });
   return router;
 });
-
