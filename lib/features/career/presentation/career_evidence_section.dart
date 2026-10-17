@@ -309,7 +309,7 @@ class _VacancyCard extends StatelessWidget {
                 Text(
                   'Главный gap: ${report!.gaps.first.label} (${report!.gaps.first.score}/100)',
                   style: theme.textTheme.bodyMedium?.copyWith(
-                    color: context.gameColors.warning,
+                    color: context.gameColors.streak,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
