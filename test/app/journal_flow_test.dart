@@ -5,48 +5,22 @@ import 'package:flutter_test/flutter_test.dart';
 import '../helpers/app_harness.dart';
 import '../helpers/fake_python_runner.dart';
 
-/// Mistake → short note → detailed review → saved to the journal → the
-/// journal tab and the topic card. Then the Python sandbox.
 void main() {
-  testWidgets('a mistake can be reviewed and saved to the journal', (tester) async {
+  testWidgets('a real learning mistake feeds Mistake DNA', (tester) async {
     await pumpBytecraft(tester);
-    await completeOnboarding(tester);
-    await tester.tap(find.text('Продолжить'));
+
+    await openTab(tester, 'Учёба');
+    await tester.tap(find.text('Первая переменная'));
     await tester.pumpAndSettle();
 
-    // Wrong answer: "3".
+    // Wrong answer: "3". This is recorded both by the learning journal and
+    // by the World Mistake DNA bridge.
     await tester.tap(find.byKey(const ValueKey('option_0')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Проверить'));
     await tester.pumpAndSettle();
-    dumpTexts(tester, 'wrong');
     expect(find.text('Не то'), findsOneWidget);
 
-    // Detailed review with the topic and the journal button.
-    await tester.tap(find.byKey(const ValueKey('review_button')));
-    await tester.pumpAndSettle();
-    dumpTexts(tester, 'review');
-    expect(find.text('Что не так'), findsOneWidget);
-    expect(find.text('Присваивание'), findsWidgets);
-    // The sheet's list builds lazily: scroll down to the button.
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('journal_toggle')),
-      300,
-      scrollable: find
-          .descendant(
-            of: find.byType(DraggableScrollableSheet),
-            matching: find.byType(Scrollable),
-          )
-          .first,
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(const ValueKey('journal_toggle')));
-    await tester.pumpAndSettle();
-    expect(find.text('В журнале · убрать'), findsOneWidget);
-
-    // Close the sheet, try again correctly.
-    await tester.tapAt(const Offset(195, 20));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Ещё раз'));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('option_1')));
@@ -59,24 +33,23 @@ void main() {
     await tester.tap(find.text('К карте'));
     await tester.pumpAndSettle();
 
-    // The journal tab lists the saved topic.
-    await openTab(tester, 'Журнал');
-    dumpTexts(tester, 'journal');
-    expect(find.text('Мои темы'), findsOneWidget);
-    expect(find.text('Присваивание'), findsWidgets);
-
-    await tester.tap(find.text('Присваивание').first);
-    await tester.pumpAndSettle();
-    dumpTexts(tester, 'topic');
-    expect(find.textContaining('Переменная — это имя'), findsWidgets);
+    await openTab(tester, 'DNA');
+    dumpTexts(tester, 'mistake-dna');
+    expect(find.text('Mistake DNA'), findsOneWidget);
+    expect(find.text('Твой профиль ошибок'), findsOneWidget);
+    expect(find.text('Функции'), findsWidgets);
+    // Default 7% + one real mistake = 9%.
+    expect(find.text('9%'), findsOneWidget);
   });
 
   testWidgets('the sandbox runs code and shows the output', (tester) async {
     final runner = FakePythonRunner(
-      (code, stdin) => RunResult(status: RunStatus.ok, stdout: 'Привет, ${stdin.trim()}!\n'),
+      (code, stdin) => RunResult(
+        status: RunStatus.ok,
+        stdout: 'Привет, ${stdin.trim()}!\n',
+      ),
     );
     await pumpBytecraft(tester, runner: runner);
-    await completeOnboarding(tester);
 
     await openTab(tester, 'Код');
     dumpTexts(tester, 'code');
