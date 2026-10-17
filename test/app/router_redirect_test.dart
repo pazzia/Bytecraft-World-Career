@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   final fresh = AppSettings.initial('python');
-  final onboarded = fresh.copyWith(onboardingCompleted: true);
 
   test('stays on splash until startup is ready', () {
     expect(
@@ -18,10 +17,10 @@ void main() {
     );
   });
 
-  test('new users go to onboarding', () {
+  test('fresh World users launch directly into the game hub', () {
     expect(
       resolveRedirect(location: Routes.splash, isReady: true, settings: fresh),
-      Routes.onboarding,
+      Routes.home,
     );
     expect(
       resolveRedirect(
@@ -29,24 +28,24 @@ void main() {
         isReady: true,
         settings: fresh,
       ),
-      isNull,
+      Routes.home,
     );
   });
 
-  test('onboarded users skip splash/onboarding and can open any page', () {
+  test('ready users can open game and learning pages', () {
     expect(
       resolveRedirect(
-        location: Routes.onboarding,
+        location: Routes.worldBoss,
         isReady: true,
-        settings: onboarded,
+        settings: fresh,
       ),
-      Routes.home,
+      isNull,
     );
     expect(
       resolveRedirect(
         location: Routes.level('python', 'py_var_001'),
         isReady: true,
-        settings: onboarded,
+        settings: fresh,
       ),
       isNull,
     );
