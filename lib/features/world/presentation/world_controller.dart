@@ -28,6 +28,51 @@ class WorldController extends AsyncNotifier<WorldState> {
 
   Future<WorldState> _current() async => state.value ?? await future;
 
+  /// The ordinary learning loop feeds the game economy. This is the bridge
+  /// between the existing Python course and Bytecraft World.
+  Future<void> recordLessonCompleted({
+    required String moduleId,
+    required int mistakes,
+  }) async {
+    final current = await _current();
+    final cleanBonus = mistakes == 0 ? 12 : 0;
+    final xp = 24 + cleanBonus;
+    await _set(
+      current.copyWith(
+        coins: current.coins + 8 + (mistakes == 0 ? 4 : 0),
+        worldXp: current.worldXp + xp,
+        seasonXp: current.seasonXp + xp,
+        streak: current.streak < 1 ? 1 : current.streak,
+      ),
+    );
+  }
+
+  /// Real mistakes change Mistake DNA instead of being only a journal entry.
+  Future<void> recordLearningMistake(String moduleId) async {
+    final current = await _current();
+    final category = _mistakeCategory(moduleId);
+    final old = current.mistakes[category] ?? 5;
+    final next = <String, int>{
+      ...current.mistakes,
+      category: (old + 2).clamp(0, 60).toInt(),
+    };
+    await _set(current.copyWith(mistakes: next));
+  }
+
+  String _mistakeCategory(String moduleId) {
+    if ({'conditions'}.contains(moduleId)) return 'Условия';
+    if ({'loops', 'loops_control', 'generators'}.contains(moduleId)) {
+      return 'Циклы';
+    }
+    if ({'lists', 'tuples_sets', 'dicts', 'strings'}.contains(moduleId)) {
+      return 'Индексы';
+    }
+    if ({'types', 'operators', 'dataclasses', 'typing'}.contains(moduleId)) {
+      return 'Типы данных';
+    }
+    return 'Функции';
+  }
+
   Future<void> upgradeBuilding(String id) async {
     final current = await _current();
     final level = current.cityLevels[id] ?? 1;
