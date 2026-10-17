@@ -10,6 +10,49 @@ enum CareerSkillId {
   production,
 }
 
+enum CareerTargetId {
+  junior('junior_python_backend', 'Junior Python Backend'),
+  pythonBackend('python_backend', 'Python Backend Developer'),
+  strongMiddle('strong_middle_python_backend', 'Strong Middle Python Backend');
+
+  const CareerTargetId(this.id, this.title);
+
+  final String id;
+  final String title;
+
+  static CareerTargetId fromId(String? id) => CareerTargetId.values.firstWhere(
+        (value) => value.id == id,
+        orElse: () => CareerTargetId.pythonBackend,
+      );
+
+  Map<CareerSkillId, int> get requirements => switch (this) {
+        CareerTargetId.junior => const {
+            CareerSkillId.pythonCore: 68,
+            CareerSkillId.oop: 48,
+            CareerSkillId.algorithms: 45,
+            CareerSkillId.testing: 50,
+            CareerSkillId.async: 35,
+            CareerSkillId.production: 42,
+          },
+        CareerTargetId.pythonBackend => const {
+            CareerSkillId.pythonCore: 85,
+            CareerSkillId.oop: 70,
+            CareerSkillId.algorithms: 65,
+            CareerSkillId.testing: 75,
+            CareerSkillId.async: 70,
+            CareerSkillId.production: 70,
+          },
+        CareerTargetId.strongMiddle => const {
+            CareerSkillId.pythonCore: 92,
+            CareerSkillId.oop: 82,
+            CareerSkillId.algorithms: 76,
+            CareerSkillId.testing: 84,
+            CareerSkillId.async: 82,
+            CareerSkillId.production: 84,
+          },
+      };
+}
+
 class CareerSkill {
   const CareerSkill({
     required this.id,
@@ -42,14 +85,20 @@ class CareerAction {
 }
 
 class RoleMatch {
-  const RoleMatch({required this.title, required this.match});
+  const RoleMatch({
+    required this.id,
+    required this.title,
+    required this.match,
+  });
 
+  final CareerTargetId id;
   final String title;
   final int match;
 }
 
 class CareerDashboard {
   const CareerDashboard({
+    required this.targetId,
     required this.targetTitle,
     required this.careerScore,
     required this.readiness,
@@ -61,6 +110,7 @@ class CareerDashboard {
     required this.totalLevels,
   });
 
+  final CareerTargetId targetId;
   final String targetTitle;
   final int careerScore;
   final int readiness;
@@ -78,26 +128,33 @@ class CareerDashboard {
 class CareerDashboardCalculator {
   const CareerDashboardCalculator();
 
-  static const String targetTitle = 'Python Backend Developer';
-
   CareerDashboard build({
     required Course course,
     required CourseProgress progress,
+    CareerTargetId target = CareerTargetId.pythonBackend,
   }) {
+    final requirements = target.requirements;
     final skills = <CareerSkill>[
       _skill(
         CareerSkillId.pythonCore,
         'Python Core',
-        85,
+        requirements[CareerSkillId.pythonCore]!,
         course,
         progress,
         _pythonCore,
       ),
-      _skill(CareerSkillId.oop, 'OOP и архитектура', 70, course, progress, _oop),
+      _skill(
+        CareerSkillId.oop,
+        'OOP и архитектура',
+        requirements[CareerSkillId.oop]!,
+        course,
+        progress,
+        _oop,
+      ),
       _skill(
         CareerSkillId.algorithms,
         'Алгоритмы',
-        65,
+        requirements[CareerSkillId.algorithms]!,
         course,
         progress,
         _algorithms,
@@ -105,7 +162,7 @@ class CareerDashboardCalculator {
       _skill(
         CareerSkillId.testing,
         'Тестирование',
-        75,
+        requirements[CareerSkillId.testing]!,
         course,
         progress,
         _testing,
@@ -113,7 +170,7 @@ class CareerDashboardCalculator {
       _skill(
         CareerSkillId.async,
         'Async и concurrency',
-        70,
+        requirements[CareerSkillId.async]!,
         course,
         progress,
         _async,
@@ -121,7 +178,7 @@ class CareerDashboardCalculator {
       _skill(
         CareerSkillId.production,
         'Production skills',
-        70,
+        requirements[CareerSkillId.production]!,
         course,
         progress,
         _production,
@@ -129,7 +186,7 @@ class CareerDashboardCalculator {
     ];
 
     final careerScore = _weightedAverage(skills);
-    final readiness = readinessFor(skills);
+    final readiness = _roleMatch(skills, requirements);
     final courseTotal = course.playableLevels.length;
     final completion = courseTotal == 0
         ? 0
@@ -138,33 +195,17 @@ class CareerDashboardCalculator {
 
     final actions = _actions(skills, course, progress);
     final roleMatches = [
-      RoleMatch(
-        title: 'Junior Python Backend',
-        match: _roleMatch(skills, const {
-          CareerSkillId.pythonCore: 68,
-          CareerSkillId.oop: 48,
-          CareerSkillId.algorithms: 45,
-          CareerSkillId.testing: 50,
-          CareerSkillId.async: 35,
-          CareerSkillId.production: 42,
-        }),
-      ),
-      RoleMatch(title: targetTitle, match: readiness),
-      RoleMatch(
-        title: 'Strong Middle Python Backend',
-        match: _roleMatch(skills, const {
-          CareerSkillId.pythonCore: 92,
-          CareerSkillId.oop: 82,
-          CareerSkillId.algorithms: 76,
-          CareerSkillId.testing: 84,
-          CareerSkillId.async: 82,
-          CareerSkillId.production: 84,
-        }),
-      ),
+      for (final role in CareerTargetId.values)
+        RoleMatch(
+          id: role,
+          title: role.title,
+          match: _roleMatch(skills, role.requirements),
+        ),
     ];
 
     return CareerDashboard(
-      targetTitle: targetTitle,
+      targetId: target,
+      targetTitle: target.title,
       careerScore: careerScore,
       readiness: readiness,
       cvScore: cvScore,
