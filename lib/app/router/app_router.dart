@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../features/home/presentation/home_screen.dart';
 import '../../features/journal/presentation/journal_screen.dart';
 import '../../features/journal/presentation/topic_screen.dart';
 import '../../features/playground/presentation/playground_screen.dart';
@@ -17,11 +16,13 @@ import '../../features/settings/domain/app_settings.dart';
 import '../../features/settings/presentation/settings_controller.dart';
 import '../../features/shop/presentation/shop_screen.dart';
 import '../../features/splash/presentation/splash_screen.dart';
+import '../../features/world/presentation/world_challenge_screens.dart';
+import '../../features/world/presentation/world_hub_screen.dart';
+import '../../features/world/presentation/world_meta_screens.dart';
 import '../shell/main_shell.dart';
 import '../startup/app_startup.dart';
 import 'routes.dart';
 
-/// Re-evaluates redirects when startup or settings change.
 class _RouterRefresh extends ChangeNotifier {
   _RouterRefresh(Ref ref) {
     ref.listen(appStartupProvider, (previous, next) => notifyListeners());
@@ -29,7 +30,6 @@ class _RouterRefresh extends ChangeNotifier {
   }
 }
 
-/// Pure redirect rule, extracted for readability and testing.
 String? resolveRedirect({
   required String location,
   required bool isReady,
@@ -87,7 +87,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: Routes.home,
-                builder: (context, state) => const HomeScreen(),
+                builder: (context, state) => const WorldHubScreen(),
               ),
             ],
           ),
@@ -134,6 +134,56 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
+        path: Routes.worldCity,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const CodeCityScreen(),
+      ),
+      GoRoute(
+        path: Routes.worldExpedition,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const ExpeditionScreen(),
+      ),
+      GoRoute(
+        path: Routes.worldBoss,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const BossFightScreen(),
+      ),
+      GoRoute(
+        path: Routes.worldGhost,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const GhostPvpScreen(),
+      ),
+      GoRoute(
+        path: Routes.worldGuild,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const GuildScreen(),
+      ),
+      GoRoute(
+        path: Routes.worldRival,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const AiRivalScreen(),
+      ),
+      GoRoute(
+        path: Routes.worldMistakes,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const MistakeDnaScreen(),
+      ),
+      GoRoute(
+        path: Routes.worldBuild,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const BuildUnlockScreen(),
+      ),
+      GoRoute(
+        path: Routes.worldSeason,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const SeasonScreen(),
+      ),
+      GoRoute(
+        path: Routes.worldInfinite,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const InfiniteRunScreen(),
+      ),
+      GoRoute(
         path: Routes.levelPattern,
         parentNavigatorKey: _rootKey,
         builder: (context, state) => LevelScreen(
@@ -169,4 +219,3 @@ final routerProvider = Provider<GoRouter>((ref) {
   });
   return router;
 });
-
