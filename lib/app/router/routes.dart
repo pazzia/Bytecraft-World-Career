@@ -13,6 +13,18 @@ abstract final class Routes {
   static const String topicPattern = '/topic/:topicId';
   static const String topicIdParam = 'topicId';
 
+  // Bytecraft World — the game layer built around learning.
+  static const String worldCity = '/world/city';
+  static const String worldExpedition = '/world/expedition';
+  static const String worldBoss = '/world/boss';
+  static const String worldGhost = '/world/ghost';
+  static const String worldGuild = '/world/guild';
+  static const String worldRival = '/world/rival';
+  static const String worldMistakes = '/world/mistakes';
+  static const String worldBuild = '/world/build';
+  static const String worldSeason = '/world/season';
+  static const String worldInfinite = '/world/infinite';
+
   static const String practiceTaskSegment = 'task/:taskId';
   static const String taskIdParam = 'taskId';
 
