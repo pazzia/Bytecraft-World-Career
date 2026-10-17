@@ -216,7 +216,7 @@ class WorldProgress extends StatelessWidget {
   Widget build(BuildContext context) => ClipRRect(
         borderRadius: BorderRadius.circular(99),
         child: LinearProgressIndicator(
-          value: value.clamp(0, 1),
+          value: value.clamp(0.0, 1.0).toDouble(),
           minHeight: height,
           color: color,
           backgroundColor: WorldPalette.border.withValues(alpha: .55),
@@ -344,7 +344,8 @@ class CityPainter extends CustomPainter {
         RRect.fromRectAndRadius(body, const Radius.circular(8)),
         paint,
       );
-      final window = Paint()..color = const Color(0xFFDFF9FF).withValues(alpha: .9);
+      final window = Paint()
+        ..color = const Color(0xFFDFF9FF).withValues(alpha: .9);
       for (var row = 0; row < math.max(2, level); row++) {
         final y = body.top + 10 + row * 12;
         if (y > body.bottom - 8) break;
