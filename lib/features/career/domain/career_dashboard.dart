@@ -23,7 +23,7 @@ class CareerSkill {
   final int score;
   final int target;
 
-  int get gap => (target - score).clamp(0, 100);
+  int get gap => (target - score).clamp(0, 100).toInt();
   bool get readyForAssessment => score >= target;
 }
 
@@ -133,8 +133,8 @@ class CareerDashboardCalculator {
     final courseTotal = course.playableLevels.length;
     final completion = courseTotal == 0
         ? 0
-        : (progress.completedCount / courseTotal * 100).round().clamp(0, 100);
-    final cvScore = (readiness * 0.72 + completion * 0.28).round().clamp(0, 100);
+        : _percent(progress.completedCount / courseTotal * 100);
+    final cvScore = _percent(readiness * 0.72 + completion * 0.28);
 
     final actions = _actions(skills, course, progress);
     final roleMatches = [
@@ -149,10 +149,7 @@ class CareerDashboardCalculator {
           CareerSkillId.production: 42,
         }),
       ),
-      RoleMatch(
-        title: targetTitle,
-        match: readiness,
-      ),
+      RoleMatch(title: targetTitle, match: readiness),
       RoleMatch(
         title: 'Strong Middle Python Backend',
         match: _roleMatch(skills, const {
@@ -186,8 +183,10 @@ class CareerDashboardCalculator {
       if (skill.target <= 0) continue;
       total += (skill.score / skill.target).clamp(0.0, 1.0);
     }
-    return (total / skills.length * 100).round().clamp(0, 100);
+    return _percent(total / skills.length * 100);
   }
+
+  static int _percent(num value) => value.round().clamp(0, 100).toInt();
 
   CareerSkill _skill(
     CareerSkillId id,
@@ -218,13 +217,13 @@ class CareerDashboardCalculator {
         total++;
         final levelProgress = progress.levelOf(level.id);
         if (levelProgress.completed) completed++;
-        stars += levelProgress.bestStars.clamp(0, 3);
+        stars += levelProgress.bestStars.clamp(0, 3).toInt();
       }
     }
     if (total == 0) return 0;
     final completionScore = completed / total * 70;
     final masteryScore = stars / (total * 3) * 30;
-    return (completionScore + masteryScore).round().clamp(0, 100);
+    return _percent(completionScore + masteryScore);
   }
 
   int _weightedAverage(List<CareerSkill> skills) {
@@ -243,7 +242,7 @@ class CareerDashboardCalculator {
       value += skill.score * currentWeight;
       weight += currentWeight;
     }
-    return weight == 0 ? 0 : (value / weight).round().clamp(0, 100);
+    return weight == 0 ? 0 : _percent(value / weight);
   }
 
   int _roleMatch(
@@ -257,7 +256,7 @@ class CareerDashboardCalculator {
       sum += (skill.score / entry.value).clamp(0.0, 1.0);
       count++;
     }
-    return count == 0 ? 0 : (sum / count * 100).round().clamp(0, 100);
+    return count == 0 ? 0 : _percent(sum / count * 100);
   }
 
   List<CareerAction> _actions(
@@ -270,13 +269,14 @@ class CareerDashboardCalculator {
     for (final skill in ordered) {
       if (skill.gap == 0) continue;
       final definition = _definitionFor(skill.id);
-      final nextModule = course.modules.cast<CourseModule?>().firstWhere(
-            (module) =>
-                module != null &&
-                definition.contains(module.id) &&
-                module.playableLevels.any((level) => !progress.isCompleted(level.id)),
-            orElse: () => null,
-          );
+      CourseModule? nextModule;
+      for (final module in course.modules) {
+        if (!definition.contains(module.id)) continue;
+        if (module.playableLevels.any((level) => !progress.isCompleted(level.id))) {
+          nextModule = module;
+          break;
+        }
+      }
       result.add(
         CareerAction(
           skill: skill.id,
@@ -284,7 +284,7 @@ class CareerDashboardCalculator {
           subtitle: nextModule == null
               ? 'Закрепить навык в практике и задачах на время'
               : 'Следующий модуль: ${nextModule.title}',
-          estimatedGain: skill.gap.clamp(1, 5),
+          estimatedGain: skill.gap.clamp(1, 5).toInt(),
         ),
       );
       if (result.length == 3) break;
