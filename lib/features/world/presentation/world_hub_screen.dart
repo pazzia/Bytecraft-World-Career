@@ -29,7 +29,7 @@ class WorldHubScreen extends ConsumerWidget {
               children: [
                 _TopBar(world: world),
                 const SizedBox(height: 12),
-                const WorldHeartsPanel(),
+                const WorldHeartsPanel(compact: true),
                 if (world.showMigrationNotice) ...[
                   const SizedBox(height: 12),
                   WorldPanel(

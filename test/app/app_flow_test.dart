@@ -14,6 +14,7 @@ void main() {
     expect(find.text('Bytecraft World'), findsOneWidget);
     expect(find.text('Учись. Пиши. Строй. Соревнуйся.'), findsOneWidget);
     expect(find.text('CODE CITY'), findsOneWidget);
+    expect(find.text('Жизни забега: 3/3'), findsOneWidget);
 
     await openTab(tester, 'Учёба');
     expect(find.text('Переменные'), findsWidgets);

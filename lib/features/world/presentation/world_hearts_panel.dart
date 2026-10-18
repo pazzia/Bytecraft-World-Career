@@ -10,7 +10,8 @@ import 'world_ui.dart';
 
 /// Mounted on the hub and in Run; refreshes immediately when returning to the app.
 class WorldHeartsPanel extends ConsumerStatefulWidget {
-  const WorldHeartsPanel({super.key});
+  const WorldHeartsPanel({this.compact = false, super.key});
+  final bool compact;
 
   @override
   ConsumerState<WorldHeartsPanel> createState() => _WorldHeartsPanelState();
@@ -63,6 +64,27 @@ class _WorldHeartsPanelState extends ConsumerState<WorldHeartsPanel>
     final s = WorldHearts.regenerate(saved, now);
     final wait = WorldHearts.nextIn(s, now);
     final full = wait == null;
+    if (widget.compact) {
+      return WorldPanel(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        onTap: () => showModalBottomSheet<void>(
+          context: context, isScrollControlled: true,
+          backgroundColor: WorldPalette.bg,
+          builder: (_) => const SafeArea(child: SingleChildScrollView(
+            child: Padding(padding: EdgeInsets.all(16), child: WorldHeartsPanel())))),
+        child: Row(children: [
+          const Icon(Icons.favorite_rounded, color: WorldPalette.red, size: 22),
+          const SizedBox(width: 8),
+          Expanded(child: Text('Жизни забега: ${s.hearts}/${s.maxHearts}',
+            key: const ValueKey('world-hearts-count'),
+            style: const TextStyle(color: WorldPalette.text, fontWeight: FontWeight.w800))),
+          Text(full ? 'Полные' : '+1 ${WorldHearts.countdown(wait)}',
+            style: const TextStyle(color: WorldPalette.cyan, fontSize: 12)),
+          const SizedBox(width: 4),
+          const Icon(Icons.chevron_right, color: WorldPalette.muted, size: 20),
+        ]),
+      );
+    }
     return WorldPanel(
       glow: WorldPalette.red,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
