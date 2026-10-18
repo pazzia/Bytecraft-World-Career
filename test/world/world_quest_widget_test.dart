@@ -37,7 +37,8 @@ void main() {
         of: find.text('Проверить ответ'),
         matching: find.byWidgetPredicate((w) => w is FilledButton),
       );
-      await tester.ensureVisible(find.text('Проверить ответ'));
+      await tester.scrollUntilVisible(find.text('Проверить ответ'), 250,
+        scrollable: find.byType(Scrollable).first);
       await tester.pumpAndSettle();
       expect(tester.widget<FilledButton>(button).onPressed, isNull);
       await tester.enterText(

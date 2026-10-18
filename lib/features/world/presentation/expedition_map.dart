@@ -126,7 +126,7 @@ class _ExpeditionMapState extends State<ExpeditionMap>
         ClipRRect(borderRadius: BorderRadius.circular(6), child: LinearProgressIndicator(
           value: step / 5, minHeight: 7, color: WorldPalette.green,
           backgroundColor: WorldPalette.border,
-          semanticsLabel: 'Пройдено этапов', semanticsValue: '$step из 5',
+          semanticsLabel: 'Пройдено $step из 5 этапов',
         )),
         const SizedBox(height: 10),
         const Wrap(spacing: 14, runSpacing: 5, children: [
