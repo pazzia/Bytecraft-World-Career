@@ -4,6 +4,7 @@ import 'package:bytecraft/app/di/providers.dart';
 import 'package:bytecraft/core/storage/key_value_store.dart';
 import 'package:bytecraft/features/world/presentation/world_challenge_screens.dart';
 import 'package:bytecraft/features/world/presentation/world_controller.dart';
+import 'package:bytecraft/features/world/presentation/expedition_map.dart';
 import 'package:bytecraft/features/world/domain/world_challenge.dart';
 import 'package:bytecraft/features/world/domain/world_state.dart';
 import 'package:flutter/material.dart';
@@ -30,6 +31,8 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+      expect(find.byType(ExpeditionMap), findsOneWidget);
+      expect(tester.widget<ExpeditionMap>(find.byType(ExpeditionMap)).completed, 0);
       final button = find.ancestor(
         of: find.text('Проверить ответ'),
         matching: find.byWidgetPredicate((w) => w is FilledButton),
@@ -45,6 +48,7 @@ void main() {
       await tester.tap(find.text('Проверить ответ'));
       await tester.pumpAndSettle();
       expect(c.read(worldControllerProvider).value!.expeditionStep, 0);
+      expect(tester.widget<ExpeditionMap>(find.byType(ExpeditionMap)).completed, 0);
       expect(c.read(worldControllerProvider).value!.mistakes['Типы данных'], 1);
       expect(find.textContaining('Неверно.'), findsOneWidget);
       expect(find.byTooltip('Скопировать код'), findsNothing);
@@ -62,6 +66,10 @@ void main() {
       await tester.tap(find.text('Проверить ответ'));
       await tester.pumpAndSettle();
       expect(c.read(worldControllerProvider).value!.expeditionStep, 1);
+      expect(tester.widget<ExpeditionMap>(find.byType(ExpeditionMap)).completed, 1);
+      final hero = tester.getRect(find.byKey(const ValueKey('expedition-explorer')));
+      expect(hero.top, greaterThanOrEqualTo(0));
+      expect(hero.bottom, lessThanOrEqualTo(900));
       await tester.ensureVisible(find.text('Следующее задание'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Следующее задание'));

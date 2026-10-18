@@ -11,6 +11,7 @@ import '../domain/world_state.dart';
 import 'world_controller.dart';
 import 'world_ui.dart';
 import 'world_hearts_panel.dart';
+import 'expedition_map.dart';
 
 class ExpeditionScreen extends StatelessWidget {
   const ExpeditionScreen({super.key});
@@ -61,6 +62,7 @@ class WorldQuestScreen extends ConsumerStatefulWidget {
 
 class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
   final _feedbackKey = GlobalKey();
+  final _expeditionMapKey = GlobalKey();
   String? _feedback;
   bool _next = false;
   bool _correct = false;
@@ -109,8 +111,9 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                   const WorldHeartsPanel(),
                   const SizedBox(height: 14),
                 ],
-                if (mode == WorldMode.expedition ||
-                    mode == WorldMode.boss ||
+                if (mode == WorldMode.expedition)
+                  ExpeditionMap(key: _expeditionMapKey, completed: s.expeditionStep),
+                if (mode == WorldMode.boss ||
                     mode == WorldMode.rival)
                   SizedBox(
                     height: 200,
@@ -267,7 +270,9 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                       });
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (!mounted) return;
-                        final target = _feedbackKey.currentContext;
+                        final target = result.correct && mode == WorldMode.expedition
+                            ? _expeditionMapKey.currentContext
+                            : _feedbackKey.currentContext;
                         if (target != null) {
                           unawaited(
                             Scrollable.ensureVisible(
