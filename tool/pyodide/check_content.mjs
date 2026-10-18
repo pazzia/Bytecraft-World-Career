@@ -80,6 +80,28 @@ for (const item of items) {
     failures.push({ id: item.id, error, got: out, expected: item.expected });
   }
 }
+// Verify the project checker through the same worker entry point as Android.
+const calculatorChecker = readFileSync(new URL('../../assets/projects/calculator_check.py', import.meta.url), 'utf8');
+const calculatorReference = readFileSync(new URL('../projects/calculator_reference.py', import.meta.url), 'utf8');
+for (const [name, code, step, expectedPass] of [
+  ...[0, 1, 2, 3].map((step) => [`reference-${step}`, calculatorReference, step, true]),
+  ['constant-answer', 'def calculate(a,b,operation): return 11', 0, false],
+  ['syntax-error', 'def broken(', 0, false],
+]) {
+  const token = `project-${name}`;
+  const result = check(calculatorChecker, JSON.stringify({ code, step, nonce: token }), true);
+  const [out, error] = result.toJs();
+  result.destroy();
+  let passed = false;
+  let valid = false;
+  try {
+    const report = JSON.parse(out);
+    valid = !error && report.nonce === token && Array.isArray(report.checks);
+    passed = valid && report.checks.length === [5, 6, 9, 14][step] && report.checks.every((item) => item.passed === true);
+  } catch { /* Invalid output is always a failed check. */ }
+  if (!valid || passed !== expectedPass) failures.push({ id: `calculator-${name}`, error, got: out, expected: `passed=${expectedPass}` });
+}
+console.log('checked 6 calculator cases in the bundled Python runner');
 console.log(`checked ${items.length} programs, ${failures.length} differ`);
 for (const f of failures.slice(0, 40)) {
   console.log(`--- ${f.id}`);
