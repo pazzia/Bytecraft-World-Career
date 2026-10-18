@@ -9,6 +9,7 @@ import 'validators/fill_code_validator.dart';
 import 'validators/match_pairs_validator.dart';
 import 'validators/multi_select_validator.dart';
 import 'validators/multiple_choice_validator.dart';
+import 'validators/new_types_validators.dart';
 import 'validators/type_output_validator.dart';
 
 /// Checks an answer against a level. One implementation per mechanic.
@@ -32,6 +33,9 @@ class ValidatorRegistry {
         LevelType.typeOutput: TypeOutputValidator(),
         LevelType.matchPairs: MatchPairsValidator(),
         LevelType.multiSelect: MultiSelectValidator(),
+        LevelType.traceTable: TraceTableValidator(),
+        LevelType.categorize: CategorizeValidator(),
+        LevelType.fixLine: FixLineValidator(),
       });
 
   final Map<LevelType, AnswerValidator> _validators;

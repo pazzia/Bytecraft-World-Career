@@ -33,6 +33,9 @@ class ContentParser {
     LevelType.typeOutput: _parseTypeOutput,
     LevelType.matchPairs: _parseMatchPairs,
     LevelType.multiSelect: _parseMultiSelect,
+    LevelType.traceTable: _parseTraceTable,
+    LevelType.categorize: _parseCategorize,
+    LevelType.fixLine: _parseFixLine,
   };
 
   final Map<LevelType, PayloadParser> _payloadParsers;
@@ -192,6 +195,79 @@ class ContentParser {
       throw JsonFormatException('${p.path}.expectedOutput: must not be empty');
     }
     return TypeOutputPayload(expectedOutput: expected);
+  }
+
+  static LevelPayload _parseTraceTable(JsonReader p, JsonReader level) {
+    level.requireString('code');
+    final columns = p.requireStringList('columns');
+    final rows = p.requireObjectList('rows').map((row) {
+      final values = row.requireStringList('values');
+      if (values.length != columns.length) {
+        throw JsonFormatException('${row.path}.values: one value per column');
+      }
+      return TraceRow(line: row.requireInt('line'), values: values);
+    }).toList();
+    final blanks = p.optionalIntMatrix('blanks').map((cell) {
+      if (cell.length != 2 ||
+          cell[0] < 0 ||
+          cell[0] >= rows.length ||
+          cell[1] < 0 ||
+          cell[1] >= columns.length) {
+        throw JsonFormatException('${p.path}.blanks: bad cell $cell');
+      }
+      return TraceCell(cell[0], cell[1]);
+    }).toList();
+    final bank = p.requireStringList('bank');
+    if (blanks.isEmpty || rows.isEmpty) {
+      throw JsonFormatException('${p.path}: needs rows and blanks');
+    }
+    final payload = TraceTablePayload(columns: columns, rows: rows, blanks: blanks, bank: bank);
+    for (var slot = 0; slot < blanks.length; slot++) {
+      if (!bank.contains(payload.answerFor(slot))) {
+        throw JsonFormatException('${p.path}.bank: misses ${payload.answerFor(slot)}');
+      }
+    }
+    return payload;
+  }
+
+  static LevelPayload _parseCategorize(JsonReader p, JsonReader level) {
+    final categories = p.requireStringList('categories');
+    if (categories.length < 2 || categories.length > 4) {
+      throw JsonFormatException('${p.path}.categories: 2 to 4 groups');
+    }
+    final items = p.requireObjectList('items').map((item) {
+      final category = item.requireInt('category');
+      if (category < 0 || category >= categories.length) {
+        throw JsonFormatException('${item.path}.category: out of range');
+      }
+      return CategorizeItem(
+        text: item.requireString('text'),
+        category: category,
+        isCode: item.optionalBool('code', fallback: false),
+        feedback: item.optionalString('feedback'),
+      );
+    }).toList();
+    if (items.length < 2) {
+      throw JsonFormatException('${p.path}.items: need at least 2 items');
+    }
+    return CategorizePayload(categories: categories, items: items);
+  }
+
+  static LevelPayload _parseFixLine(JsonReader p, JsonReader level) {
+    final code = level.requireString('code');
+    final line = p.requireInt('line');
+    if (line < 0 || line >= code.split('\n').length) {
+      throw JsonFormatException('${p.path}.line: out of range');
+    }
+    final accepted = p.requireStringList('accepted');
+    if (accepted.isEmpty) {
+      throw JsonFormatException('${p.path}.accepted: must not be empty');
+    }
+    return FixLinePayload(
+      line: line,
+      accepted: accepted,
+      expectedOutput: p.optionalString('expectedOutput') ?? '',
+    );
   }
 
   static LevelPayload _parseMatchPairs(JsonReader p, JsonReader level) {

@@ -3,6 +3,10 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/di/providers.dart';
+import '../../courses/domain/level_definition.dart';
+import '../../courses/domain/level_payload.dart';
+import '../../playground/domain/python_runner.dart';
+import '../../playground/presentation/playground_providers.dart';
 import '../../progress/presentation/progress_providers.dart';
 import '../domain/answer.dart';
 import '../domain/initial_answer_factory.dart';
@@ -10,7 +14,9 @@ import '../domain/level_result.dart';
 import '../domain/level_session.dart';
 import '../domain/mistake_analysis.dart';
 import '../domain/validation_outcome.dart';
+import '../engine/answer_validator.dart';
 import '../engine/level_engine.dart';
+import '../engine/validators/type_output_validator.dart';
 import 'level_ui_state.dart';
 
 typedef LevelArgs = ({String courseId, String levelId, LevelMode mode});
@@ -42,6 +48,11 @@ class LevelController extends Notifier<LevelUiState> {
       );
       if (!ref.mounted) return;
       ref.read(progressRevisionProvider.notifier).bump();
+      if (result is LevelStarted && result.session.level.payload is FixLinePayload) {
+        // Warm the interpreter: an unexpected but valid fix is checked by
+        // running it (see _acceptByRunning).
+        unawaited(ref.read(pythonRunnerProvider).start().catchError((_) {}));
+      }
       state = switch (result) {
         LevelStarted(:final session, :final lives) => LevelUiState(
             phase: LevelPhase.playing,
@@ -78,10 +89,12 @@ class LevelController extends Notifier<LevelUiState> {
   Future<void> submit() async {
     final current = state;
     final session = current.session;
-    final answer = current.answer;
-    if (!current.canSubmit || session == null || answer == null) return;
+    final typed = current.answer;
+    if (!current.canSubmit || session == null || typed == null) return;
     state = current.copyWith(isSubmitting: true);
     try {
+      final answer = await _acceptByRunning(session.level, typed);
+      if (!ref.mounted) return;
       final result = await _engine.submit(session, answer);
       if (!ref.mounted) return;
       ref.read(progressRevisionProvider.notifier).bump();
@@ -118,6 +131,33 @@ class LevelController extends Notifier<LevelUiState> {
     } catch (error) {
       if (!ref.mounted) return;
       state = LevelUiState(phase: LevelPhase.error, errorMessage: '$error');
+    }
+  }
+
+  /// A fixed line that isn't among the verified fixes may still be right
+  /// (another valid way to write it). When the on-device Python is ready,
+  /// the program is run with the typed line; if it prints exactly what the
+  /// correct program prints, the answer counts as the canonical fix.
+  Future<Answer> _acceptByRunning(LevelDefinition level, Answer answer) async {
+    final payload = level.payload;
+    final code = level.code;
+    if (payload is! FixLinePayload || answer is! TextAnswer || code == null) {
+      return answer;
+    }
+    if (ValidatorRegistry.standard().validate(level, answer).isCorrect) return answer;
+    final runner = ref.read(pythonRunnerProvider);
+    if (runner.state != PythonRunnerState.ready || answer.text.trim().isEmpty) return answer;
+    final lines = code.split('\n');
+    lines[payload.line] = FixLineText.indentOf(lines[payload.line]) + answer.text.trim();
+    try {
+      final result = await runner
+          .run(lines.join('\n'), timeout: const Duration(seconds: 5))
+          .timeout(const Duration(seconds: 15));
+      final same = result.isOk &&
+          OutputText.differentLines(expected: payload.expectedOutput, actual: result.stdout).isEmpty;
+      return same ? TextAnswer(payload.accepted.first) : answer;
+    } catch (_) {
+      return answer;
     }
   }
 
@@ -261,6 +301,14 @@ class LevelController extends Notifier<LevelUiState> {
               if (!outcome.wrongParts.contains(entry.key)) entry.key: entry.value,
           },
           pairCount: pairCount,
+        );
+      case AssignmentAnswer(:final values, :final slotCount):
+        return AssignmentAnswer(
+          {
+            for (final entry in values.entries)
+              if (!outcome.wrongParts.contains(entry.key)) entry.key: entry.value,
+          },
+          slotCount: slotCount,
         );
       case TextAnswer():
       case OrderingAnswer():

@@ -308,6 +308,42 @@
    }
   },
   {
+   "id": "nx_dc_tf",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Про dataclass",
+   "prompt": "Верно ли утверждение?",
+   "topic": "dc_basics",
+   "difficulty": 2,
+   "hint": "Проверьте каждое утверждение на коротком dataclass.",
+   "explanation": "dataclass генерирует __init__, __repr__ и __eq__. Изменяемые значения по умолчанию задают через field(default_factory=...). frozen=True делает объект неизменяемым.",
+   "payload": {
+    "categories": [
+     "Верно",
+     "Неверно"
+    ],
+    "items": [
+     {
+      "text": "@dataclass сам пишет __init__ по аннотациям полей",
+      "category": 0
+     },
+     {
+      "text": "Два объекта dataclass с равными полями равны (==)",
+      "category": 0
+     },
+     {
+      "text": "Поле со списком можно задать как items: list = []",
+      "category": 1,
+      "feedback": "Нужно field(default_factory=list) — иначе ValueError."
+     },
+     {
+      "text": "frozen=True запрещает менять поля",
+      "category": 0
+     }
+    ]
+   }
+  },
+  {
    "id": "py_dc_009",
    "type": "code_ordering",
    "role": "boss",

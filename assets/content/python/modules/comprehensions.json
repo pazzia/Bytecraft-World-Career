@@ -240,6 +240,29 @@
    }
   },
   {
+   "id": "nx_comp_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Только чётные",
+   "prompt": "Строка 2 с ошибкой. Перепишите её правильно",
+   "topic": "comp_cond",
+   "difficulty": 2,
+   "hint": "Остаток от деления на 2 у чётных чисел равен…",
+   "explanation": "n % 2 == 1 отбирает нечётные. У чётных остаток 0.",
+   "code": "nums = [1, 2, 3, 4, 5, 6]\nevens = [n for n in nums if n % 2 == 1]\nprint(evens)",
+   "payload": {
+    "line": 1,
+    "accepted": [
+     "evens = [n for n in nums if n % 2 == 0]"
+    ],
+    "expectedOutput": "[2, 4, 6]\n"
+   },
+   "solution": {
+    "code": "nums = [1, 2, 3, 4, 5, 6]\nevens = [n for n in nums if n % 2 == 0]\nprint(evens)",
+    "output": "[2, 4, 6]\n"
+   }
+  },
+  {
    "id": "py_comp_008",
    "type": "predict_output",
    "role": "boss",

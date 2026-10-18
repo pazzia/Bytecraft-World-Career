@@ -315,6 +315,74 @@
    }
   },
   {
+   "id": "nx_gen_trace",
+   "type": "trace_table",
+   "role": "practice",
+   "title": "Генератор по шагам",
+   "prompt": "Заполните значения переменных",
+   "topic": "gen_yield",
+   "difficulty": 3,
+   "hint": "next выполняет генератор до следующего yield. list забирает всё оставшееся.",
+   "explanation": "Первый next отдаёт 3, второй — 2. list(g) забирает оставшееся: [1].",
+   "code": "def countdown(n):\n    while n > 0:\n        yield n\n        n -= 1\n\ng = countdown(3)\na = next(g)\nb = next(g)\nrest = list(g)",
+   "payload": {
+    "columns": [
+     "a",
+     "b",
+     "rest"
+    ],
+    "rows": [
+     {
+      "line": 7,
+      "values": [
+       "3",
+       "—",
+       "—"
+      ]
+     },
+     {
+      "line": 8,
+      "values": [
+       "3",
+       "2",
+       "—"
+      ]
+     },
+     {
+      "line": 9,
+      "values": [
+       "3",
+       "2",
+       "[1]"
+      ]
+     }
+    ],
+    "blanks": [
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ]
+    ],
+    "bank": [
+     "1",
+     "2",
+     "3",
+     "[1, 0]",
+     "[1]",
+     "[2, 1]",
+     "[]"
+    ]
+   },
+   "solution": {
+    "code": "def countdown(n):\n    while n > 0:\n        yield n\n        n -= 1\n\ng = countdown(3)\na = next(g)\nb = next(g)\nrest = list(g)",
+    "output": ""
+   }
+  },
+  {
    "id": "py_gen_009",
    "type": "predict_output",
    "role": "boss",

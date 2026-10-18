@@ -260,6 +260,126 @@
    }
   },
   {
+   "id": "py_files_011",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Длина в байтах",
+   "prompt": "Что выведет код?",
+   "topic": "files_bytes",
+   "difficulty": 1,
+   "hint": "Сколько байт в UTF-8 занимает русская буква, а сколько — восклицательный знак?",
+   "explanation": "В строке 7 символов. В UTF-8 шесть русских букв занимают по 2 байта, «!» — 1 байт: 6 · 2 + 1 = 13.",
+   "code": "msg = \"Привет!\"\ndata = msg.encode(\"utf-8\")\nprint(len(msg), len(data))",
+   "payload": {
+    "options": [
+     "7 7",
+     "7 14",
+     "7 13",
+     "13 7"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "В UTF-8 кириллица занимает 2 байта на букву.",
+     "«!» — символ ASCII, он занимает 1 байт.",
+     "",
+     "len строки считает символы, а длину в байтах даёт len байтов."
+    ]
+   },
+   "solution": {
+    "code": "msg = \"Привет!\"\ndata = msg.encode(\"utf-8\")\nprint(len(msg), len(data))",
+    "output": "7 13\n"
+   }
+  },
+  {
+   "id": "py_files_012",
+   "type": "categorize",
+   "role": "practice",
+   "title": "str, bytes или int",
+   "prompt": "Разложите выражения по типу результата",
+   "topic": "files_bytes",
+   "difficulty": 2,
+   "hint": "encode даёт bytes, decode — str. Индекс у bytes возвращает число, срез — bytes.",
+   "explanation": "encode, литерал b\"…\", bytes([...]) и срез дают bytes. decode и str() дают строку. Индекс у bytes — число от 0 до 255, len — тоже число.",
+   "payload": {
+    "categories": [
+     "str",
+     "bytes",
+     "int"
+    ],
+    "items": [
+     {
+      "text": "\"кот\".encode(\"utf-8\")",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "b\"abc\"",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "b\"abc\".decode(\"ascii\")",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "bytes([72, 105])",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "b\"abc\"[0]",
+      "category": 2,
+      "code": true,
+      "feedback": "Элемент bytes по индексу — число, код байта: 97."
+     },
+     {
+      "text": "b\"abc\"[:1]",
+      "category": 1,
+      "code": true,
+      "feedback": "Срез bytes — снова bytes: b'a'."
+     },
+     {
+      "text": "str(b\"hi\")",
+      "category": 0,
+      "code": true,
+      "feedback": "str от байтов не декодирует, а даёт строку \"b'hi'\" — тип всё равно str."
+     },
+     {
+      "text": "len(\"€\".encode())",
+      "category": 2,
+      "code": true
+     }
+    ]
+   }
+  },
+  {
+   "id": "py_files_013",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Запись в двоичный файл",
+   "prompt": "Строка 2 с ошибкой. Перепишите её правильно",
+   "topic": "files_bytes",
+   "difficulty": 2,
+   "hint": "Что принимает write в режиме \"wb\" — строку или байты?",
+   "explanation": "Файл открыт в двоичном режиме, write ждёт bytes: TypeError: a bytes-like object is required, not 'str'. Подойдёт литерал b\"OK\" или \"OK\".encode().",
+   "code": "with open(\"status.bin\", \"wb\") as f:\n    f.write(\"OK\")\n\nwith open(\"status.bin\", \"rb\") as f:\n    print(f.read())",
+   "payload": {
+    "line": 1,
+    "accepted": [
+     "f.write(b\"OK\")",
+     "f.write(\"OK\".encode())",
+     "f.write(\"OK\".encode(\"utf-8\"))",
+     "f.write(\"OK\".encode(\"ascii\"))"
+    ],
+    "expectedOutput": "b'OK'\n"
+   },
+   "solution": {
+    "code": "with open(\"status.bin\", \"wb\") as f:\n    f.write(b\"OK\")\n\nwith open(\"status.bin\", \"rb\") as f:\n    print(f.read())",
+    "output": "b'OK'\n"
+   }
+  },
+  {
    "id": "py_files_009",
    "type": "predict_output",
    "role": "boss",

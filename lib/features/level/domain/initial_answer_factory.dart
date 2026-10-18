@@ -21,6 +21,11 @@ class InitialAnswerFactory {
         MultiSelectPayload() => null,
         TypeOutputPayload() => const TextAnswer(''),
         MatchPairsPayload(:final pairs) => MatchAnswer.empty(pairs.length),
+        TraceTablePayload(:final blanks) => AssignmentAnswer.empty(blanks.length),
+        CategorizePayload(:final items) => AssignmentAnswer.empty(items.length),
+        // Start from the broken line: the player edits it in place.
+        FixLinePayload(:final line) =>
+          TextAnswer((level.code ?? '').split('\n')[line].trim()),
         UnsupportedPayload() => null,
       };
 

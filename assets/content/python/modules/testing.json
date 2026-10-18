@@ -315,6 +315,177 @@
    }
   },
   {
+   "id": "py_test_012",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Отладочная печать",
+   "prompt": "Что выведет код?",
+   "topic": "test_debug",
+   "difficulty": 1,
+   "hint": "Знак = в конце поля f-строки печатает само выражение и repr его значения.",
+   "explanation": "f\"{выражение=}\" выводит текст выражения, знак = и значение через repr: строка — в кавычках, пробел виден. strip убрал пробелы, но элементы остались строками, а сумму считает int.",
+   "code": "raw = [\"3\", \" 4\", \"5 \"]\nnums = [x.strip() for x in raw]\nprint(f\"{raw[1]=}\")\nprint(f\"{nums=}\")\nprint(sum(map(int, nums)))",
+   "payload": {
+    "options": [
+     "raw[1]=4\nnums=['3', '4', '5']\n12",
+     "raw[1]=' 4'\nnums=['3', '4', '5']\n12",
+     "raw[1]=' 4'\nnums=[3, 4, 5]\n12",
+     "' 4'\n['3', '4', '5']\n12"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Значение показывается через repr: строка в кавычках, и пробел перед 4 виден.",
+     "",
+     "strip возвращает строки, числами они становятся только внутри sum(map(int, ...)).",
+     "С = в конце поля печатается и само выражение: raw[1]=."
+    ]
+   },
+   "solution": {
+    "code": "raw = [\"3\", \" 4\", \"5 \"]\nnums = [x.strip() for x in raw]\nprint(f\"{raw[1]=}\")\nprint(f\"{nums=}\")\nprint(sum(map(int, nums)))",
+    "output": "raw[1]=' 4'\nnums=['3', '4', '5']\n12\n"
+   }
+  },
+  {
+   "id": "py_test_013",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Команды pdb",
+   "prompt": "Разложите команды отладчика pdb по назначению",
+   "topic": "test_debug",
+   "difficulty": 2,
+   "hint": "Команды pdb — первые буквы английских слов: next, step, continue, print, list, where, break, clear.",
+   "explanation": "n, s и c двигают программу дальше по-разному: строка, вход в функцию, до остановки. p, l и w ничего не выполняют, а показывают значение, код и цепочку вызовов. b ставит точку остановки, cl убирает.",
+   "payload": {
+    "categories": [
+     "Продвинуть выполнение",
+     "Показать состояние",
+     "Точки остановки"
+    ],
+    "items": [
+     {
+      "text": "n",
+      "category": 0,
+      "code": true,
+      "feedback": "next — выполнить строку целиком и встать на следующей."
+     },
+     {
+      "text": "s",
+      "category": 0,
+      "code": true,
+      "feedback": "step — войти внутрь вызываемой функции."
+     },
+     {
+      "text": "c",
+      "category": 0,
+      "code": true,
+      "feedback": "continue — работать до следующей остановки."
+     },
+     {
+      "text": "p total",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "l",
+      "category": 1,
+      "code": true,
+      "feedback": "list — показать код вокруг текущей строки."
+     },
+     {
+      "text": "w",
+      "category": 1,
+      "code": true,
+      "feedback": "where — цепочка вызовов, как в трассировке."
+     },
+     {
+      "text": "b 12",
+      "category": 2,
+      "code": true,
+      "feedback": "break — поставить точку остановки на строку 12."
+     },
+     {
+      "text": "cl",
+      "category": 2,
+      "code": true,
+      "feedback": "clear — убрать точки остановки."
+     }
+    ]
+   }
+  },
+  {
+   "id": "py_test_014",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Отладка без отладчика",
+   "prompt": "Верно ли утверждение?",
+   "topic": "test_debug",
+   "difficulty": 2,
+   "hint": "print_exc только печатает. Что делает флаг -O с __debug__, и что без него?",
+   "explanation": "format_exc возвращает трассировку строкой, print_exc печатает её и не прерывает программу. __debug__ равно True, пока не указан флаг -O. breakpoint() работает где угодно. {x=} печатает имя и значение.",
+   "payload": {
+    "categories": [
+     "Верно",
+     "Неверно"
+    ],
+    "items": [
+     {
+      "text": "traceback.format_exc() в except возвращает трассировку строкой",
+      "category": 0
+     },
+     {
+      "text": "traceback.print_exc() останавливает программу",
+      "category": 1,
+      "feedback": "Она только печатает трассировку: программа идёт дальше."
+     },
+     {
+      "text": "При обычном запуске __debug__ равно True",
+      "category": 0
+     },
+     {
+      "text": "breakpoint() можно вызвать только внутри функции",
+      "category": 1,
+      "feedback": "Его вызывают в любом месте, и на уровне модуля тоже."
+     },
+     {
+      "text": "f\"{x=}\" печатает имя и значение: x=5",
+      "category": 0
+     }
+    ]
+   }
+  },
+  {
+   "id": "nx_test_tf",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Про тесты",
+   "prompt": "Верно ли утверждение?",
+   "topic": "test_assert",
+   "difficulty": 2,
+   "hint": "Что именно проверяет assert, если после него стоят скобки с запятой?",
+   "explanation": "assert падает, если условие ложно. Скобки с запятой создают кортеж — непустой кортеж всегда истинен. Mock записывает каждый вызов.",
+   "payload": {
+    "categories": [
+     "Верно",
+     "Неверно"
+    ],
+    "items": [
+     {
+      "text": "assert с ложным условием бросает AssertionError",
+      "category": 0
+     },
+     {
+      "text": "assert (x > 0, 'сообщение') проверяет x > 0",
+      "category": 1,
+      "feedback": "Это кортеж — он всегда истинен."
+     },
+     {
+      "text": "Mock запоминает, с какими аргументами его вызывали",
+      "category": 0
+     }
+    ]
+   }
+  },
+  {
    "id": "py_test_009",
    "type": "predict_output",
    "role": "boss",

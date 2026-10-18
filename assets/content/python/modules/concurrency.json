@@ -70,7 +70,7 @@
    "role": "challenge",
    "title": "Замок, который не запирает",
    "prompt": "Два снятия должны оставить 50. Найдите строку с ошибкой",
-   "topic": "conc_threads",
+   "topic": "conc_lock",
    "difficulty": 3,
    "hint": "Сколько разных замков создаётся в этой программе?",
    "explanation": "threading.Lock() внутри функции создаёт новый замок при каждом вызове — потоки не мешают друг другу. Оба читают 100, и одно снятие теряется. Нужен один общий lock.",
@@ -91,7 +91,7 @@
    "role": "practice",
    "title": "Порядок в pool.map",
    "prompt": "Что выведет код?",
-   "topic": "conc_threads",
+   "topic": "conc_pool",
    "difficulty": 2,
    "hint": "Быстрее всех закончится slow_square(2). Но в каком порядке map отдаёт результаты?",
    "explanation": "map возвращает результаты в порядке входных данных, даже если задачи закончились в другом порядке.",
@@ -120,7 +120,7 @@
    "role": "practice",
    "title": "По мере готовности",
    "prompt": "Что выведет код?",
-   "topic": "conc_threads",
+   "topic": "conc_pool",
    "difficulty": 3,
    "hint": "as_completed отдаёт задачи по мере завершения. А список futures?",
    "explanation": "as_completed выдаёт Future в порядке готовности: b, c, a. Список futures остаётся в порядке создания.",
@@ -149,7 +149,7 @@
    "role": "practice",
    "title": "Где помогут потоки",
    "prompt": "В каких задачах потоки обычного CPython (с GIL) реально ускорят программу?",
-   "topic": "conc_processes",
+   "topic": "conc_choice",
    "difficulty": 2,
    "hint": "GIL отпускается, пока поток ждёт ввода-вывода.",
    "explanation": "Сеть, база данных и диск — ожидания: пока один поток ждёт, другие работают. Вычисления на чистом Python упираются в GIL — для них нужны процессы (или numpy).",
@@ -181,7 +181,7 @@
    "role": "practice",
    "title": "Словарь параллельности",
    "prompt": "Сопоставьте понятие и смысл",
-   "topic": "conc_processes",
+   "topic": "conc_choice",
    "difficulty": 2,
    "hint": "Где пул потоков, а где пул процессов — подскажут их имена.",
    "explanation": "GIL ограничивает потоки CPython, Lock защищает общие данные, Queue передаёт задачи, пулы потоков — для ожиданий, пулы процессов — для вычислений.",
@@ -216,7 +216,7 @@
    "role": "practice",
    "title": "Счёт под замком",
    "prompt": "Напишите, что выведет код",
-   "topic": "conc_threads",
+   "topic": "conc_lock",
    "difficulty": 2,
    "hint": "Сколько раз выполнится counter += 1 и может ли увеличение потеряться?",
    "explanation": "С общим Lock каждое counter += 1 выполняется целиком: 3 × 5000 = 15000.",
@@ -256,12 +256,47 @@
    }
   },
   {
+   "id": "nx_conc_sort",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Потоки или процессы",
+   "prompt": "Что лучше подходит для задачи в обычном CPython?",
+   "topic": "conc_processes",
+   "difficulty": 2,
+   "hint": "GIL не мешает ожиданию, но мешает вычислениям на чистом Python.",
+   "explanation": "Ожидания (сеть, база) хорошо работают в потоках. Вычисления на чистом Python упираются в GIL — им нужны процессы.",
+   "payload": {
+    "categories": [
+     "Потоки (threading)",
+     "Процессы (multiprocessing)"
+    ],
+    "items": [
+     {
+      "text": "Скачать 100 страниц",
+      "category": 0
+     },
+     {
+      "text": "Посчитать хеши миллиона паролей на чистом Python",
+      "category": 1
+     },
+     {
+      "text": "Ждать ответы базы данных",
+      "category": 0
+     },
+     {
+      "text": "Обработать картинки циклами на Python на всех ядрах",
+      "category": 1
+     }
+    ]
+   }
+  },
+  {
    "id": "py_conc_010",
    "type": "predict_output",
    "role": "boss",
    "title": "Босс: очередь задач",
    "prompt": "Что выведет код?",
-   "topic": "conc_threads",
+   "topic": "conc_queue",
    "difficulty": 4,
    "hint": "q.join() ждёт, пока для каждого put вызовут task_done. А что сделает None?",
    "explanation": "q.join() возвращается, когда все три элемента обработаны (task_done) — results уже полон, порядок FIFO. None выводит рабочего из цикла, t.join() дожидается его конца — поток больше не жив.",

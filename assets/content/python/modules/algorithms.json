@@ -194,7 +194,7 @@
    "role": "challenge",
    "title": "Потерянное окно",
    "prompt": "Нужна наибольшая сумма k подряд идущих чисел: 9 и 8. Найдите строку с ошибкой",
-   "topic": "algo_patterns",
+   "topic": "algo_window",
    "difficulty": 3,
    "hint": "Сколько окон длины k в списке из n элементов?",
    "explanation": "Окон длины k ровно n - k + 1. range(n - k) пропускает последнее окно [5, 1, 3] с суммой 9 — классическая ошибка на единицу.",
@@ -272,7 +272,7 @@
    "role": "practice",
    "title": "Два указателя",
    "prompt": "Что выведет код?",
-   "topic": "algo_patterns",
+   "topic": "algo_window",
    "difficulty": 3,
    "hint": "Пройдите вручную: 1 + 11, затем сдвиг правого указателя, и так далее. Считайте каждую проверку суммы.",
    "explanation": "1 + 11 = 12 — много, hi влево; 1 + 8 = 9 — мало, lo вправо; 3 + 8 = 11 — много; 3 + 6 = 9 — мало; 4 + 6 = 10 — нашли на пятом шаге. Каждый шаг сдвигает один указатель, поэтому проход — O(n).",
@@ -298,12 +298,119 @@
    }
   },
   {
+   "id": "nx_bsearch_trace",
+   "type": "trace_table",
+   "role": "practice",
+   "title": "Бинарный поиск по шагам",
+   "prompt": "Заполните значения переменных",
+   "topic": "algo_search_sort",
+   "difficulty": 3,
+   "hint": "mid — середина между lo и hi. Если середина меньше искомого, lo сдвигается за неё.",
+   "explanation": "Сначала mid = 2 (8 < 16) — lo = 3. Затем mid = 4 — там 16, break. Две проверки вместо пяти.",
+   "code": "items = [2, 5, 8, 12, 16, 23]\ntarget = 16\nlo, hi = 0, len(items) - 1\nwhile lo <= hi:\n    mid = (lo + hi) // 2\n    if items[mid] < target:\n        lo = mid + 1\n    elif items[mid] > target:\n        hi = mid - 1\n    else:\n        break",
+   "payload": {
+    "columns": [
+     "lo",
+     "hi",
+     "mid"
+    ],
+    "rows": [
+     {
+      "line": 5,
+      "values": [
+       "0",
+       "5",
+       "2"
+      ]
+     },
+     {
+      "line": 5,
+      "values": [
+       "3",
+       "5",
+       "4"
+      ]
+     }
+    ],
+    "blanks": [
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      2
+     ]
+    ],
+    "bank": [
+     "2",
+     "3",
+     "4",
+     "5"
+    ]
+   },
+   "solution": {
+    "code": "items = [2, 5, 8, 12, 16, 23]\ntarget = 16\nlo, hi = 0, len(items) - 1\nwhile lo <= hi:\n    mid = (lo + hi) // 2\n    if items[mid] < target:\n        lo = mid + 1\n    elif items[mid] > target:\n        hi = mid - 1\n    else:\n        break",
+    "output": ""
+   }
+  },
+  {
+   "id": "nx_complexity_sort",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Сложность операции",
+   "prompt": "Разложите операции по сложности",
+   "topic": "algo_complexity",
+   "difficulty": 3,
+   "hint": "Хеш-таблицы — O(1), просмотр всех элементов — O(n), сортировка — O(n log n).",
+   "explanation": "Множество и словарь ищут по хешу. in по списку, сумма и вставка в начало проходят или сдвигают все элементы. Сортировка — O(n log n).",
+   "payload": {
+    "categories": [
+     "O(1)",
+     "O(n)",
+     "O(n log n)"
+    ],
+    "items": [
+     {
+      "text": "x in set",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "x in list",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "sorted(list)",
+      "category": 2,
+      "code": true
+     },
+     {
+      "text": "dict[key]",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "list.insert(0, x)",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "sum(list)",
+      "category": 1,
+      "code": true
+     }
+    ]
+   }
+  },
+  {
    "id": "py_algo_009",
    "type": "predict_output",
    "role": "boss",
    "title": "Босс: обход в ширину",
    "prompt": "Что выведет код?",
-   "topic": "algo_patterns",
+   "topic": "algo_bfs",
    "difficulty": 4,
    "hint": "BFS обрабатывает вершины слоями: сначала все на расстоянии 1, потом 2…",
    "explanation": "Из A за шаг достижимы B и C, за два — D и E, за три — F. Очередь гарантирует, что первая найденная дорога — кратчайшая по числу рёбер (в графе без весов); словарь хранит вершины в порядке открытия.",

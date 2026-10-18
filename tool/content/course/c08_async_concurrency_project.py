@@ -1,6 +1,7 @@
 """Модули 34–37: asyncio, потоки и процессы, производительность, программа
 как проект (argparse, logging, структура, PEP 8)."""
-from bclib import choice, fill, match, multi, order, predict, bug, typed, topic, task, run
+from bclib import (choice, fill, match, multi, order, predict, bug, typed, topic, pitfall, task, run,
+                   categorize, fix_line)
 
 
 def compiles(code):
@@ -19,17 +20,34 @@ MODULES.append(dict(
     icon="⏳",
     topics=[
         topic("async_basics", "Корутины и цикл событий",
-              "async def создаёт корутину. Она выполняется, только когда её ждут через await или запускают asyncio.run(main()). Пока корутина ждёт (await asyncio.sleep, сеть), цикл событий выполняет другие.",
+              "Корутина — функция `async def`, которая умеет ждать, не останавливая остальные задачи программы.",
               """
-              Асинхронность — способ делать много ожиданий одновременно в одном потоке: скачивать страницы, ждать базу данных, обслуживать тысячи соединений. Пока одна задача ждёт ответа, работают другие.
+              Программа, которая скачивает страницы или ждёт ответа базы данных, большую часть времени простаивает. Асинхронность позволяет в одном потоке вести много таких ожиданий сразу: пока одна задача ждёт, работают другие.
 
-              async def f(): ... — объявление корутинной функции. Вызов f() ничего не выполняет: он возвращает объект-корутину. Выполнить её можно двумя способами: await f() внутри другой корутины или asyncio.run(f()) на верхнем уровне программы (обычно один раз — для main()).
+              ## Как записать
 
-              await можно писать только внутри async def. В точке await корутина отдаёт управление циклу событий, и тот запускает другие готовые задачи.
+              ```syntax
+              import asyncio
 
-              asyncio.sleep(секунды) — неблокирующая пауза: ждёт только эта корутина. time.sleep останавливает весь поток вместе с циклом событий — в асинхронном коде его не используют. То же с любой долгой синхронной работой: тяжёлые вычисления в корутине «замораживают» все остальные.
+              async def main():
+                  результат = await другая_корутина()
 
-              Асинхронность не ускоряет вычисления: она выигрывает только на ожиданиях (ввод-вывод).
+              asyncio.run(main())
+              ```
+
+              - `async def` объявляет корутинную функцию.
+              - Её вызов ничего не выполняет, а только создаёт объект-корутину.
+              - Выполняют корутину через `await` внутри другой корутины или через `asyncio.run` на верхнем уровне — обычно один раз, для `main()`.
+
+              ## Что делает await
+
+              `await` пишут только внутри `async def`. В этой точке корутина отдаёт управление циклу событий — диспетчеру, который запускает другие готовые задачи. Когда ожидание закончится, корутина продолжит с того же места.
+
+              ## Блокировать нельзя
+
+              `await asyncio.sleep(сек)` — пауза, во время которой работают другие корутины. `time.sleep` останавливает весь поток вместе с циклом событий. То же делает долгий расчёт внутри корутины: остальные задачи замирают.
+
+              Асинхронность не ускоряет вычисления, она выигрывает только на ожиданиях: сеть, диск, база данных. Два `await` подряд выполняются по очереди. Как ждать несколько корутин одновременно — в теме [[async_tasks|задачи и gather]].
               """,
               [("""\
                 import asyncio
@@ -42,48 +60,374 @@ MODULES.append(dict(
                     text = await greet("Ада")
                     print(text)
 
-                asyncio.run(main())""", "await ждёт результат корутины; asyncio.run запускает главную.")],
-              ["Забыть await: f() без await не выполняется, Python лишь предупредит «coroutine was never awaited».",
-               "Вызывать time.sleep или долгий цикл внутри корутины — это блокирует все задачи сразу.",
-               "Вызывать asyncio.run изнутри уже работающей корутины — RuntimeError: внутри используют await."]),
-        topic("async_tasks", "Задачи: gather, create_task, таймауты",
-              "asyncio.gather запускает корутины одновременно и возвращает результаты в порядке аргументов. create_task ставит корутину в работу сразу, а await задачи ждёт её результат. wait_for и asyncio.timeout ограничивают время.",
+                asyncio.run(main())""",
+                "await дождался результата, asyncio.run запустил main"),
+               ("""\
+                import asyncio
+
+                async def save():
+                    print("сохраняю")
+
+                job = save()
+                print("корутина создана")
+                asyncio.run(job)""",
+                "Тело выполнилось в asyncio.run, а не при вызове save()"),
+               ("""\
+                import asyncio
+
+                async def step(name):
+                    print("начал", name)
+                    await asyncio.sleep(0.01)
+                    print("закончил", name)
+
+                async def main():
+                    await step("A")
+                    await step("B")
+
+                asyncio.run(main())""",
+                "Два await подряд идут по очереди: B ждёт конца A")],
+              [pitfall("Без await корутина не выполняется: RuntimeWarning: coroutine 'save' was never awaited.",
+                       bad="save()", good="await save()"),
+               pitfall("time.sleep в корутине останавливает весь цикл событий и все задачи сразу.",
+                       bad="time.sleep(1)", good="await asyncio.sleep(1)"),
+               pitfall("await в обычной функции — SyntaxError: 'await' outside async function.",
+                       bad='''
+                           def main():
+                               await asyncio.sleep(1)''',
+                       good='''
+                           async def main():
+                               await asyncio.sleep(1)''', syntax_error=True),
+               pitfall("asyncio.run внутри работающей корутины — RuntimeError. Внутри корутин ждут через await.",
+                       bad="data = asyncio.run(fetch())", good="data = await fetch()")]),
+        topic("async_tasks", "Задачи: gather и create_task",
+              "`gather` и задачи запускают несколько корутин одновременно: общее время равно самому долгому ожиданию.",
               """
-              await f(); await g() — последовательно: g начнётся только после f. Чтобы ждать одновременно, корутины превращают в задачи.
+              Скачать десять страниц по очереди — это десять ожиданий подряд. Если запустить их одновременно, общее время сократится до самого долгого из них. Для этого корутины превращают в задачи.
 
-              asyncio.gather(f(), g(), h()) — ждёт все и возвращает список результатов в порядке аргументов, а не в порядке завершения. Если одна упала, исключение долетает до await gather, а остальные корутины не отменяются и продолжают работать. С return_exceptions=True исключения попадают в список результатов.
+              ## Три способа
 
-              asyncio.create_task(f()) — задача начнёт выполняться, когда текущая задача отдаст управление циклу (на await того, что реально ждёт; await корутины, которая не приостанавливается, хода не отдаёт). Результат забирают через await task, отменяют — task.cancel(). Ссылку на задачу нужно хранить, иначе её может собрать сборщик мусора.
+              - `asyncio.gather(f(), g())` — ждать все и получить список результатов
+              - `asyncio.create_task(f())` — запустить в фоне, результат забрать позже
+              - `asyncio.TaskGroup()` — группа задач с общей обработкой ошибок (с Python 3.11)
 
-              async with asyncio.TaskGroup() as tg: tg.create_task(...) (Python 3.11+) — современная замена gather: выход из блока ждёт все задачи, а при ошибке в одной остальные отменяются; ошибки приходят как ExceptionGroup и ловятся через except*.
+              ## gather
 
-              await asyncio.wait_for(f(), timeout=1) отменяет ожидаемую корутину, async with asyncio.timeout(1): (3.11+) — текущую задачу внутри блока. Внутри летит CancelledError (срабатывают finally), а наружу выходит TimeoutError.
+              ```syntax
+              результаты = await asyncio.gather(корутина_1, корутина_2)
+              ```
 
-              async with lock: — asyncio.Lock, замок для корутин. async for x in поток: — перебор асинхронного итератора. asyncio.Semaphore(n) ограничивает, сколько корутин одновременно входят в блок.
+              Результаты идут в порядке аргументов, а не в порядке завершения. Если одна корутина упала, исключение долетит до `await gather`, а остальные продолжат работать. С `return_exceptions=True` исключения встают в список на место результатов.
 
-              asyncio.Queue — очередь между корутинами: await queue.put(x) и await queue.get(). С maxsize производитель ждёт, пока потребитель освободит место.
+              ## create_task
+
+              `task = asyncio.create_task(f())` ставит корутину в план. Работать она начнёт, когда текущая корутина отдаст управление на `await`. Результат забирают через `await task`.
+
+              Ссылку на задачу храните в переменной: задачу, на которую никто не ссылается, может удалить сборщик мусора.
+
+              ## TaskGroup
+
+              ```syntax
+              async with asyncio.TaskGroup() as tg:
+                  задача = tg.create_task(корутина)
+              ```
+
+              Выход из блока ждёт все задачи. Если одна упала, остальные отменяются, а ошибки приходят вместе как `ExceptionGroup`; их ловят через {`except*`} ([[exc_types|группы исключений]]).
+
+              ## Что выбрать
+
+              - Набор корутин известен заранее, нужны результаты — `gather`.
+              - Ошибка в одной задаче должна остановить остальные — `TaskGroup`.
+              - Одна фоновая работа рядом с основной — `create_task`.
+
+              Время ожидания ограничивают [[async_timeouts|таймауты]], а данные между задачами передают [[async_sync|очереди]].
               """,
               [("""\
                 import asyncio
 
-                async def download(name, delay):
+                async def load(name, delay):
                     await asyncio.sleep(delay)
-                    return name
+                    print("готов", name)
+                    return len(name)
+
+                async def main():
+                    sizes = await asyncio.gather(
+                        load("фото", 0.03),
+                        load("текст", 0.01),
+                    )
+                    print(sizes)
+
+                asyncio.run(main())""",
+                "Печать — по готовности, а результаты — в порядке аргументов"),
+               ("""\
+                import asyncio
+
+                async def backup():
+                    await asyncio.sleep(0.02)
+                    return "копия готова"
+
+                async def main():
+                    task = asyncio.create_task(backup())
+                    print("main работает дальше")
+                    await asyncio.sleep(0.01)
+                    print("main ждёт задачу")
+                    print(await task)
+
+                asyncio.run(main())""",
+                "Задача шла в фоне, пока main делал своё"),
+               ("""\
+                import asyncio
+
+                async def price(shop, value):
+                    await asyncio.sleep(0.01)
+                    return shop, value
 
                 async def main():
                     async with asyncio.TaskGroup() as tg:
-                        slow = tg.create_task(download("медленный", 0.03))
-                        fast = tg.create_task(download("быстрый", 0.01))
-                    print(slow.result(), fast.result())
-                    try:
-                        async with asyncio.timeout(0.01):
-                            await download("вечный", 1)
-                    except TimeoutError:
-                        print("не дождались")
+                        a = tg.create_task(price("A", 90))
+                        b = tg.create_task(price("B", 75))
+                    print(a.result())
+                    print(b.result())
 
-                asyncio.run(main())""", None)],
-              ["Ждать задачи по одной в цикле for вместо gather/TaskGroup, если их можно ждать одновременно.",
-               "Глотать CancelledError: с 3.8 это BaseException, и except Exception его не ловит, но except BaseException или голый except: поймают. Поймали — уберите за собой и снова raise, иначе отмена и таймауты сломаются."]),
+                asyncio.run(main())""",
+                "После блока все задачи готовы, result() отдаёт значения"),
+               ("""\
+                import asyncio
+
+                async def check(n):
+                    if n < 0:
+                        raise ValueError(n)
+                    return n * 2
+
+                async def main():
+                    res = await asyncio.gather(
+                        check(1), check(-1),
+                        return_exceptions=True,
+                    )
+                    print(res)
+
+                asyncio.run(main())""",
+                "С return_exceptions ошибка стоит в списке на месте результата")],
+              [pitfall("await в цикле ждёт корутины по одной: общее время — сумма всех пауз.",
+                       bad='''
+                           for url in urls:
+                               pages.append(await fetch(url))''',
+                       good="pages = await asyncio.gather(*(fetch(u) for u in urls))"),
+               pitfall("gather ждёт корутины отдельными аргументами; список целиком даёт TypeError: unhashable type: 'list'.",
+                       bad="await asyncio.gather(jobs)", good="await asyncio.gather(*jobs)"),
+               pitfall("Задачу без сохранённой ссылки может удалить сборщик мусора до конца её работы.",
+                       bad="asyncio.create_task(backup())", good="task = asyncio.create_task(backup())")]),
+        topic("async_timeouts", "Таймауты и отмена",
+              "Таймаут ограничивает ожидание, а отмена останавливает задачу исключением CancelledError внутри неё.",
+              """
+              Сервер может не ответить никогда. Программа не должна ждать вечно: через несколько секунд она сдаётся, убирает за собой и сообщает об ошибке. Для этого в asyncio есть таймауты и отмена задач.
+
+              ## Как записать
+
+              ```syntax
+              результат = await asyncio.wait_for(корутина, timeout=секунды)
+
+              async with asyncio.timeout(секунды):
+                  await долгая_операция()
+              ```
+
+              - {`wait_for`} ограничивает одну корутину.
+              - {`asyncio.timeout`} (с Python 3.11) ограничивает весь блок, сколько бы `await` в нём ни было.
+
+              Если время вышло, наружу вылетает {`TimeoutError`}.
+
+              ## Как работает отмена
+
+              `task.cancel()` не убивает задачу сразу. Внутри задачи на текущем `await` возникает исключение {`asyncio.CancelledError`}. Благодаря этому срабатывают [[exc_try|finally]] и `with`: задача успевает закрыть файлы и соединения.
+
+              Таймауты устроены так же: когда время вышло, они отменяют ожидание. После отмены `await task` выбрасывает {`CancelledError`}, а `task.cancelled()` возвращает `True`.
+
+              ## Не глушите отмену
+
+              {`CancelledError`} наследует `BaseException`, а не `Exception` ([[exc_types|иерархия исключений]]). Поэтому `except Exception` его не ловит, а голый `except:` поймает — и задача перестанет отменяться.
+
+              Если отмену перехватили, чтобы убрать за собой, выбросьте её дальше через `raise`.
+              """,
+              [("""\
+                import asyncio
+
+                async def ask_server():
+                    await asyncio.sleep(1)
+                    return "ответ"
+
+                async def main():
+                    try:
+                        r = await asyncio.wait_for(
+                            ask_server(), timeout=0.02)
+                        print(r)
+                    except TimeoutError:
+                        print("сервер молчит")
+
+                asyncio.run(main())""",
+                "Пауза длиннее таймаута — вместо ответа TimeoutError"),
+               ("""\
+                import asyncio
+
+                async def download():
+                    try:
+                        await asyncio.sleep(1)
+                    finally:
+                        print("закрываю соединение")
+
+                async def main():
+                    try:
+                        async with asyncio.timeout(0.02):
+                            await download()
+                    except TimeoutError:
+                        print("время вышло")
+
+                asyncio.run(main())""",
+                "Сначала finally внутри задачи, потом TimeoutError снаружи"),
+               ("""\
+                import asyncio
+
+                async def ticker():
+                    try:
+                        while True:
+                            await asyncio.sleep(0.01)
+                    except asyncio.CancelledError:
+                        print("ticker: стоп")
+                        raise
+
+                async def main():
+                    t = asyncio.create_task(ticker())
+                    await asyncio.sleep(0.03)
+                    t.cancel()
+                    try:
+                        await t
+                    except asyncio.CancelledError:
+                        print("отменена:", t.cancelled())
+
+                asyncio.run(main())""",
+                "cancel() бросил исключение внутрь задачи, raise довёл отмену")],
+              [pitfall("Голый except ловит и CancelledError: задача перестаёт отменяться. Перехватили — выбросьте снова.",
+                       bad='''
+                           try:
+                               await fetch()
+                           except:
+                               log("сбой")''',
+                       good='''
+                           try:
+                               await fetch()
+                           except asyncio.CancelledError:
+                               cleanup()
+                               raise'''),
+               pitfall("asyncio.timeout — асинхронный менеджер: TypeError: 'Timeout' object does not support the context manager protocol.",
+                       bad='''
+                           with asyncio.timeout(1):
+                               await fetch()''',
+                       good='''
+                           async with asyncio.timeout(1):
+                               await fetch()'''),
+               "Ждать, что cancel() остановит задачу мгновенно: исключение возникнет только на её ближайшем await."]),
+        topic("async_sync", "Очереди и семафоры",
+              "`asyncio.Queue`, `Semaphore` и `Lock` согласуют корутины: передают данные и ограничивают одновременную работу.",
+              """
+              Когда задач много, им нужно договариваться. Одни производят данные, другие их обрабатывают. К серверу можно делать не больше пяти запросов сразу. Общий счётчик нельзя менять двум задачам одновременно. Для этого в asyncio есть свои очередь, семафор и замок.
+
+              ## Очередь
+
+              `asyncio.Queue` передаёт данные от производителя к потребителю:
+
+              - `await q.put(x)` — положить; если очередь с `maxsize` заполнена — ждать места
+              - `await q.get()` — взять; если пусто — ждать элемента
+              - `q.task_done()` и `await q.join()` — дождаться обработки всего положенного
+
+              Конец работы обычно обозначают особым значением, например `None`.
+
+              ## Семафор
+
+              ```syntax
+              sem = asyncio.Semaphore(n)
+
+              async with sem:
+                  действия
+              ```
+
+              Семафор пускает в блок не больше `n` корутин. Остальные ждут на входе, пока кто-то не выйдет. Так ограничивают число одновременных запросов к одному серверу.
+
+              ## Замок
+
+              `asyncio.Lock` — семафор на одного: `async with lock:` пускает в блок одну корутину. Он нужен, если между чтением и записью общих данных есть `await`: в этой точке может вклиниться другая корутина. Без `await` корутины и так не переключаются.
+
+              ## async with и async for
+
+              `async with` — [[ctx_protocol|контекстный менеджер]], вход и выход которого сами умеют ждать. `async for x in поток:` перебирает асинхронный итератор: между элементами можно ждать. Обе конструкции пишут только внутри `async def`.
+              """,
+              [("""\
+                import asyncio
+
+                async def cook(q):
+                    for dish in ["суп", "плов"]:
+                        await q.put(dish)
+                    await q.put(None)
+
+                async def waiter(q):
+                    while (dish := await q.get()):
+                        print("несу", dish)
+
+                async def main():
+                    q = asyncio.Queue()
+                    await asyncio.gather(cook(q), waiter(q))
+
+                asyncio.run(main())""",
+                "None в очереди — сигнал, что блюд больше не будет"),
+               ("""\
+                import asyncio
+
+                async def visit(sem, n):
+                    async with sem:
+                        print("вошёл", n)
+                        await asyncio.sleep(0.01 * (n + 1))
+                        print("вышел", n)
+
+                async def main():
+                    sem = asyncio.Semaphore(2)
+                    await asyncio.gather(
+                        *(visit(sem, n) for n in range(3)))
+
+                asyncio.run(main())""",
+                "Внутри не больше двух: третий вошёл, когда вышел первый"),
+               ("""\
+                import asyncio
+
+                stock = 1
+
+                async def buy(lock, who):
+                    global stock
+                    async with lock:
+                        if stock > 0:
+                            await asyncio.sleep(0.01)
+                            stock -= 1
+                            print(who, "купил")
+                        else:
+                            print(who, "опоздал")
+
+                async def main():
+                    lock = asyncio.Lock()
+                    await asyncio.gather(buy(lock, "Ада"),
+                                         buy(lock, "Боб"))
+                    print("осталось:", stock)
+
+                asyncio.run(main())""",
+                "Замок не дал второму проверить остаток до списания")],
+              [pitfall("Потребитель без сигнала конца ждёт get() вечно, и программа не завершается.",
+                       bad='''
+                           while True:
+                               item = await q.get()
+                               handle(item)''',
+                       good='''
+                           while (item := await q.get()) is not None:
+                               handle(item)'''),
+               pitfall("threading.Lock в корутине блокирует весь цикл событий: для корутин нужен asyncio.Lock.",
+                       bad="lock = threading.Lock()", good="lock = asyncio.Lock()"),
+               pitfall("Новый семафор в каждой корутине у каждой свой и ничего не ограничивает: создайте один общий.",
+                       bad="async with asyncio.Semaphore(2):\n    await fetch()",
+                       good="async with sem:\n    await fetch()")]),
     ],
     tasks=[
         task("t_async_gather", "Параллельная загрузка",
@@ -267,7 +611,7 @@ MODULES.append(dict(
                         print("таймаут")
 
                 asyncio.run(main())""",
-                ["таймаут", "данные", "таймаут\nslow: уборка"], position=3, topic="async_tasks",
+                ["таймаут", "данные", "таймаут\nslow: уборка"], position=3, topic="async_timeouts",
                 role="practice", difficulty=3,
                 hint="Что происходит с корутиной, которая не успела? Срабатывает ли её finally?",
                 explanation="По таймауту wait_for отменяет slow: внутри неё await бросает CancelledError, finally печатает «уборка». Затем wait_for выбрасывает TimeoutError (в 3.11+ asyncio.TimeoutError — это он же).",
@@ -351,7 +695,7 @@ MODULES.append(dict(
 
                 asyncio.run(main())""",
                 ["задача отменена: True", "отмена: убираю за собой\nзадача отменена: False",
-                 "отмена: убираю за собой"], position=1, topic="async_tasks", role="practice", difficulty=3,
+                 "отмена: убираю за собой"], position=1, topic="async_timeouts", role="practice", difficulty=3,
                 hint="cancel() бросает CancelledError внутрь задачи на её текущем await. Что сделает raise в except?",
                 explanation="task.cancel() бросает CancelledError внутрь worker на await asyncio.sleep. worker убирает за собой и пробрасывает отмену дальше, поэтому задача считается отменённой, а await task в main выбрасывает CancelledError.",
                 feedback={"задача отменена: True": "except внутри worker выполняется — он печатает про уборку.",
@@ -376,7 +720,7 @@ MODULES.append(dict(
                     print(await asyncio.gather(*(fetch(sem, n) for n in range(5))), peak)
 
                 asyncio.run(main())""",
-                ["[0, 1, 2, 3, 4] 5", "[0, 1, 2, 3, 4] 1", "[0, 1] 2"], position=3, topic="async_tasks",
+                ["[0, 1, 2, 3, 4] 5", "[0, 1, 2, 3, 4] 1", "[0, 1] 2"], position=3, topic="async_sync",
                 role="practice", difficulty=3,
                 hint="Semaphore(2) пускает в блок не больше двух корутин. Остальные ждут, но не пропадают.",
                 explanation="Все пять корутин стартуют, но в async with sem одновременно находятся не больше двух — так ограничивают число параллельных запросов к серверу. Результаты — все пять, в порядке аргументов.",
@@ -407,7 +751,7 @@ MODULES.append(dict(
                 ["положил a\nположил b\nположил c\nвзял a\nвзял b\nвзял c\nвсё",
                  "положил a\nвзял a\nвзял b\nположил b\nположил c\nвзял c\nвсё",
                  "всё\nположил a\nвзял a\nположил b\nвзял b\nположил c\nвзял c"],
-                position=1, topic="async_tasks", role="boss", difficulty=4,
+                position=1, topic="async_sync", role="boss", difficulty=4,
                 hint="В очереди помещается один элемент: put ждёт, пока потребитель заберёт предыдущий. И когда выполняется код после async with?",
                 explanation="Очередь на один элемент: producer кладёт a, а на b ждёт. consumer забирает a, место освобождается — producer кладёт b и снова ждёт. Так они чередуются. Блок TaskGroup ждёт обе задачи, поэтому «всё» — последнее.",
                 feedback={"положил a\nположил b\nположил c\nвзял a\nвзял b\nвзял c\nвсё": "maxsize=1: второй put ждёт, пока потребитель заберёт первый элемент.",
@@ -429,62 +773,521 @@ MODULES.append(dict(
     id="concurrency", title="Потоки и процессы", description="threading, Lock, очереди, пулы, GIL",
     icon="🧵",
     topics=[
-        topic("conc_threads", "Потоки и GIL",
-              "Поток — ещё одна линия выполнения в той же программе. Thread(target=f).start() запускает f одновременно с остальным кодом (конкурентно: с GIL байт-код потоков выполняется по очереди), join() ждёт её конца. Общие данные защищают Lock. Из-за GIL потоки ускоряют ожидание (сеть, диск), но не вычисления на чистом Python.",
+        topic("conc_threads", "Потоки: Thread и join",
+              "Поток — ещё одна линия выполнения внутри программы; потоки помогают, когда программа много ждёт.",
               """
-              threading.Thread(target=функция, args=(аргументы,)) создаёт поток, start() запускает его, join() ждёт завершения. Без join главный поток не ждёт результатов. t.is_alive() — работает ли поток, threading.active_count() — сколько потоков живо, включая главный. daemon=True — фоновый поток, который не мешает программе завершиться.
+              Пока программа ждёт ответа сервера или чтения файла, процессор простаивает. В отдельном потоке это ожидание идёт одновременно с остальной работой. В отличие от [[async_basics|asyncio]], потоки работают и с обычными, не асинхронными функциями.
 
-              GIL (глобальная блокировка интерпретатора) в обычном CPython позволяет выполнять байт-код только одному потоку за раз. Пока поток ждёт ввода-вывода, GIL отпускается — поэтому потоки хороши для сетевых запросов и файлов, но не ускоряют вычисления на чистом Python. (В 3.13 появилась экспериментальная сборка без GIL — free-threading; с 3.14 она официально поддерживается, но ставится отдельно, например python3.14t, и не используется по умолчанию.)
+              ## Как записать
 
-              Гонка данных: два потока читают и меняют одно значение, и обновления теряются. Решение — threading.Lock: with lock: ... пускает в блок только один поток. Lock должен быть общим для всех потоков, а не создаваться заново при каждом вызове.
+              ```syntax
+              import threading
 
-              queue.Queue — потокобезопасная очередь: put/get уже защищены. task_done() и join() позволяют дождаться обработки всех элементов.
+              t = threading.Thread(target=функция, args=(аргумент,))
+              t.start()
+              t.join()
+              ```
 
-              concurrent.futures.ThreadPoolExecutor — пул потоков: pool.map(f, данные) возвращает результаты в исходном порядке, pool.submit(f, x) — объект Future, а as_completed(futures) выдаёт их по мере готовности.
+              - `target` — функция, которую выполнит поток. Её передают без скобок.
+              - `args` — кортеж аргументов; для одного аргумента запятая обязательна.
+              - `start()` запускает поток, и программа сразу идёт дальше.
+              - `join()` ждёт, пока поток закончит. Без него результат можно прочитать раньше, чем поток его запишет.
+
+              ## Состояние потоков
+
+              - `t.is_alive()` — работает ли поток
+              - `threading.active_count()` — сколько потоков живо, включая главный
+              - `daemon=True` — фоновый поток: программа не ждёт его при выходе
+
+              ## GIL
+
+              В обычном CPython GIL (глобальная блокировка интерпретатора) разрешает выполнять байт-код только одному потоку за раз. Пока поток ждёт ввода-вывода, GIL отпускается. Поэтому потоки ускоряют ожидание — сеть, диск, — но не вычисления на чистом Python.
+
+              С Python 3.13 есть экспериментальная сборка без GIL, с 3.14 она поддерживается официально. Но ставится она отдельно и по умолчанию не используется.
+
+              ## Потоки в приложении
+
+              Во встроенном Python приложения потоки эмулируются: выполняются по очереди, и ускорения нет. Логика и порядок — как в обычном Python, подробнее — в теме [[conc_processes|процессы]]. Как потокам безопасно делить данные — в теме [[conc_lock|гонка данных]].
               """,
               [("""\
                 import threading
+                import time
 
-                counter = 0
-                lock = threading.Lock()
+                def download(name):
+                    time.sleep(0.02)
+                    print("скачан", name)
 
-                def add(times):
-                    global counter
-                    for _ in range(times):
-                        with lock:
-                            counter += 1
+                t = threading.Thread(target=download,
+                                     args=("отчёт",))
+                t.start()
+                print("главный поток не ждёт")
+                t.join()
+                print("поток закончил")""",
+                "start() не ждёт: главный поток печатает раньше потока"),
+               ("""\
+                import threading
+                import time
 
-                threads = [threading.Thread(target=add, args=(10_000,)) for _ in range(4)]
-                for t in threads:
+                sizes = {}
+
+                def measure(word):
+                    time.sleep(0.01)
+                    sizes[word] = len(word)
+
+                threads = []
+                for w in ["кот", "собака", "ёж"]:
+                    t = threading.Thread(
+                        target=measure, args=(w,))
                     t.start()
+                    threads.append(t)
                 for t in threads:
                     t.join()
-                print(counter)""", "С общим Lock ни одно увеличение не теряется.")],
-              ["Забыть join: главный поток напечатает результат раньше, чем потоки его посчитают.",
-               "Создавать Lock внутри функции потока: у каждого вызова свой замок, и он ничего не защищает.",
-               "Ждать ускорения вычислений от потоков в обычном CPython: GIL выполняет байт-код по очереди."]),
-        topic("conc_processes", "Процессы и выбор инструмента",
-              "Для вычислений на всех ядрах — процессы: ProcessPoolExecutor или multiprocessing. Для ожиданий — потоки или asyncio. Код запуска пулов процессов держат под if __name__ == \"__main__\".",
+                print(sizes["собака"])
+                print(len(sizes))""",
+                "Сначала запускают все потоки, потом ждут каждый"),
+               ("""\
+                import threading
+                import time
+
+                result = []
+
+                def work():
+                    time.sleep(0.02)
+                    result.append("готово")
+
+                t = threading.Thread(target=work)
+                t.start()
+                print(result)
+                t.join()
+                print(result)
+                print(t.is_alive())""",
+                "До join список пуст, после — заполнен, поток завершён")],
+              [pitfall("args ждёт кортеж: (\"отчёт\") — просто строка, и поток упадёт с TypeError: takes 1 positional argument but 5 were given.",
+                       bad='Thread(target=download, args=("отчёт"))',
+                       good='Thread(target=download, args=("отчёт",))'),
+               pitfall("target=work() вызывает функцию сразу в главном потоке, а потоку отдаёт её результат.",
+                       bad="Thread(target=work())", good="Thread(target=work)"),
+               pitfall("Без join главный поток читает результат раньше, чем поток его запишет.",
+                       bad='''
+                           t.start()
+                           print(result)''',
+                       good='''
+                           t.start()
+                           t.join()
+                           print(result)'''),
+               "Ждать от потоков ускорения вычислений в обычном CPython: из-за GIL байт-код выполняется по очереди."]),
+        topic("conc_lock", "Гонка данных и Lock",
+              "Гонка данных — потеря обновлений, когда потоки меняют общее значение; `Lock` пускает к нему один поток за раз.",
               """
-              Процесс — отдельная копия интерпретатора со своей памятью и своим GIL. Поэтому процессы ускоряют вычисления на нескольких ядрах. Цена — данные передаются между процессами через сериализацию (pickle), а запуск процесса дороже потока.
+              Два кассира одновременно списывают деньги с одного счёта: оба прочитали 100, оба записали своё, и одно списание пропало. С потоками бывает то же самое, причём ошибка проявляется не при каждом запуске.
 
-              ProcessPoolExecutor имеет тот же интерфейс, что ThreadPoolExecutor: map, submit, as_completed. Функция и аргументы должны сериализоваться: lambda и функции, объявленные внутри других функций, не подойдут.
+              ## Откуда берётся гонка
 
-              У запущенного файла имя модуля __name__ равно "__main__", а при импорте — имени файла (подробнее — в модуле «Программа как проект»). Новые процессы на Windows и macOS (способ spawn), а с Python 3.14 и на Linux (forkserver) импортируют главный модуль заново. Без if __name__ == "__main__": дочерний процесс попытался бы снова создать пул — multiprocessing это замечает и падает с RuntimeError. Fork (Linux до 3.13) копирует процесс и модуль не импортирует, но проверку пишут всегда — ради переносимости.
+              «Прочитать — изменить — записать» — несколько шагов. Если между ними поток переключится, другой поток прочитает старое значение, и одно из изменений затрётся. Даже `counter += 1` — несколько шагов байт-кода, а не одно действие.
 
-              Как выбрать: много ожиданий в сети — asyncio (тысячи соединений) или потоки (проще с синхронными библиотеками); тяжёлые вычисления на чистом Python — процессы; вычисления в numpy и других C-библиотеках часто отпускают GIL и работают и в потоках.
+              ## Как записать
 
-              Во встроенном Python приложения потоки и процессы эмулируются: они выполняются по очереди в одном настоящем потоке и переключаются там, где ждут (sleep, замок, очередь, join). Логика, порядок и синхронизация — как в обычном Python, но ускорения нет, а у «процессов» общая память.
+              ```syntax
+              lock = threading.Lock()
+
+              def работа():
+                  with lock:
+                      чтение_и_запись_общих_данных
+              ```
+
+              `with lock:` пускает в блок один поток, остальные ждут у входа. При выходе из блока замок открывается, даже если внутри случилась ошибка.
+
+              ## Правила
+
+              - Замок создают один на всех, до запуска потоков. Новый {`Lock()`} внутри функции у каждого вызова свой и ничего не защищает.
+              - Чтение и запись общего значения держат в одном блоке под замком.
+              - Под замком — только работа с общими данными: долгие ожидания под ним выстраивают потоки в очередь.
+              - Поток, который второй раз берёт свой же {`Lock`}, зависнет навсегда. Для повторного входа есть `threading.RLock`.
+
+              Чтобы не делить данные вовсе, потоки передают их через [[conc_queue|очередь]].
               """,
               [("""\
-                from concurrent.futures import ProcessPoolExecutor
+                import threading
+                import time
+
+                seats = 10
+
+                def book(n):
+                    global seats
+                    free = seats
+                    time.sleep(0.01)
+                    seats = free - n
+
+                a = threading.Thread(target=book, args=(3,))
+                b = threading.Thread(target=book, args=(2,))
+                a.start()
+                b.start()
+                a.join()
+                b.join()
+                print(seats)""",
+                "Ждали 5 свободных мест, но потоки затёрли изменения друг друга"),
+               ("""\
+                import threading
+                import time
+
+                seats = 10
+                lock = threading.Lock()
+
+                def book(n):
+                    global seats
+                    with lock:
+                        free = seats
+                        time.sleep(0.01)
+                        seats = free - n
+
+                a = threading.Thread(target=book, args=(3,))
+                b = threading.Thread(target=book, args=(2,))
+                a.start()
+                b.start()
+                a.join()
+                b.join()
+                print(seats)""",
+                "Под замком второй поток ждал, пока первый закончит")],
+              [pitfall("Новый замок при каждом вызове у каждого потока свой и ничего не защищает.",
+                       bad='''
+                           with threading.Lock():
+                               seats -= n''',
+                       good='''
+                           with lock:
+                               seats -= n'''),
+               pitfall("Чтение вне замка: другой поток успеет изменить значение до записи.",
+                       bad='''
+                           free = seats
+                           with lock:
+                               seats = free - n''',
+                       good='''
+                           with lock:
+                               free = seats
+                               seats = free - n'''),
+               pitfall("acquire без release при ошибке оставляет замок закрытым навсегда; with открывает его сам.",
+                       bad='''
+                           lock.acquire()
+                           seats -= n
+                           lock.release()''',
+                       good='''
+                           with lock:
+                               seats -= n''')]),
+        topic("conc_queue", "Очередь между потоками",
+              "`queue.Queue` безопасно передаёт данные между потоками, и общий Lock для этого не нужен.",
+              """
+              Один поток получает задания, другой их выполняет. Делить общий список под замком неудобно, и легко ошибиться. Очередь решает это готово: её методы уже защищены.
+
+              ## Как записать
+
+              ```syntax
+              import queue
+
+              q = queue.Queue()
+              q.put(элемент)
+              элемент = q.get()
+              ```
+
+              - `put` кладёт в конец, `get` берёт из начала: первым пришёл — первым ушёл.
+              - Если очередь пуста, `get` ждёт, пока кто-то положит элемент.
+              - `queue.Queue(maxsize=n)` ограничивает размер: `put` ждёт, пока освободится место.
+
+              ## Как остановить работника
+
+              Работник — поток, который в цикле берёт задания из очереди. Чтобы он закончил, в очередь кладут особое значение, например `None`. Получив его, работник выходит из цикла, и [[conc_threads|`join()`]] потока возвращается. Каждому работнику нужен свой сигнал.
+
+              ## Дождаться обработки
+
+              - `q.task_done()` — работник сообщает, что закончил с элементом
+              - `q.join()` — ждёт, пока для каждого `put` вызовут `task_done`
+
+              Так главный поток узнаёт, что все задания обработаны, даже если работники ещё живы. Не путайте `q.join()` очереди и `t.join()` потока.
+              """,
+              [("""\
+                import queue
+                import threading
+
+                q = queue.Queue()
+
+                def printer():
+                    while (doc := q.get()) is not None:
+                        print("печатаю", doc)
+
+                t = threading.Thread(target=printer)
+                t.start()
+                for doc in ["счёт", "договор"]:
+                    q.put(doc)
+                q.put(None)
+                t.join()
+                print("принтер свободен")""",
+                "None — сигнал остановки: работник вышел из цикла"),
+               ("""\
+                import queue
+                import threading
+
+                q = queue.Queue()
+                done = []
+
+                def worker():
+                    while (n := q.get()) is not None:
+                        done.append(n * n)
+                        q.task_done()
+
+                ts = [threading.Thread(target=worker)
+                      for _ in range(2)]
+                for t in ts:
+                    t.start()
+                for n in range(5):
+                    q.put(n)
+                q.join()
+                print(sorted(done))
+                for t in ts:
+                    q.put(None)""",
+                "q.join() вернулся, когда все задания отмечены task_done")],
+              [pitfall("Работник без сигнала остановки ждёт get() вечно, и программа не завершается.",
+                       bad='''
+                           while True:
+                               job = q.get()
+                               run(job)''',
+                       good='''
+                           while (job := q.get()) is not None:
+                               run(job)'''),
+               pitfall("Без task_done() вызов q.join() не вернётся никогда.",
+                       bad='''
+                           n = q.get()
+                           done.append(n)''',
+                       good='''
+                           n = q.get()
+                           done.append(n)
+                           q.task_done()'''),
+               pitfall("Один None остановит только одного работника: сигнал кладут каждому.",
+                       bad="q.put(None)",
+                       good='''
+                           for _ in workers:
+                               q.put(None)''')]),
+        topic("conc_pool", "Пул потоков",
+              "`ThreadPoolExecutor` раздаёт задания готовым потокам и собирает результаты без ручных start и join.",
+              """
+              Сто файлов не стоит качать в ста потоках: их создание тоже стоит времени и памяти. Пул держит несколько рабочих потоков и раздаёт им задания по очереди. Пул живёт в модуле `concurrent.futures`.
+
+              ## Как записать
+
+              ```syntax
+              from concurrent.futures import ThreadPoolExecutor
+
+              with ThreadPoolExecutor(max_workers=4) as pool:
+                  результаты = list(pool.map(функция, данные))
+              ```
+
+              Выход из `with` ждёт все задания, как `join` у каждого потока.
+
+              ## map, submit, as_completed
+
+              - {`pool.map(f, данные)`} — результаты в порядке входных данных
+              - `pool.submit(f, x)` — одно задание, возвращает `Future`
+              - `future.result()` — дождаться результата задания
+              - `as_completed(futures)` — выдавать задания по мере готовности
+
+              `Future` — «обещание результата»: объект, в котором результат появится, когда задание закончится. Если в задании было исключение, `result()` выбросит его в главном потоке.
+
+              ## Что выбрать
+
+              - Нужны все результаты по порядку — {`map`}.
+              - Готовое нужно обрабатывать сразу — `submit` и `as_completed`.
+
+              Для вычислений есть такой же пул процессов — [[conc_processes|ProcessPoolExecutor]].
+              """,
+              [("""\
+                from concurrent.futures import (
+                    ThreadPoolExecutor)
+                import time
+
+                def fetch(page):
+                    time.sleep(0.01 * (4 - page))
+                    return f"стр.{page}"
+
+                with ThreadPoolExecutor(3) as pool:
+                    pages = pool.map(fetch, [1, 2, 3])
+                    print(list(pages))""",
+                "Быстрее всех готова стр.3, но map сохранил порядок"),
+               ("""\
+                from concurrent.futures import (
+                    ThreadPoolExecutor, as_completed)
+                import time
+
+                def cook(dish, minutes):
+                    time.sleep(minutes / 100)
+                    return dish
+
+                orders = [("плов", 3), ("чай", 1),
+                          ("суп", 2)]
+                with ThreadPoolExecutor() as pool:
+                    futs = [pool.submit(cook, d, m)
+                            for d, m in orders]
+                    for f in as_completed(futs):
+                        print(f.result())""",
+                "as_completed отдаёт блюда по мере готовности"),
+               ("""\
+                from concurrent.futures import (
+                    ThreadPoolExecutor)
+
+                def parse(text):
+                    return int(text)
+
+                with ThreadPoolExecutor() as pool:
+                    fut = pool.submit(parse, "12a")
+                    try:
+                        fut.result()
+                    except ValueError as e:
+                        print("ошибка:", e)""",
+                "Исключение из потока пришло в главный через result()")],
+              [pitfall("submit(parse(text)) вызывает функцию сразу, а в пул отдаёт результат; result() даст TypeError.",
+                       bad='pool.submit(parse("12"))', good='pool.submit(parse, "12")'),
+               pitfall("Исключение задания видно только через result(): без него ошибка пропадает молча.",
+                       bad="pool.submit(parse, text)",
+                       good='''
+                           fut = pool.submit(parse, text)
+                           fut.result()'''),
+               "Ждать от map результатов по мере готовности: порядок всегда как у входных данных."]),
+        topic("conc_processes", "Процессы",
+              "Процессы — отдельные копии интерпретатора, которые считают на нескольких ядрах процессора одновременно.",
+              """
+              Расчёт на чистом Python занимает одно ядро, даже если их восемь: [[conc_threads|GIL]] не даёт потокам считать одновременно. Процессы обходят это ограничение — у каждого свой интерпретатор и свой GIL.
+
+              ## Как записать
+
+              ```syntax
+              from concurrent.futures import ProcessPoolExecutor
+
+              if __name__ == "__main__":
+                  with ProcessPoolExecutor() as pool:
+                      результаты = list(pool.map(функция, данные))
+              ```
+
+              Интерфейс тот же, что у [[conc_pool|пула потоков]]: {`map`}, `submit`, `as_completed`. Модуль `multiprocessing` даёт то же на более низком уровне.
+
+              ## Цена процессов
+
+              - Запуск процесса дороже, чем запуск потока.
+              - Общей памяти у процессов нет: аргументы и результаты передаются через [[data_json|сериализацию]] модулем `pickle`.
+              - Поэтому функцию объявляют на верхнем уровне модуля: `lambda` и вложенные функции не сериализуются.
+
+              ## Зачем проверка __name__
+
+              У запущенного файла `__name__` равен `"__main__"`, у импортированного — имени модуля ([[proj_structure|точка входа]]). Новые процессы на Windows и macOS, а с Python 3.14 и на Linux импортируют главный модуль заново.
+
+              Без проверки каждый из них снова создавал бы пул — Python останавливает это ошибкой `RuntimeError`. Проверку пишут всегда, ради переносимости.
+
+              ## Процессы в приложении
+
+              Во встроенном Python приложения потоки и процессы эмулируются: они выполняются по очереди в одном настоящем потоке и переключаются там, где ждут (`sleep`, замок, очередь, `join`). Логика, порядок и синхронизация — как в обычном Python, но ускорения нет, а у «процессов» общая память.
+              """,
+              [("""\
+                from concurrent.futures import (
+                    ProcessPoolExecutor)
 
                 if __name__ == "__main__":
-                    with ProcessPoolExecutor(max_workers=2) as pool:
-                        print(list(pool.map(pow, [2, 3, 4], [10, 2, 3])))""",
-                "pow — встроенная функция, она сериализуется и выполняется в процессах пула.")],
-              ["Передавать в ProcessPoolExecutor lambda — её нельзя сериализовать (PicklingError).",
-               "Запускать пул процессов без if __name__ == \"__main__\" — на Windows, macOS и Linux 3.14+ дочерние процессы падают с RuntimeError."]),
+                    with ProcessPoolExecutor(2) as pool:
+                        res = pool.map(pow, [2, 3, 4],
+                                       [10, 2, 3])
+                        print(list(res))""",
+                "Каждая пара чисел возведена в степень в процессах пула"),
+               ("""\
+                import math
+                from concurrent.futures import (
+                    ProcessPoolExecutor)
+
+                if __name__ == "__main__":
+                    with ProcessPoolExecutor() as pool:
+                        fut = pool.submit(math.factorial, 20)
+                        print(fut.result())""",
+                "submit и result работают так же, как у пула потоков"),
+               ("""\
+                print(__name__)
+                if __name__ == "__main__":
+                    print("файл запущен, а не импортирован")""",
+                "У запущенного файла __name__ равен \"__main__\"")],
+              [pitfall("lambda нельзя сериализовать для другого процесса: PicklingError. Нужна функция верхнего уровня.",
+                       bad="pool.map(lambda x: x * 2, data)", good="pool.map(double, data)"),
+               pitfall("Пул процессов без проверки __name__ на Windows, macOS и Linux 3.14+ падает с RuntimeError.",
+                       bad='''
+                           with ProcessPoolExecutor() as pool:
+                               run(pool)''',
+                       good='''
+                           if __name__ == "__main__":
+                               with ProcessPoolExecutor() as pool:
+                                   run(pool)'''),
+               "Ждать, что процесс изменит глобальную переменную главной программы: память у процессов своя."]),
+        topic("conc_choice", "Потоки, процессы или asyncio",
+              "Для ожиданий подходят asyncio и потоки, для вычислений на чистом Python — процессы.",
+              """
+              Три инструмента решают похожую задачу — делать несколько дел сразу, — но выигрывают в разных случаях. Главный вопрос: программа больше ждёт или больше считает?
+
+              ## Ждёт или считает
+
+              - Ввод-вывод: сеть, диск, база данных. Процессор простаивает, и выигрыш дают и [[conc_threads|потоки]], и [[async_basics|asyncio]].
+              - Вычисления на чистом Python: циклы, перебор, математика. Потокам мешает GIL, нужны [[conc_processes|процессы]].
+
+              ## Что выбрать
+
+              | Задача | Инструмент |
+              |---|---|
+              | тысячи соединений | {`asyncio`} |
+              | ожидания в обычном коде | пул потоков |
+              | счёт на чистом Python | процессы |
+              | счёт в numpy | потоки или процессы |
+
+              ## Почему numpy — исключение
+
+              Библиотеки на C, например numpy, во время тяжёлых операций часто отпускают GIL. Тогда считать параллельно могут и потоки.
+
+              ## Можно сочетать
+
+              Блокирующую функцию из корутины выносят в поток: `await asyncio.to_thread(f, x)`. Цикл событий в это время продолжает работать с другими задачами.
+
+              Во встроенном Python приложения ни один вариант не даёт ускорения: потоки и процессы там эмулируются. Но порядок и логика работы — как в обычном Python.
+              """,
+              [("""\
+                import threading
+                import time
+
+                def wait():
+                    time.sleep(0.03)
+
+                start = time.perf_counter()
+                ts = [threading.Thread(target=wait)
+                      for _ in range(3)]
+                for t in ts:
+                    t.start()
+                for t in ts:
+                    t.join()
+                spent = time.perf_counter() - start
+                print(spent < 0.06)""",
+                "Три паузы по 0.03 с в потоках заняли меньше 0.06 с"),
+               ("""\
+                import asyncio
+                import time
+
+                def read_disk(name):
+                    time.sleep(0.02)
+                    return name + ": прочитан"
+
+                async def main():
+                    a, b = await asyncio.gather(
+                        asyncio.to_thread(read_disk, "a"),
+                        asyncio.to_thread(read_disk, "b"))
+                    print(a)
+                    print(b)
+
+                asyncio.run(main())""",
+                "Обычная функция с паузой работает в потоке рядом с asyncio",
+                {"native_only": True})],
+              [pitfall("Потоки не ускоряют счёт на чистом Python: GIL выполняет байт-код по очереди.",
+                       bad="ThreadPoolExecutor().map(count_primes, parts)",
+                       good="ProcessPoolExecutor().map(count_primes, parts)"),
+               pitfall("Блокирующий вызов в корутине останавливает весь asyncio: выносите его в поток.",
+                       bad='data = read_disk("a")',
+                       good='data = await asyncio.to_thread(read_disk, "a")'),
+               "Отдавать процессам короткие задачи: запуск и передача данных обходятся дороже самой работы."]),
     ],
     tasks=[
         task("t_conc_queue", "Рабочий поток и очередь",
@@ -579,7 +1382,7 @@ MODULES.append(dict(
             for t in threads:
                 t.join()
             print(balance)""", {8: "    with lock:"},
-            prompt="Два снятия должны оставить 50. Найдите строку с ошибкой", topic="conc_threads",
+            prompt="Два снятия должны оставить 50. Найдите строку с ошибкой", topic="conc_lock",
             hint="Сколько разных замков создаётся в этой программе?",
             explanation="threading.Lock() внутри функции создаёт новый замок при каждом вызове — потоки не мешают друг другу. Оба читают 100, и одно снятие теряется. Нужен один общий lock.",
             difficulty=3),
@@ -593,7 +1396,7 @@ MODULES.append(dict(
 
                 with ThreadPoolExecutor(max_workers=3) as pool:
                     print(list(pool.map(slow_square, [0, 1, 2])))""",
-                ["[4, 1, 0]", "[0, 1, 2]"], position=0, topic="conc_threads", role="practice", difficulty=2,
+                ["[4, 1, 0]", "[0, 1, 2]"], position=0, topic="conc_pool", role="practice", difficulty=2,
                 hint="Быстрее всех закончится slow_square(2). Но в каком порядке map отдаёт результаты?",
                 explanation="map возвращает результаты в порядке входных данных, даже если задачи закончились в другом порядке.",
                 feedback={"[4, 1, 0]": "Это порядок завершения. map сохраняет порядок входных данных.",
@@ -611,14 +1414,14 @@ MODULES.append(dict(
                     print([f.result() for f in as_completed(futures)])
                     print([f.result() for f in futures])""",
                 ["['a', 'b', 'c']\n['a', 'b', 'c']", "['b', 'c', 'a']\n['b', 'c', 'a']"], position=1,
-                topic="conc_threads", role="practice", difficulty=3,
+                topic="conc_pool", role="practice", difficulty=3,
                 hint="as_completed отдаёт задачи по мере завершения. А список futures?",
                 explanation="as_completed выдаёт Future в порядке готовности: b, c, a. Список futures остаётся в порядке создания.",
                 feedback={"['a', 'b', 'c']\n['a', 'b', 'c']": "as_completed выдаёт задачи по мере готовности — первой b.",
                           "['b', 'c', 'a']\n['b', 'c', 'a']": "Список futures не пересортировывается: он в порядке submit."}),
         multi("py_conc_006", "Где помогут потоки", "В каких задачах потоки обычного CPython (с GIL) реально ускорят программу?",
               list(PURPOSES), [i for i, ok in enumerate(PURPOSES.values()) if ok],
-              check=lambda option: PURPOSES[option], topic="conc_processes",
+              check=lambda option: PURPOSES[option], topic="conc_choice",
               hint="GIL отпускается, пока поток ждёт ввода-вывода.",
               explanation="Сеть, база данных и диск — ожидания: пока один поток ждёт, другие работают. Вычисления на чистом Python упираются в GIL — для них нужны процессы (или numpy).",
               feedback={"Посчитать простые числа до 10 миллионов циклом на чистом Python": "Это чистые вычисления: GIL выполняет байт-код по очереди. Нужны процессы.",
@@ -630,7 +1433,7 @@ MODULES.append(dict(
                       "Потокобезопасная очередь задач",
                       "Пул потоков для ожиданий: сеть, файлы",
                       "Пул процессов для вычислений на всех ядрах"],
-              prompt="Сопоставьте понятие и смысл", topic="conc_processes",
+              prompt="Сопоставьте понятие и смысл", topic="conc_choice",
               hint="Где пул потоков, а где пул процессов — подскажут их имена.",
               explanation="GIL ограничивает потоки CPython, Lock защищает общие данные, Queue передаёт задачи, пулы потоков — для ожиданий, пулы процессов — для вычислений."),
         typed("py_conc_008", "Счёт под замком", """\
@@ -651,7 +1454,7 @@ MODULES.append(dict(
               for t in threads:
                   t.join()
               print(counter, len(threads))""",
-              topic="conc_threads", hint="Сколько раз выполнится counter += 1 и может ли увеличение потеряться?",
+              topic="conc_lock", hint="Сколько раз выполнится counter += 1 и может ли увеличение потеряться?",
               explanation="С общим Lock каждое counter += 1 выполняется целиком: 3 × 5000 = 15000."),
         choice("py_conc_009", "Пул процессов", "Почему запуск ProcessPoolExecutor прячут под if __name__ == \"__main__\"?",
                ["Новые процессы импортируют главный модуль, и без проверки каждый попытался бы снова запустить пул",
@@ -688,7 +1491,7 @@ MODULES.append(dict(
                 q.put(None)
                 t.join()
                 print(t.is_alive())""",
-                ["[]\nFalse", "[0, 10, 20]\nTrue", "[20, 10, 0]\nFalse"], position=2, topic="conc_threads",
+                ["[]\nFalse", "[0, 10, 20]\nTrue", "[20, 10, 0]\nFalse"], position=2, topic="conc_queue",
                 role="boss", difficulty=4,
                 hint="q.join() ждёт, пока для каждого put вызовут task_done. А что сделает None?",
                 explanation="q.join() возвращается, когда все три элемента обработаны (task_done) — results уже полон, порядок FIFO. None выводит рабочего из цикла, t.join() дожидается его конца — поток больше не жив.",
@@ -711,65 +1514,129 @@ MODULES.append(dict(
     id="performance", title="Производительность", description="Замеры, кэш, память, быстрые идиомы",
     icon="🚀",
     topics=[
-        topic("perf_measure", "Сначала измерь",
-              "Оптимизируют то, что измерили. time.perf_counter — для разового замера, timeit — для маленьких фрагментов, cProfile — чтобы найти, какие функции тратят время.",
+        topic("perf_measure", "Замеры скорости",
+              "Ускоряют только то, что измерили: время замеряют часами, `timeit` и профилировщиком.",
               """
-              Интуиция о «медленных местах» часто ошибается. Порядок работы: убедиться, что программа правильная, измерить, найти узкое место, ускорить его, измерить снова.
+              Интуиция о «медленных местах» часто ошибается: программа тратит время совсем не там, где кажется. Поэтому ускорение начинают с замеров.
 
-              time.perf_counter() — самые точные часы для замеров: засекают до и после, разница — секунды.
+              ## Порядок работы
 
-              timeit.timeit(функция, number=N) запускает фрагмент N раз и возвращает общее время — так сглаживаются случайные колебания. В терминале: python -m timeit "выражение".
+              1. Убедиться, что программа работает правильно.
+              2. Измерить и найти узкое место.
+              3. Ускорить только его.
+              4. Измерить снова и сравнить.
 
-              cProfile показывает, сколько раз вызвана каждая функция и сколько времени в ней проведено: python -m cProfile -s cumtime программа.py. tracemalloc отслеживает выделения памяти.
+              ## Инструменты
 
-              Главный выигрыш почти всегда даёт алгоритм (O(n) вместо O(n²)), а не мелкие приёмы.
+              - `time.perf_counter()` — точные часы: засекают до и после, разница — в секундах
+              - `timeit.timeit(код, number=N)` — запускает фрагмент N раз и возвращает общее время
+              - `python -m timeit "выражение"` — то же из терминала
+              - `python -m cProfile -s cumtime файл.py` — сколько раз вызвана каждая функция и сколько времени в ней прошло
+              - `tracemalloc` — где программа выделяет память
+
+              ## Почему много запусков
+
+              Один замер искажают другие программы, кэши процессора, сборщик мусора. `timeit` повторяет фрагмент много раз и сглаживает этот шум. Варианты сравнивают одним способом и на одних данных.
+
+              Главный выигрыш почти всегда даёт алгоритм — O(n) вместо O(n²), — а не мелкие приёмы. Как оценить алгоритм — в теме [[algo_complexity|сложность алгоритма]].
               """,
               [("""\
                 import time
-                import timeit
 
                 start = time.perf_counter()
                 total = sum(range(100_000))
-                elapsed = time.perf_counter() - start
-                print(total, type(elapsed).__name__)
+                spent = time.perf_counter() - start
+                print(total)
+                print(type(spent).__name__)""",
+                "Разница показаний часов — дробное число секунд"),
+               ("""\
+                import timeit
 
-                print(timeit.timeit("sum(range(100))", number=1000) < 60)""", "Время — дробное число секунд; сами значения от запуска к запуску разные.")],
-              ["Сравнивать скорость по одному запуску — шум ОС и кэшей легко перекрывает разницу.",
-               "Оптимизировать код, который выполняется редко, вместо найденного профилировщиком узкого места."]),
+                data = list(range(10_000))
+                items = set(data)
+                t_list = timeit.timeit(
+                    lambda: 9_999 in data, number=200)
+                t_set = timeit.timeit(
+                    lambda: 9_999 in items, number=200)
+                print(t_set < t_list)""",
+                "Замер подтверждает: множество ищет быстрее списка")],
+              [pitfall("Один запуск ничего не доказывает: шум системы легко перекрывает разницу.",
+                       bad="t = timeit.timeit(f, number=1)", good="t = timeit.timeit(f, number=1000)"),
+               pitfall("time.time() для замеров грубее и может скакнуть при смене системного времени.",
+                       bad="start = time.time()", good="start = time.perf_counter()"),
+               "Ускорять код, который выполняется редко, вместо узкого места, найденного профилировщиком."]),
         topic("perf_tricks", "Быстрые идиомы и память",
-              "Множества и словари вместо поиска в списке, join вместо += для строк, встроенные функции вместо ручных циклов, генераторы вместо огромных списков, functools.cache для повторных вычислений, __slots__ для миллионов объектов.",
+              "Встроенные функции, множества, `join`, генераторы и кэш ускоряют код без смены алгоритма.",
               """
-              Встроенные функции (sum, max, sorted, map, any) и методы написаны на C и обычно быстрее ручного цикла на Python.
+              Когда узкое место найдено, часто хватает простой замены: другой структуры данных или встроенной функции вместо ручного цикла. Эти приёмы дают выигрыш почти всегда.
 
-              Строки неизменяемы: s += часть в цикле может каждый раз копировать всю строку. "".join(список_частей) собирает результат за один проход.
+              ## Скорость
 
-              Генератор вместо списка не хранит все элементы сразу: sum(x * x for x in данные) работает с памятью O(1). Но генератор одноразовый.
+              - Встроенные `sum`, `max`, `sorted`, `any` написаны на C и быстрее ручного цикла.
+              - `x in множество` — O(1), а `x in список` — O(n).
+              - `"".join(части)` собирает строку за один проход. `s += часть` в цикле может каждый раз копировать всю строку.
+              - Неизменные вычисления выносят из тела цикла.
+              - Готовые [[std_collections|`Counter`]] и [[std_deque|`deque`]] быстрее самодельных.
 
-              functools.cache и lru_cache(maxsize=N) запоминают результаты по аргументам — аргументы должны быть хешируемыми (кортеж, а не список). cache_info() показывает попадания (hits) и промахи (misses).
+              ## Память
 
-              __slots__ = ("x", "y") в классе убирает словарь __dict__ у каждого объекта: меньше памяти, но новые атрибуты добавлять нельзя.
+              - [[gen_lazy|Генератор]] не хранит элементы: `sum(x * x for x in data)` почти не занимает памяти. Но пройти его можно только один раз.
+              - `sys.getsizeof(obj)` — сколько байт занимает сам объект, без вложенных.
+              - `__slots__ = ("x", "y")` убирает у объектов словарь `__dict__`: на миллионах объектов это заметная экономия, но новые атрибуты добавить нельзя.
 
-              collections.Counter, deque, defaultdict, bisect, heapq — готовые быстрые структуры; не изобретайте их заново.
+              Если у родительского класса слотов нет, `__dict__` вернётся от него, и экономии не будет.
 
-              sys.getsizeof(объект) — сколько байт занимает сам объект (без вложенных).
+              ## Кэш
+
+              `@functools.cache` запоминает результат по аргументам: повторный вызов не считает заново ([[rec_memo|запоминание результатов]]). Аргументы должны быть [[g:хешируемый|хешируемыми]] — кортеж, а не список.
+
+              `cache_info()` показывает попадания `hits` и промахи `misses`. `lru_cache(maxsize=N)` хранит только N последних результатов.
               """,
               [("""\
                 from functools import cache
 
                 @cache
-                def slow_square(n):
-                    print("считаю", n)
-                    return n * n
+                def tax(price):
+                    print("считаю", price)
+                    return price * 0.2
 
-                print(slow_square(4), slow_square(4), slow_square(5))
-                print(slow_square.cache_info())
+                print(tax(100))
+                print(tax(100))
+                print(tax.cache_info().hits)""",
+                "Второй вызов не печатает «считаю»: ответ взят из кэша"),
+               ("""\
+                import sys
 
-                parts = [str(n) for n in range(5)]
-                print("-".join(parts))""", "Второй вызов с 4 не печатает «считаю»: ответ взят из кэша.")],
-              ["Передавать список в функцию с @cache — TypeError: unhashable type: 'list'.",
-               "Кэшировать функции с побочными эффектами (print, запись в файл): при попадании в кэш они не выполнятся.",
-               "Ждать, что __slots__ уберёт __dict__, если у родителя слотов нет: словарь вернётся от родителя.",
-               "Жертвовать читаемостью ради микроускорений, которых не видно в замерах."]),
+                nums = [n * n for n in range(10_000)]
+                lazy = (n * n for n in range(10_000))
+                print(sys.getsizeof(nums) > 10_000)
+                print(sys.getsizeof(lazy) < 1_000)
+                print(sum(lazy))""",
+                "Список хранит все числа, генератор — только своё состояние"),
+               ("""\
+                class Point:
+                    __slots__ = ("x", "y")
+
+                    def __init__(self, x, y):
+                        self.x, self.y = x, y
+
+                p = Point(1, 2)
+                print(hasattr(p, "__dict__"))
+                try:
+                    p.z = 3
+                except AttributeError:
+                    print("новый атрибут нельзя")""",
+                "У объекта со слотами нет __dict__ и лишних атрибутов")],
+              [pitfall("Функция с @cache не принимает список: TypeError: unhashable type: 'list'. Передайте кортеж.",
+                       bad="total([10, 20])", good="total((10, 20))"),
+               pitfall("Строка через += в большом цикле может копироваться каждый раз; соберите части через join.",
+                       bad='''
+                           s = ""
+                           for w in words:
+                               s += w + " "''',
+                       good='s = " ".join(words)'),
+               "Кэшировать функцию с побочным эффектом: при попадании в кэш print или запись в файл не выполнятся.",
+               "Жертвовать читаемостью ради ускорений, которых не видно в замерах."]),
     ],
     tasks=[
         task("t_perf_stairs", "Лестница с кэшем",
@@ -975,76 +1842,422 @@ PEP8_NAMES = {
 }
 
 MODULES.append(dict(
-    id="project", title="Программа как проект", description="__main__, argparse, logging, PEP 8, docstring",
+    id="project", title="Программа как проект", description="Модули и пакеты, __main__, argparse, logging, PEP 8",
     icon="🏗️",
     topics=[
-        topic("proj_structure", "Структура программы",
-              "Код программы держат в функциях, точка входа — main(), а запуск — под if __name__ == \"__main__\":. Имена — по PEP 8, у функций — docstring.",
+        topic("proj_modules", "Свои модули и пакеты",
+              "Свой файл `.py` подключают через `import` как модуль, а папка с модулями и `__init__.py` становится пакетом.",
               """
-              Каждый файл .py — модуль. При запуске файла его __name__ равен "__main__", а при импорте — имени модуля. Поэтому if __name__ == "__main__": main() выполняет программу при запуске, но не при импорте: функции модуля можно переиспользовать и тестировать.
+              Когда программа растёт, код раскладывают по файлам: расчёты отдельно, ввод и вывод отдельно. Свой файл подключают тем же `import`, что и [[std_import|модули стандартной библиотеки]].
 
-              Типичная структура: импорты сверху (стандартная библиотека, сторонние, свои — группами), константы, функции и классы, main(argv) возвращает код выхода, внизу — sys.exit(main(sys.argv[1:])). Код выхода 0 — успех, не 0 — ошибка: так программу встраивают в скрипты.
+              ## Как записать
 
-              PEP 8 — стиль кода Python: отступ 4 пробела, имена_функций_и_переменных, ИменаКлассов, КОНСТАНТЫ, _внутренние_имена, пробелы вокруг операторов, строки до 79–99 символов. Форматировщики (black, ruff format) и линтеры (ruff, flake8) проверяют это автоматически.
+              ```syntax
+              # файл prices.py
+              def tax(цена):
+                  return цена * 1.2
 
-              Docstring — строка сразу после def/class: первая строка — кратко что делает, дальше подробности. Её видно в help(функция) и в атрибуте __doc__.
+              # файл main.py в той же папке
+              import prices
+              from prices import tax
+              ```
 
-              Папка с модулями и файлом __init__.py — пакет: from shop.cart import Cart. Зависимости проекта описывают в pyproject.toml, а ставят в виртуальное окружение (python -m venv .venv).
+              Имя модуля — имя файла без `.py`. Поэтому файл называют как переменную: `my_tools.py`, а не `my-tools.py`.
+
+              ## Где Python ищет модули
+
+              Папки поиска перечислены в списке `sys.path`. Первой идёт папка запущенного файла, затем стандартная библиотека и установленные пакеты. В примерах файлы создаются кодом, и папку добавляют в `sys.path` вручную.
+
+              ## Импорт выполняет модуль
+
+              При первом импорте код модуля выполняется сверху вниз, а сам модуль запоминается в `sys.modules`. Повторный `import` берёт готовый объект.
+
+              У импортированного модуля `__name__` — его имя, у запущенного файла — `"__main__"`. Код под `if __name__ == "__main__":` при импорте не выполняется. Как на этом строят файл программы — в теме [[proj_structure|Структура программы]].
+
+              ## Пакет и относительный импорт
+
+              Пакет — папка с модулями и файлом `__init__.py`. Этот файл выполняется при импорте пакета. Внутри пакета соседей импортируют с точкой:
+
+              - `from . import prices` — модуль этого же пакета
+              - `from .prices import tax` — имя из соседнего модуля
+              - `from ..utils import log` — из пакета уровнем выше
+
+              Точка работает только в модуле пакета. Поэтому файл пакета запускают из папки проекта как модуль: `python -m shop.cart`.
               """,
               [("""\
-                \"\"\"Мини-утилита: приветствует пользователя.\"\"\"
                 import sys
+                from pathlib import Path
 
-                GREETING = "Привет"
+                Path("greet.py").write_text(
+                    "def hello(name):\\n"
+                    "    return 'Привет, ' + name\\n",
+                    encoding="utf-8")
+                sys.path.insert(0, str(Path.cwd()))
 
+                import greet
+                print(greet.hello("Ада"))""",
+                "Файл greet.py стал модулем: import нашёл его через sys.path"),
+               ("""\
+                import sys
+                from pathlib import Path
 
-                def greet(name: str) -> str:
-                    \"\"\"Возвращает приветствие для name.\"\"\"
-                    return f"{GREETING}, {name}!"
+                Path("units.py").write_text(
+                    'print("units:", __name__)\\n'
+                    'if __name__ == "__main__":\\n'
+                    '    print("демо units")\\n',
+                    encoding="utf-8")
+                sys.path.insert(0, str(Path.cwd()))
 
+                import units
+                print("main:", __name__)""",
+                "При импорте __name__ — имя модуля, блок __main__ пропущен"),
+               ("""\
+                import sys
+                from pathlib import Path
 
-                def main(argv: list[str]) -> int:
-                    print(greet(argv[0] if argv else "мир"))
-                    return 0
+                pkg = Path("shop")
+                pkg.mkdir()
+                (pkg / "prices.py").write_text(
+                    "def tax(p):\\n    return p * 1.2\\n")
+                (pkg / "__init__.py").write_text(
+                    "from .prices import tax\\n")
+                sys.path.insert(0, str(Path.cwd()))
 
+                from shop import tax
+                print(tax(50))""",
+                "__init__.py поднял tax из shop.prices на уровень пакета"),
+               ("""\
+                print(__name__)
+                try:
+                    from .prices import tax
+                except ImportError as e:
+                    print(e)""",
+                "У запущенного файла нет пакета: импорт с точкой не работает")],
+              [pitfall("Свой файл `random.py` рядом с программой заслоняет модуль стандартной библиотеки, и `random.randint` пропадает.",
+                       bad='''
+                           # файл random.py
+                           import random
+                           print(random.randint(1, 6))''',
+                       good='''
+                           # файл dice.py
+                           import random
+                           print(random.randint(1, 6))'''),
+               pitfall("Дефис в имени файла не даёт его импортировать: `import my-tools` — SyntaxError.",
+                       bad="import my-tools", good="import my_tools", syntax_error=True),
+               pitfall("Запускать файл пакета как `python shop/cart.py`: импорт с точкой даст `ImportError`. Запускайте `python -m shop.cart` из папки проекта."),
+               pitfall("Повторный `import` не перечитывает изменённый файл: модуль уже лежит в `sys.modules`. Перезапустите программу.")]),
+        topic("proj_structure", "Структура программы",
+              "Программа — набор функций с одной точкой входа `main()`, которая срабатывает только при запуске файла.",
+              """
+              Скрипт из двадцати строк можно писать сверху вниз. Когда строк сотни, код раскладывают по функциям, а запуск собирают в одном месте. Так программу проще читать, тестировать и подключать к другим.
+
+              ## Шаблон файла
+
+              ```syntax
+              \"\"\"Что делает программа.\"\"\"
+              import sys
+
+              КОНСТАНТА = значение
+
+              def функция():
+                  действия
+
+              def main(argv):
+                  действия
+                  return 0
+
+              if __name__ == "__main__":
+                  sys.exit(main(sys.argv[1:]))
+              ```
+
+              Порядок сверху вниз: описание модуля, импорты, константы, функции и классы, точка входа.
+
+              ## Что значит __name__
+
+              Каждый файл `.py` — [[std_import|модуль]]. У запущенного файла `__name__` равен `"__main__"`, а при импорте — имени модуля. Поэтому код под проверкой выполняется при запуске и не выполняется при импорте: функции модуля можно подключать и тестировать.
+
+              ## Код выхода
+
+              `main` возвращает число, а `sys.exit` передаёт его системе: `0` — успех, другое — ошибка. По коду выхода скрипты и сборочные системы понимают, удалась ли программа.
+
+              `sys.argv` — список аргументов запуска, `sys.argv[0]` — имя самого файла. Разбирать аргументы удобнее модулем [[proj_cli_logging|argparse]].
+
+              ## Пакеты и окружение
+
+              - Папка с модулями и файлом `__init__.py` — [[proj_modules|пакет]]: `from shop.cart import Cart`.
+              - Зависимости проекта перечисляют в `pyproject.toml`.
+              - Ставят их в виртуальное окружение: `python -m venv .venv`, у каждого проекта своё.
+
+              Как оформлять сам код — в теме [[proj_style|PEP 8 и docstring]].
+              """,
+              [("""\
+                def area(w, h):
+                    return w * h
 
                 if __name__ == "__main__":
-                    code = main(["Ада"])
-                    print("код выхода:", code)""", "При запуске __name__ == \"__main__\", при импорте — нет.")],
-              ["Писать логику на верхнем уровне модуля: при импорте она выполнится, а протестировать её трудно.",
-               "Опечатка в проверке: __name__ == \"main\" — условие всегда ложно, программа молча ничего не делает."]),
-        topic("proj_cli_logging", "argparse и logging",
-              "argparse разбирает аргументы командной строки и сам пишет справку и ошибки. logging пишет сообщения с уровнями важности, которые можно включать и выключать без правки кода.",
+                    print("запуск как программы")
+                    print(area(3, 4))""",
+                "Файл запущен напрямую, поэтому блок под проверкой выполнился"),
+               ("""\
+                \"\"\"Считает слова в тексте.\"\"\"
+
+                def count_words(text):
+                    return len(text.split())
+
+                def main(argv):
+                    if not argv:
+                        print("нужен текст")
+                        return 1
+                    print(count_words(" ".join(argv)))
+                    return 0
+
+                if __name__ == "__main__":
+                    print("код:", main(["раз", "два три"]))
+                    print("код:", main([]))""",
+                "main возвращает 0 при успехе и 1, когда текста нет")],
+              [pitfall("С \"main\" вместо \"__main__\" условие всегда ложно, и программа молча ничего не делает.",
+                       bad='if __name__ == "main":\n    main()',
+                       good='if __name__ == "__main__":\n    main()'),
+               pitfall("Код на верхнем уровне модуля выполняется при каждом импорте, и его трудно протестировать.",
+                       bad='''
+                           data = load()
+                           report(data)''',
+                       good='''
+                           def main():
+                               report(load())
+
+                           if __name__ == "__main__":
+                               main()'''),
+               "Называть свой файл как модуль стандартной библиотеки (random.py, json.py): import подхватит ваш файл вместо настоящего."]),
+        topic("proj_style", "PEP 8 и docstring",
+              "PEP 8 — общий стиль кода Python, а docstring — строка-описание, которую показывает `help()`.",
               """
-              parser = argparse.ArgumentParser(description=...) — парсер. add_argument("file") — обязательный позиционный аргумент, add_argument("--limit", type=int, default=10) — необязательный с преобразованием типа, add_argument("-v", "--verbose", action="store_true") — флаг True/False, nargs="+" — один или больше значений, choices=[...] — допустимые значения. args = parser.parse_args() читает sys.argv; в тестах передают список: parse_args(["a.txt", "--limit", "5"]).
+              Код читают чаще, чем пишут: коллеги, проверяющие, вы сами через полгода. Единый стиль убирает споры о мелочах, и чужой код читается так же легко, как свой.
 
-              При ошибке (нет обязательного аргумента, не то значение) argparse печатает подсказку в stderr и завершает программу с кодом 2 (SystemExit). --help генерируется сам. required=True делает опцию с -- обязательной. Подкоманды, как у git: sub = parser.add_subparsers(dest="command", required=True); sub.add_parser("add") — у каждой свои аргументы.
+              ## Имена
 
-              logging в проекте (основы — в модуле «Тестирование и отладка»): basicConfig вызывают один раз в точке входа (force=True — перенастроить заново), а в каждом модуле берут log = logging.getLogger(__name__). Логгеры образуют дерево по точкам в имени: app.db — потомок app. Уровень можно задать отдельному логгеру — log.setLevel(logging.WARNING), — и шумный модуль замолчит, не трогая остальные.
+              | Что | Как писать |
+              |---|---|
+              | переменная, функция | {`total_price`} |
+              | класс | {`UserAccount`} |
+              | константа | {`MAX_RETRIES`} |
+              | внутреннее имя | {`_cache`} |
 
-              Аргументы передают отдельно: log.info("файл %s", name) — строка форматируется, только если сообщение реально пишется.
+              Функции и переменные пишут строчными через подчёркивание, классы — с заглавной буквы каждого слова. Стиль `getUserName` из Java и JavaScript в Python не используют.
 
-              print — для результата программы, logging — для диагностики.
+              ## Оформление
+
+              - Отступ — 4 пробела, без табуляции.
+              - Пробелы вокруг `=` и операторов, но не у `=` именованного аргумента: `f(x=1)`.
+              - Строка — до 79 символов; многие проекты разрешают 99.
+              - Две пустые строки между функциями верхнего уровня.
+              - Импорты наверху, группами: стандартная библиотека, сторонние, свои.
+
+              Следить за этим вручную не нужно: форматировщики (black, `ruff format`) и линтеры (ruff, flake8) проверяют и правят код сами.
+
+              ## Docstring
+
+              [[func_def|Docstring]] — строка в тройных кавычках первой строкой тела функции, класса или модуля. Первая строка — кратко, что делает код, дальше через пустую строку подробности.
+
+              Docstring хранится в атрибуте `__doc__`, его показывает `help(функция)`. Docstring говорит, что делает функция, а комментарий `#` — почему код написан именно так.
+              """,
+              [("""\
+                def bmi(weight, height):
+                    \"\"\"Индекс массы тела: вес в кг, рост в м.\"\"\"
+                    return weight / height ** 2
+
+                print(bmi.__doc__)
+                print(round(bmi(70, 1.75), 1))""",
+                "Docstring хранится в __doc__ — его же покажет help(bmi)"),
+               ("""\
+                def CalcTotal(Prices,Tax=0.2):
+                    return sum(Prices)*(1+Tax)
+
+                def calc_total(prices, tax=0.2):
+                    return sum(prices) * (1 + tax)
+
+                print(CalcTotal([10, 20]))
+                print(calc_total([10, 20]))""",
+                "Результат одинаковый, но второй вариант читается легче")],
+              [pitfall("camelCase для функций — стиль Java; в Python имена функций пишут через подчёркивание.",
+                       bad="def getUserName(): ...", good="def get_user_name(): ..."),
+               pitfall("Комментарий не попадает в __doc__ и help(): описание функции пишут docstring-ом.",
+                       bad='''
+                           def area(w, h):
+                               # Площадь прямоугольника.
+                               return w * h''',
+                       good='''
+                           def area(w, h):
+                               """Площадь прямоугольника."""
+                               return w * h'''),
+               pitfall("По PEP 8 у = именованного аргумента пробелов нет.",
+                       bad="connect(timeout = 5)", good="connect(timeout=5)")]),
+        topic("proj_cli_logging", "Аргументы командной строки",
+              "`argparse` разбирает аргументы командной строки, проверяет их и сам пишет справку `--help`.",
+              """
+              Программу запускают с настройками: `resize cat.png --width 320`. Разбирать `sys.argv` вручную долго: нужно проверять типы и обязательность, писать справку. Модуль `argparse` делает это по описанию аргументов.
+
+              ## Как записать
+
+              ```syntax
+              import argparse
+
+              parser = argparse.ArgumentParser(description="что делает")
+              parser.add_argument("имя")
+              parser.add_argument("--опция", type=int, default=значение)
+              args = parser.parse_args()
+              ```
+
+              `parse_args()` читает [[proj_structure|`sys.argv`]]. В тестах ему передают список: `parse_args(["a.txt", "--limit", "5"])`. Значения доступны как атрибуты: `args.limit`.
+
+              ## Параметры add_argument
+
+              - `"file"` — позиционный аргумент, обязательный
+              - `"--limit"` — опция, необязательная; `required=True` делает её обязательной
+              - `"-v", "--verbose"` — короткое и длинное имя одной опции
+              - {`type=int`} — превратить строку в число
+              - `default=10` — значение, если опцию не указали
+              - `action="store_true"` — флаг без значения: есть — `True`, нет — `False`
+              - `nargs="+"` — одно или больше значений списком
+              - `choices=[1, 2, 3]` — только перечисленные значения
+
+              ## Ошибки и справка
+
+              Без {`type`} все значения — строки. При неверных аргументах argparse печатает подсказку в stderr и завершает программу через `SystemExit` с кодом 2. Справка `--help` создаётся сама.
+
+              ## Подкоманды
+
+              Как у git: `sub = parser.add_subparsers(dest="command")`, затем `sub.add_parser("add")` — у каждой подкоманды свои аргументы. Имя выбранной подкоманды попадает в `args.command`.
+
+              Диагностику работы программы пишут не `print`, а [[proj_logging|logging]].
               """,
               [("""\
                 import argparse
+
+                parser = argparse.ArgumentParser()
+                parser.add_argument("image")
+                parser.add_argument("--width", type=int,
+                                    default=800)
+                args = parser.parse_args(["cat.png"])
+                print(args.image)
+                print(args.width)""",
+                "Опцию не передали — сработал default"),
+               ("""\
+                import argparse
+
+                p = argparse.ArgumentParser()
+                p.add_argument("files", nargs="+")
+                p.add_argument("-q", "--quiet",
+                               action="store_true")
+                args = p.parse_args(["a.txt", "b.txt", "-q"])
+                print(args.files)
+                print(args.quiet)""",
+                "nargs собрал имена в список, флаг -q дал True"),
+               ("""\
+                import argparse
+
+                p = argparse.ArgumentParser(prog="todo")
+                sub = p.add_subparsers(dest="command")
+                add = sub.add_parser("add")
+                add.add_argument("title")
+                sub.add_parser("list")
+
+                args = p.parse_args(["add", "купить хлеб"])
+                print(args.command)
+                print(args.title)""",
+                "Подкоманда add со своим аргументом title")],
+              [pitfall("Без type=int значение — строка: \"3\" * 2 даст \"33\".",
+                       bad='p.add_argument("--times")', good='p.add_argument("--times", type=int)'),
+               pitfall("Имя без -- — позиционный аргумент: он обязателен, даже если указан default.",
+                       bad='p.add_argument("limit", default=10)', good='p.add_argument("--limit", default=10)'),
+               pitfall("Дефис в имени опции становится подчёркиванием: --dry-run читают как args.dry_run.",
+                       bad="if args.dry-run:\n    return", good="if args.dry_run:\n    return")]),
+        topic("proj_logging", "logging в проекте",
+              "В программе из нескольких модулей logging настраивают один раз, а каждый модуль пишет в свой логгер.",
+              """
+              Основы — уровни, `basicConfig`, формат — в теме [[test_logging|logging вместо print]]. Когда модулей много, нужен порядок: кто настраивает вывод, кто пишет сообщения и как заглушить один шумный модуль.
+
+              ## Как записать
+
+              ```syntax
+              # в каждом модуле
+              log = logging.getLogger(__name__)
+
+              # один раз в точке входа
+              def main():
+                  logging.basicConfig(level=logging.INFO)
+              ```
+
+              `getLogger` с одним и тем же именем всегда возвращает один и тот же объект. Имя `__name__` совпадает с именем модуля, поэтому по сообщению видно, откуда оно пришло.
+
+              ## Дерево логгеров
+
+              Логгеры образуют дерево по точкам в имени: `shop.db` — потомок `shop`, а все вместе — потомки корневого логгера. Сообщение потомка доходит до вывода, который настроил `basicConfig` у корня.
+
+              Уровень можно задать отдельной ветке: `logging.getLogger("shop.db").setLevel(logging.WARNING)` заглушит только её.
+
+              ## Аргументы — отдельно
+
+              `log.info("файл %s", name)` подставляет аргументы, только если сообщение действительно пишется. f-строку Python собирает всегда, даже когда уровень выключен.
+
+              ## print или logging
+
+              `print` — для результата программы: его читает пользователь или следующая программа. `logging` — для диагностики: что происходило и где сломалось.
+              """,
+              [("""\
                 import logging
                 import sys
 
-                parser = argparse.ArgumentParser(prog="resize")
-                parser.add_argument("image")
-                parser.add_argument("--width", type=int, default=800)
-                parser.add_argument("-q", "--quiet", action="store_true")
-                args = parser.parse_args(["cat.png", "--width", "320"])
+                logging.basicConfig(
+                    stream=sys.stdout,
+                    level=logging.INFO,
+                    format="%(name)s: %(message)s",
+                    force=True)
+                db = logging.getLogger("shop.db")
+                api = logging.getLogger("shop.api")
+                db.info("подключение")
+                api.info("GET /cart")""",
+                "Имя логгера в каждой строке показывает, откуда сообщение"),
+               ("""\
+                import logging
+                import sys
 
-                logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(levelname)s %(message)s", force=True)
-                log = logging.getLogger("resize")
-                log.debug("не видно: уровень ниже INFO")
-                log.info("сжимаю %s до %d px", args.image, args.width)
-                print(args.quiet)""", "stream=sys.stdout — чтобы сообщения шли в обычный вывод (по умолчанию — stderr).")],
-              ["Строить строку для лога заранее: log.debug(f\"...{дорогой_расчёт()}\") считает, даже когда DEBUG выключен.",
-               "Забыть type=int: argparse возвращает строки, и \"3\" * 2 даст \"33\".",
-               "Вызывать basicConfig в каждом модуле: настраивают один раз в точке входа."]),
+                logging.basicConfig(
+                    stream=sys.stdout,
+                    level=logging.INFO,
+                    format="%(name)s: %(message)s",
+                    force=True)
+                logging.getLogger("shop.db").setLevel(
+                    logging.WARNING)
+                db = logging.getLogger("shop.db")
+                db.info("запрос за 1 мс")
+                db.warning("запрос за 3 с")
+                logging.getLogger("shop.api").info("GET /")""",
+                "Ветку shop.db заглушили до WARNING, shop.api пишет INFO"),
+               ("""\
+                import logging
+                import sys
+
+                logging.basicConfig(stream=sys.stdout,
+                                    level=logging.INFO,
+                                    force=True)
+                log = logging.getLogger("calc")
+
+                class Report:
+                    def __str__(self):
+                        print("(собираю отчёт)")
+                        return "отчёт"
+
+                log.debug("данные: %s", Report())
+                log.info("данные: %s", Report())""",
+                "Для выключенного DEBUG строка не собиралась: __str__ не вызван")],
+              [pitfall("f-строка собирается всегда; с %s строка форматируется, только если сообщение пишется.",
+                       bad='log.debug(f"данные: {data}")', good='log.debug("данные: %s", data)'),
+               pitfall("basicConfig срабатывает один раз: вызовы в модулях конфликтуют. Настраивайте в точке входа.",
+                       bad="logging.basicConfig(level=logging.DEBUG)",
+                       good="log = logging.getLogger(__name__)"),
+               pitfall("Общее имя вроде \"log\" во всех модулях лишает дерева: ни источник, ни уровень по модулю не задать.",
+                       bad='log = logging.getLogger("log")', good="log = logging.getLogger(__name__)")]),
     ],
     tasks=[
         task("t_proj_cli", "Своя командная строка",
@@ -1144,7 +2357,7 @@ MODULES.append(dict(
                 ["app.db|INFO|подключение\napp.db|WARNING|медленный запрос\napp.api|INFO|GET /users\nTrue",
                  "app.db|WARNING|медленный запрос\nTrue",
                  "app.db|WARNING|медленный запрос\napp.api|INFO|GET /users\nFalse"],
-                position=3, topic="proj_cli_logging", role="practice", difficulty=3,
+                position=3, topic="proj_logging", role="practice", difficulty=3,
                 hint="У логгера app.db свой порог. А что возвращает getLogger при повторном вызове с тем же именем?",
                 explanation="Для app.db порог поднят до WARNING — его info отсекается. app.api наследует порог INFO от корня. getLogger с тем же именем возвращает тот же объект — поэтому в каждом модуле пишут getLogger(__name__) и настраивают уровни по именам.",
                 feedback={"app.db|INFO|подключение\napp.db|WARNING|медленный запрос\napp.api|INFO|GET /users\nTrue": "db.setLevel(WARNING) отсекает info этого логгера.",
@@ -1152,7 +2365,7 @@ MODULES.append(dict(
                           "app.db|WARNING|медленный запрос\napp.api|INFO|GET /users\nFalse": "getLogger с одним именем всегда возвращает один и тот же логгер."}),
         multi("py_proj_006", "Имена по PEP 8", "Какие имена записаны по PEP 8?",
               list(PEP8_NAMES), [i for i, ok in enumerate(PEP8_NAMES.values()) if ok],
-              check=lambda option: PEP8_NAMES[option], topic="proj_structure",
+              check=lambda option: PEP8_NAMES[option], topic="proj_style",
               hint="Функции и переменные — snake_case, классы — CamelCase, константы — ВЕРХНИЙ_РЕГИСТР.",
               explanation="snake_case для переменных и функций, CapWords для классов, UPPER_CASE для констант, ведущее подчёркивание — для внутренних имён. getUserName и Calculate_Total нарушают стиль функций.",
               feedback={"getUserName — функция": "camelCase — стиль Java/JS. В Python: get_user_name.",
@@ -1168,7 +2381,7 @@ MODULES.append(dict(
                 print(area.__doc__.splitlines()[0])
                 print(area(3, 4))""",
                 ["None\n12", "width и height — длины сторон.\n12", "\"\"\"Возвращает площадь прямоугольника.\n12"],
-                position=1, topic="proj_structure", role="practice",
+                position=1, topic="proj_style", role="practice",
                 hint="Строка сразу после def попадает в __doc__.",
                 explanation="Первая строка в теле функции — docstring: она хранится в __doc__ (без кавычек). Её первая строка — краткое описание.",
                 feedback={"None\n12": "Строка сразу после def — это docstring, она сохраняется в __doc__.",
@@ -1208,6 +2421,60 @@ MODULES.append(dict(
                 feedback={"ValueError": "argparse перехватывает ошибку преобразования и завершает программу через SystemExit.",
                           "код выхода: 1": "Для неверных аргументов argparse использует код 2.",
                           "код выхода: 0": "Код 0 означает успех — здесь ошибка."}),
+        predict("py_proj_012", "Модуль загружается один раз", """\
+                import sys
+                from pathlib import Path
+
+                Path("helper.py").write_text(
+                    'print("helper загружен")\\n'
+                    'def run():\\n'
+                    '    print("helper.run")\\n'
+                    'if __name__ == "__main__":\\n'
+                    '    run()\\n',
+                    encoding="utf-8")
+                sys.path.insert(0, str(Path.cwd()))
+
+                print("старт")
+                import helper
+                import helper
+                helper.run()""",
+                ["старт\nhelper загружен\nhelper загружен\nhelper.run",
+                 "старт\nhelper загружен\nhelper.run\nhelper.run",
+                 "helper загружен\nстарт\nhelper.run"],
+                position=3, topic="proj_modules", difficulty=2,
+                hint="Сколько раз выполняется код модуля при двух import? Чему равен __name__ у импортированного модуля?",
+                explanation="Код модуля выполняется при первом import — после «старт». Второй import берёт модуль из sys.modules и ничего не печатает. Внутри helper __name__ равно \"helper\", поэтому run() под проверкой не вызывается — его вызывает только main.",
+                feedback={"старт\nhelper загружен\nhelper загружен\nhelper.run": "Повторный import не выполняет модуль заново: он уже в sys.modules.",
+                          "старт\nhelper загружен\nhelper.run\nhelper.run": "При импорте __name__ — \"helper\", блок под __main__ не выполняется.",
+                          "helper загружен\nстарт\nhelper.run": "import выполняется там, где стоит, — после print(\"старт\")."}),
+        fix_line("py_proj_013", "Импорт с точкой", """\
+                 import sys
+                 from pathlib import Path
+
+                 pkg = Path("store")
+                 pkg.mkdir()
+                 (pkg / "__init__.py").write_text("")
+                 (pkg / "prices.py").write_text(
+                     "def tax(p):\\n    return p * 1.2\\n")
+                 sys.path.insert(0, str(Path.cwd()))
+
+                 from .prices import tax
+                 print(tax(100))""", 10,
+                 ["from store.prices import tax"],
+                 expect_error="ImportError", topic="proj_modules", role="practice", difficulty=2,
+                 hint="Запущенный файл — модуль __main__, он не лежит ни в каком пакете. Куда тогда указывает точка?",
+                 explanation="Импорт с точкой ищет соседа в пакете текущего модуля, а у запущенного файла пакета нет: ImportError: attempted relative import with no known parent package. Из главного файла пишут полный путь: from store.prices import tax."),
+        categorize("py_proj_014", "Что выполнится при импорте", "Файл tools.py импортируют командой import tools. Что из него выполнится?",
+                   ["Выполнится при импорте", "Не выполнится"],
+                   [('print("загрузка") на верхнем уровне', 0),
+                    ("RATE = 0.2 на верхнем уровне", 0),
+                    ("import json в начале файла", 0),
+                    ("тело функции def report()", 1, "def только создаёт функцию, тело выполнится при вызове."),
+                    ('код под if __name__ == "__main__":', 1, "При импорте __name__ равно \"tools\", условие ложно."),
+                    ("тело класса class Cart:", 0, "Тело класса выполняется сразу, когда Python доходит до class: так создаются его атрибуты и методы.")],
+                   topic="proj_modules", difficulty=3,
+                   hint="Импорт выполняет модуль сверху вниз, как при запуске. Что из этого откладывает выполнение?",
+                   explanation="При импорте выполняется весь верхний уровень модуля: присваивания, import, print, создание функций и классов вместе с телом класса. Тело функции ждёт вызова, а блок под проверкой __name__ ждёт запуска файла напрямую."),
         predict("py_proj_010", "Босс: мини-CLI", """\
                 import argparse
                 import logging

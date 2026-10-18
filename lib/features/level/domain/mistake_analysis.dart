@@ -95,6 +95,28 @@ class MistakeAnalyzer {
               ? 'Одна пара соединена неверно.'
               : 'Неверных пар: $count.',
         );
+      case (final TraceTablePayload p, AssignmentAnswer()):
+        final cells = outcome.wrongParts.toList()..sort();
+        final first = p.blanks[cells.first];
+        final where = 'после строки ${p.rows[first.row].line}, '
+            'переменная ${p.columns[first.column]}';
+        return MistakeNote(
+          text: cells.length == 1
+              ? 'Неверное значение: $where.'
+              : 'Неверных значений: ${cells.length}. Первое — $where.',
+        );
+      case (final CategorizePayload p, AssignmentAnswer()):
+        final wrong = outcome.wrongParts.toList()..sort();
+        final item = p.items[wrong.first];
+        final why = item.feedback;
+        final head = wrong.length == 1
+            ? '«${item.text}» — не в той группе.'
+            : 'Не в своей группе: ${wrong.length}. Например, «${item.text}».';
+        return MistakeNote(text: why == null ? head : '$head $why');
+      case (FixLinePayload(), TextAnswer()):
+        return const MistakeNote(
+          text: 'Строка всё ещё неверная: программа с ней выведет не то, что нужно.',
+        );
       default:
         return const MistakeNote(text: 'Ответ неверный.');
     }

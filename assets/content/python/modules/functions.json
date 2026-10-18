@@ -288,6 +288,85 @@
    }
   },
   {
+   "id": "nx_func_trace",
+   "type": "trace_table",
+   "role": "practice",
+   "title": "Внутри функции",
+   "prompt": "Заполните значения переменных",
+   "topic": "func_def",
+   "difficulty": 2,
+   "hint": "Результат функции — то, что после return. Во второй вызов попадает уже вычисленное a.",
+   "explanation": "area(2, 3) возвращает 6, area(6, 2) — 12.",
+   "code": "def area(w, h):\n    s = w * h\n    return s\n\na = area(2, 3)\nb = area(a, 2)",
+   "payload": {
+    "columns": [
+     "a",
+     "b"
+    ],
+    "rows": [
+     {
+      "line": 5,
+      "values": [
+       "6",
+       "—"
+      ]
+     },
+     {
+      "line": 6,
+      "values": [
+       "6",
+       "12"
+      ]
+     }
+    ],
+    "blanks": [
+     [
+      0,
+      0
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "bank": [
+     "5",
+     "6",
+     "7",
+     "11",
+     "12",
+     "13"
+    ]
+   },
+   "solution": {
+    "code": "def area(w, h):\n    s = w * h\n    return s\n\na = area(2, 3)\nb = area(a, 2)",
+    "output": ""
+   }
+  },
+  {
+   "id": "nx_func_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Функция ничего не вернула",
+   "prompt": "Строка 2 с ошибкой. Перепишите её правильно",
+   "topic": "func_def",
+   "difficulty": 2,
+   "hint": "Что возвращает функция без return?",
+   "explanation": "Без return функция возвращает None. Чтобы вернуть результат, нужен return x * 2.",
+   "code": "def double(x):\n    x * 2\n\nprint(double(4))",
+   "payload": {
+    "line": 1,
+    "accepted": [
+     "return x * 2"
+    ],
+    "expectedOutput": "8\n"
+   },
+   "solution": {
+    "code": "def double(x):\n    return x * 2\n\nprint(double(4))",
+    "output": "8\n"
+   }
+  },
+  {
    "id": "py_func_009",
    "type": "predict_output",
    "role": "boss",

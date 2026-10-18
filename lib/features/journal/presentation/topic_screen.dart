@@ -19,9 +19,12 @@ import 'widgets/topic_content.dart';
 /// A topic from the journal or the reference: the explanation with
 /// examples, review state and practice levels.
 class TopicScreen extends ConsumerWidget {
-  const TopicScreen({super.key, required this.topicId});
+  const TopicScreen({super.key, required this.topicId, this.fromTopicId});
 
   final String topicId;
+
+  /// The topic the reader came from by a link: shows «‹ К теме X».
+  final String? fromTopicId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,80 +49,137 @@ class TopicScreen extends ConsumerWidget {
       );
     }
 
+    final saved = entry != null;
+    final fromTopic = fromTopicId == null
+        ? null
+        : ref.watch(topicCatalogProvider).value?.byId(fromTopicId!);
+
     return Scaffold(
-      appBar: AppBar(title: Text(topic?.title ?? 'Тема')),
+      appBar: AppBar(
+        title: Text(topic?.title ?? 'Тема', maxLines: 1, overflow: TextOverflow.ellipsis),
+        actions: [
+          if (topic != null)
+            IconButton(
+              key: const ValueKey('topic_bookmark'),
+              tooltip: saved ? 'Убрать из журнала' : 'Сохранить в журнал',
+              icon: Icon(saved ? Icons.bookmark_rounded : Icons.bookmark_add_outlined),
+              color: saved ? Theme.of(context).colorScheme.primary : null,
+              onPressed: () => runJournalAction(
+                ref,
+                (service, courseId) => saved
+                    ? service.remove(courseId, topicId)
+                    : service.add(courseId, topicId),
+              ),
+            ),
+        ],
+      ),
       body: topic == null
           ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(
-                Spacing.page,
-                Spacing.md,
-                Spacing.page,
-                Spacing.huge,
-              ),
+          : Column(
               children: [
-                if (entry != null)
-                  _ReviewCard(
-                    entry: entry,
-                    now: now,
-                    canPractice: playable.isNotEmpty,
-                    onReview: startReview,
-                    onSelfCheck: (remembered) => runJournalAction(
-                      ref,
-                      (service, courseId) => service.recordReview(
-                        courseId,
-                        topicId,
-                        remembered: remembered,
-                      ),
-                    ),
-                  )
-                else
-                  AppButton(
-                    key: const ValueKey('topic_save'),
-                    label: 'Сохранить в журнал',
-                    icon: Icons.bookmark_add_rounded,
-                    onPressed: () => runJournalAction(
-                      ref,
-                      (service, courseId) => service.add(courseId, topicId),
-                    ),
-                  ),
-                const SizedBox(height: Spacing.xxl),
-                TopicContent(topic: topic, showTitle: false),
-                if (all.isNotEmpty) ...[
-                  const SectionTitle('Практика по теме'),
-                  for (final level in all)
-                    _PracticeRow(
-                      level: level,
-                      isOpen: playable.any((open) => open.id == level.id),
-                      isDone: progress?.isCompleted(level.id) ?? false,
-                      hadMistake: mistakes.contains(level.id),
-                      onTap: () => context.push(
-                        Routes.level(
-                          level.courseId,
-                          level.id,
-                          mode: entry == null
-                              ? LevelMode.standard
-                              : LevelMode.review,
+                if (fromTopic != null)
+                  Material(
+                    color: game.primaryTint,
+                    child: InkWell(
+                      key: const ValueKey('topic_back_link'),
+                      onTap: () => context.canPop()
+                          ? context.pop()
+                          : context.go(Routes.topic(fromTopic.id)),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Spacing.page,
+                          vertical: Spacing.md,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.arrow_back_rounded, size: 18, color: Theme.of(context).colorScheme.primary),
+                            const SizedBox(width: Spacing.sm),
+                            Expanded(
+                              child: Text(
+                                'К теме «${fromTopic.title}»',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: textTheme.labelLarge?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
-                ],
-                if (entry != null) ...[
-                  const SizedBox(height: Spacing.xxl),
-                  AppButton(
-                    label: 'Убрать из журнала',
-                    variant: AppButtonVariant.quiet,
-                    onPressed: () => runJournalAction(
-                      ref,
-                      (service, courseId) => service.remove(courseId, topicId),
+                  ),
+                Expanded(
+                  child: ListView(
+                    key: PageStorageKey('topic_$topicId'),
+                    padding: const EdgeInsets.fromLTRB(
+                      Spacing.page,
+                      Spacing.lg,
+                      Spacing.page,
+                      Spacing.huge,
                     ),
+                    children: [
+                      TopicContent(topic: topic),
+                      if (all.isNotEmpty) ...[
+                        const SectionTitle('Практика по теме'),
+                        for (final level in all)
+                          _PracticeRow(
+                            level: level,
+                            isOpen: playable.any((open) => open.id == level.id),
+                            isDone: progress?.isCompleted(level.id) ?? false,
+                            hadMistake: mistakes.contains(level.id),
+                            onTap: () => context.push(
+                              Routes.level(
+                                level.courseId,
+                                level.id,
+                                mode: entry == null
+                                    ? LevelMode.standard
+                                    : LevelMode.review,
+                              ),
+                            ),
+                          ),
+                      ],
+                      const SizedBox(height: Spacing.xxl),
+                      if (entry != null)
+                        _ReviewCard(
+                          entry: entry,
+                          now: now,
+                          canPractice: playable.isNotEmpty,
+                          onReview: startReview,
+                          onSelfCheck: (remembered) => runJournalAction(
+                            ref,
+                            (service, courseId) => service.recordReview(
+                              courseId,
+                              topicId,
+                              remembered: remembered,
+                            ),
+                          ),
+                        )
+                      else
+                        AppButton(
+                          key: const ValueKey('topic_save'),
+                          label: 'Сохранить в журнал',
+                          icon: Icons.bookmark_add_rounded,
+                          variant: AppButtonVariant.secondary,
+                          onPressed: () => runJournalAction(
+                            ref,
+                            (service, courseId) => service.add(courseId, topicId),
+                          ),
+                        ),
+                      if (entry != null) ...[
+                        const SizedBox(height: Spacing.lg),
+                        AppButton(
+                          label: 'Убрать из журнала',
+                          variant: AppButtonVariant.quiet,
+                          onPressed: () => runJournalAction(
+                            ref,
+                            (service, courseId) => service.remove(courseId, topicId),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
-                if (topic.examples.isEmpty && all.isEmpty)
-                  Text(
-                    'Для этой темы пока нет упражнений.',
-                    style: textTheme.bodyMedium?.copyWith(color: game.textMuted),
-                  ),
+                ),
               ],
             ),
     );

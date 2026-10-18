@@ -270,6 +270,57 @@
    }
   },
   {
+   "id": "nx_fn_sort",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Что возвращают функции",
+   "prompt": "Разложите выражения по типу результата",
+   "topic": "fn_builtins",
+   "difficulty": 2,
+   "hint": "sorted и list(...) дают список; sum, max — число; any, all — True/False.",
+   "explanation": "sorted всегда возвращает новый список, sum и max — элементы или их сумму, any и all — логические значения.",
+   "payload": {
+    "categories": [
+     "list",
+     "int",
+     "bool"
+    ],
+    "items": [
+     {
+      "text": "sorted([3, 1])",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "sum([1, 2])",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "any([0, 1])",
+      "category": 2,
+      "code": true
+     },
+     {
+      "text": "list(map(abs, [-1]))",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "max([1, 5])",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "all([])",
+      "category": 2,
+      "code": true,
+      "feedback": "all от пустой последовательности — True: нет ни одного ложного."
+     }
+    ]
+   }
+  },
+  {
    "id": "py_fn_009",
    "type": "code_ordering",
    "role": "boss",

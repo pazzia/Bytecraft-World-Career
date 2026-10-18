@@ -277,6 +277,29 @@
    }
   },
   {
+   "id": "nx_deco_fix",
+   "type": "fix_line",
+   "role": "challenge",
+   "title": "Обёртка без результата",
+   "prompt": "Строка 3 с ошибкой. Перепишите её правильно",
+   "topic": "deco_basics",
+   "difficulty": 3,
+   "hint": "Что вернёт wrapper, если в нём нет return?",
+   "explanation": "wrapper вычисляет строку и выбрасывает её — возвращается None. Обёртка должна вернуть результат: return func(*args).upper().",
+   "code": "def shout(func):\n    def wrapper(*args):\n        func(*args).upper()\n    return wrapper\n\n@shout\ndef greet(name):\n    return \"привет, \" + name\n\nprint(greet(\"ада\"))",
+   "payload": {
+    "line": 2,
+    "accepted": [
+     "return func(*args).upper()"
+    ],
+    "expectedOutput": "ПРИВЕТ, АДА\n"
+   },
+   "solution": {
+    "code": "def shout(func):\n    def wrapper(*args):\n        return func(*args).upper()\n    return wrapper\n\n@shout\ndef greet(name):\n    return \"привет, \" + name\n\nprint(greet(\"ада\"))",
+    "output": "ПРИВЕТ, АДА\n"
+   }
+  },
+  {
    "id": "py_deco_009",
    "type": "predict_output",
    "role": "boss",

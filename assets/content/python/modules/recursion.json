@@ -295,6 +295,29 @@
    }
   },
   {
+   "id": "nx_rec_fix",
+   "type": "fix_line",
+   "role": "challenge",
+   "title": "Без условия остановки",
+   "prompt": "Строка 3 с ошибкой. Перепишите её правильно",
+   "topic": "rec_basics",
+   "difficulty": 3,
+   "hint": "Чему равен 0! ? И что будет с произведением, если на дне рекурсии ноль?",
+   "explanation": "0! = 1. С return 0 всё произведение обнуляется: 5 · 4 · 3 · 2 · 1 · 0 = 0.",
+   "code": "def fact(n):\n    if n == 0:\n        return 0\n    return n * fact(n - 1)\n\nprint(fact(5))",
+   "payload": {
+    "line": 2,
+    "accepted": [
+     "return 1"
+    ],
+    "expectedOutput": "120\n"
+   },
+   "solution": {
+    "code": "def fact(n):\n    if n == 0:\n        return 1\n    return n * fact(n - 1)\n\nprint(fact(5))",
+    "output": "120\n"
+   }
+  },
+  {
    "id": "py_rec_009",
    "type": "predict_output",
    "role": "boss",

@@ -225,7 +225,7 @@
    "role": "challenge",
    "title": "Пропавший список",
    "prompt": "Найдите строку с ошибкой",
-   "topic": "list_methods",
+   "topic": "none_value",
    "difficulty": 2,
    "hint": "Что возвращает метод sort?",
    "explanation": "sort() сортирует список на месте и возвращает None. После nums = nums.sort() в nums лежит None, и nums[0] вызывает TypeError.",
@@ -269,6 +269,133 @@
    "solution": {
     "code": "m = [[0] * 2] * 2\nm[0][0] = 1\nprint(m)",
     "output": "[[1, 0], [1, 0]]\n"
+   }
+  },
+  {
+   "id": "nx_list_trace",
+   "type": "trace_table",
+   "role": "practice",
+   "title": "Список меняется",
+   "prompt": "Заполните значения переменных",
+   "topic": "list_methods",
+   "difficulty": 2,
+   "hint": "append — в конец, insert(0, x) — в начало, pop() — забирает последний.",
+   "explanation": "[1, 2] → [1, 2, 3] → [9, 1, 2, 3]; pop убирает 3 и возвращает его; items[1] = 5 заменяет второй элемент.",
+   "code": "items = [1, 2]\nitems.append(3)\nitems.insert(0, 9)\nlast = items.pop()\nitems[1] = 5",
+   "payload": {
+    "columns": [
+     "items",
+     "last"
+    ],
+    "rows": [
+     {
+      "line": 1,
+      "values": [
+       "[1, 2]",
+       "—"
+      ]
+     },
+     {
+      "line": 2,
+      "values": [
+       "[1, 2, 3]",
+       "—"
+      ]
+     },
+     {
+      "line": 3,
+      "values": [
+       "[9, 1, 2, 3]",
+       "—"
+      ]
+     },
+     {
+      "line": 4,
+      "values": [
+       "[9, 1, 2]",
+       "3"
+      ]
+     },
+     {
+      "line": 5,
+      "values": [
+       "[9, 5, 2]",
+       "3"
+      ]
+     }
+    ],
+    "blanks": [
+     [
+      1,
+      0
+     ],
+     [
+      2,
+      0
+     ],
+     [
+      3,
+      0
+     ],
+     [
+      3,
+      1
+     ],
+     [
+      4,
+      0
+     ]
+    ],
+    "bank": [
+     "2",
+     "3",
+     "4",
+     "[1, 2, 3]",
+     "[9, 1, 2, 3]",
+     "[9, 1, 2]",
+     "[9, 5, 2]"
+    ]
+   },
+   "solution": {
+    "code": "items = [1, 2]\nitems.append(3)\nitems.insert(0, 9)\nlast = items.pop()\nitems[1] = 5",
+    "output": ""
+   }
+  },
+  {
+   "id": "nx_list_tf",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Про списки",
+   "prompt": "Верно ли утверждение?",
+   "topic": "list_mutable",
+   "difficulty": 2,
+   "hint": "Проверьте, что возвращает функция и меняет ли она исходный список.",
+   "explanation": "Присваивание не копирует список. sorted создаёт новый, append добавляет ровно один элемент.",
+   "payload": {
+    "categories": [
+     "Верно",
+     "Неверно"
+    ],
+    "items": [
+     {
+      "text": "b = a не копирует список: a и b — один объект",
+      "category": 0
+     },
+     {
+      "text": "sorted(a) меняет сам список a",
+      "category": 1,
+      "feedback": "sorted возвращает новый список; на месте сортирует a.sort()."
+     },
+     {
+      "text": "a.append([1, 2]) добавляет два элемента",
+      "category": 1,
+      "feedback": "append добавляет один элемент — сам список. Два элемента добавит extend."
+     },
+     {
+      "text": "a[-1] — последний элемент",
+      "category": 0
+     }
+    ]
    }
   },
   {

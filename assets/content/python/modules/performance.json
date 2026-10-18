@@ -259,6 +259,29 @@
    }
   },
   {
+   "id": "nx_perf_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Кэш и список",
+   "prompt": "Строка 7 с ошибкой. Перепишите её правильно",
+   "topic": "perf_tricks",
+   "difficulty": 2,
+   "hint": "Кэш хранит результаты в словаре по аргументам. Каким должен быть ключ словаря?",
+   "explanation": "Список нехешируем — cache не может сделать его ключом: TypeError. Кортеж (10, 20, 30) хешируем.",
+   "code": "from functools import cache\n\n@cache\ndef total(prices):\n    return sum(prices)\n\nprint(total([10, 20, 30]))",
+   "payload": {
+    "line": 6,
+    "accepted": [
+     "print(total((10, 20, 30)))"
+    ],
+    "expectedOutput": "60\n"
+   },
+   "solution": {
+    "code": "from functools import cache\n\n@cache\ndef total(prices):\n    return sum(prices)\n\nprint(total((10, 20, 30)))",
+    "output": "60\n"
+   }
+  },
+  {
    "id": "py_perf_010",
    "type": "predict_output",
    "role": "boss",

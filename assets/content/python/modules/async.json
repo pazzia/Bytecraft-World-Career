@@ -195,7 +195,7 @@
    "role": "practice",
    "title": "Таймаут и уборка",
    "prompt": "Что выведет код?",
-   "topic": "async_tasks",
+   "topic": "async_timeouts",
    "difficulty": 3,
    "hint": "Что происходит с корутиной, которая не успела? Срабатывает ли её finally?",
    "explanation": "По таймауту wait_for отменяет slow: внутри неё await бросает CancelledError, finally печатает «уборка». Затем wait_for выбрасывает TimeoutError (в 3.11+ asyncio.TimeoutError — это он же).",
@@ -561,7 +561,7 @@
    "role": "practice",
    "title": "Явная отмена",
    "prompt": "Что выведет код?",
-   "topic": "async_tasks",
+   "topic": "async_timeouts",
    "difficulty": 3,
    "hint": "cancel() бросает CancelledError внутрь задачи на её текущем await. Что сделает raise в except?",
    "explanation": "task.cancel() бросает CancelledError внутрь worker на await asyncio.sleep. worker убирает за собой и пробрасывает отмену дальше, поэтому задача считается отменённой, а await task в main выбрасывает CancelledError.",
@@ -592,7 +592,7 @@
    "role": "practice",
    "title": "Не больше двух сразу",
    "prompt": "Что выведет код?",
-   "topic": "async_tasks",
+   "topic": "async_sync",
    "difficulty": 3,
    "hint": "Semaphore(2) пускает в блок не больше двух корутин. Остальные ждут, но не пропадают.",
    "explanation": "Все пять корутин стартуют, но в async with sem одновременно находятся не больше двух — так ограничивают число параллельных запросов к серверу. Результаты — все пять, в порядке аргументов.",
@@ -618,12 +618,57 @@
    }
   },
   {
+   "id": "nx_async_sort",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Блокирует или уступает",
+   "prompt": "Что делает эта строка внутри корутины?",
+   "topic": "async_basics",
+   "difficulty": 3,
+   "hint": "Управление отдаётся только в точке await.",
+   "explanation": "await с асинхронной операцией отдаёт ход циклу событий. Синхронный sleep и тяжёлые вычисления держат поток — все задачи стоят.",
+   "payload": {
+    "categories": [
+     "Уступает ход другим задачам",
+     "Блокирует весь цикл"
+    ],
+    "items": [
+     {
+      "text": "await asyncio.sleep(1)",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "time.sleep(1)",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "await queue.get()",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "sum(range(10**8))",
+      "category": 1,
+      "code": true,
+      "feedback": "Долгое вычисление не отдаёт управление — остальные задачи ждут."
+     },
+     {
+      "text": "await asyncio.gather(a(), b())",
+      "category": 0,
+      "code": true
+     }
+    ]
+   }
+  },
+  {
    "id": "py_async_010",
    "type": "predict_output",
    "role": "boss",
    "title": "Босс: производитель и потребитель",
    "prompt": "Что выведет код?",
-   "topic": "async_tasks",
+   "topic": "async_sync",
    "difficulty": 4,
    "hint": "В очереди помещается один элемент: put ждёт, пока потребитель заберёт предыдущий. И когда выполняется код после async with?",
    "explanation": "Очередь на один элемент: producer кладёт a, а на b ждёт. consumer забирает a, место освобождается — producer кладёт b и снова ждёт. Так они чередуются. Блок TaskGroup ждёт обе задачи, поэтому «всё» — последнее.",

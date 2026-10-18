@@ -206,6 +206,118 @@
    }
   },
   {
+   "id": "nx_types_sort",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Какого типа значение",
+   "prompt": "Разложите значения по типам",
+   "topic": "types_basic",
+   "difficulty": 1,
+   "hint": "Деление / всегда даёт float, // для целых — int. Кавычки делают строку.",
+   "explanation": "42 и 7 // 7 — целые, 3.0 и 7 / 7 — дробные: / всегда возвращает float. Всё в кавычках и результат str() — строки, int('8') превращает строку в число.",
+   "payload": {
+    "categories": [
+     "int",
+     "float",
+     "str"
+    ],
+    "items": [
+     {
+      "text": "42",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "3.0",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "\"42\"",
+      "category": 2,
+      "code": true
+     },
+     {
+      "text": "7 / 7",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "7 // 7",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "str(5)",
+      "category": 2,
+      "code": true
+     },
+     {
+      "text": "int('8')",
+      "category": 0,
+      "code": true
+     }
+    ]
+   }
+  },
+  {
+   "id": "nx_bool_tf",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Истина или ложь",
+   "prompt": "Что вернёт bool(...) для этих значений: True — «Верно», False — «Неверно»",
+   "topic": "types_bool",
+   "difficulty": 2,
+   "hint": "Ложны: 0, пустые строки и коллекции, None. Всё остальное — истина.",
+   "explanation": "Пустое и нулевое — ложь, всё остальное — истина. Поэтому ' ' и [0] истинны: они не пустые.",
+   "payload": {
+    "categories": [
+     "Верно",
+     "Неверно"
+    ],
+    "items": [
+     {
+      "text": "0",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "''",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "' '",
+      "category": 0,
+      "code": true,
+      "feedback": "Строка из пробела не пустая — значит, истина."
+     },
+     {
+      "text": "[]",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "[0]",
+      "category": 0,
+      "code": true,
+      "feedback": "Список с одним элементом не пуст, даже если элемент — ноль."
+     },
+     {
+      "text": "-1",
+      "category": 0,
+      "code": true,
+      "feedback": "Ложь только ноль; любое другое число — истина."
+     },
+     {
+      "text": "None",
+      "category": 1,
+      "code": true
+     }
+    ]
+   }
+  },
+  {
    "id": "py_types_005",
    "type": "code_ordering",
    "role": "boss",

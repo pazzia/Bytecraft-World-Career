@@ -135,7 +135,7 @@
    "role": "practice",
    "title": "Логгеры модулей",
    "prompt": "Что выведет код?",
-   "topic": "proj_cli_logging",
+   "topic": "proj_logging",
    "difficulty": 3,
    "hint": "У логгера app.db свой порог. А что возвращает getLogger при повторном вызове с тем же именем?",
    "explanation": "Для app.db порог поднят до WARNING — его info отсекается. app.api наследует порог INFO от корня. getLogger с тем же именем возвращает тот же объект — поэтому в каждом модуле пишут getLogger(__name__) и настраивают уровни по именам.",
@@ -166,7 +166,7 @@
    "role": "practice",
    "title": "Имена по PEP 8",
    "prompt": "Какие имена записаны по PEP 8?",
-   "topic": "proj_structure",
+   "topic": "proj_style",
    "difficulty": 2,
    "hint": "Функции и переменные — snake_case, классы — CamelCase, константы — ВЕРХНИЙ_РЕГИСТР.",
    "explanation": "snake_case для переменных и функций, CapWords для классов, UPPER_CASE для констант, ведущее подчёркивание — для внутренних имён. getUserName и Calculate_Total нарушают стиль функций.",
@@ -201,7 +201,7 @@
    "role": "practice",
    "title": "Docstring",
    "prompt": "Что выведет код?",
-   "topic": "proj_structure",
+   "topic": "proj_style",
    "difficulty": 1,
    "hint": "Строка сразу после def попадает в __doc__.",
    "explanation": "Первая строка в теле функции — docstring: она хранится в __doc__ (без кавычек). Её первая строка — краткое описание.",
@@ -327,6 +327,129 @@
    "solution": {
     "code": "import argparse\n\nparser = argparse.ArgumentParser(prog=\"tool\")\nparser.add_argument(\"--limit\", type=int)\ntry:\n    parser.parse_args([\"--limit\", \"много\"])\nexcept SystemExit as error:\n    print(\"код выхода:\", error.code)",
     "output": "код выхода: 2\n"
+   }
+  },
+  {
+   "id": "py_proj_012",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Модуль загружается один раз",
+   "prompt": "Что выведет код?",
+   "topic": "proj_modules",
+   "difficulty": 2,
+   "hint": "Сколько раз выполняется код модуля при двух import? Чему равен __name__ у импортированного модуля?",
+   "explanation": "Код модуля выполняется при первом import — после «старт». Второй import берёт модуль из sys.modules и ничего не печатает. Внутри helper __name__ равно \"helper\", поэтому run() под проверкой не вызывается — его вызывает только main.",
+   "code": "import sys\nfrom pathlib import Path\n\nPath(\"helper.py\").write_text(\n    'print(\"helper загружен\")\\n'\n    'def run():\\n'\n    '    print(\"helper.run\")\\n'\n    'if __name__ == \"__main__\":\\n'\n    '    run()\\n',\n    encoding=\"utf-8\")\nsys.path.insert(0, str(Path.cwd()))\n\nprint(\"старт\")\nimport helper\nimport helper\nhelper.run()",
+   "payload": {
+    "options": [
+     "старт\nhelper загружен\nhelper загружен\nhelper.run",
+     "старт\nhelper загружен\nhelper.run\nhelper.run",
+     "helper загружен\nстарт\nhelper.run",
+     "старт\nhelper загружен\nhelper.run"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Повторный import не выполняет модуль заново: он уже в sys.modules.",
+     "При импорте __name__ — \"helper\", блок под __main__ не выполняется.",
+     "import выполняется там, где стоит, — после print(\"старт\").",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "import sys\nfrom pathlib import Path\n\nPath(\"helper.py\").write_text(\n    'print(\"helper загружен\")\\n'\n    'def run():\\n'\n    '    print(\"helper.run\")\\n'\n    'if __name__ == \"__main__\":\\n'\n    '    run()\\n',\n    encoding=\"utf-8\")\nsys.path.insert(0, str(Path.cwd()))\n\nprint(\"старт\")\nimport helper\nimport helper\nhelper.run()",
+    "output": "старт\nhelper загружен\nhelper.run\n"
+   }
+  },
+  {
+   "id": "py_proj_013",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Импорт с точкой",
+   "prompt": "Строка 11 с ошибкой. Перепишите её правильно",
+   "topic": "proj_modules",
+   "difficulty": 2,
+   "hint": "Запущенный файл — модуль __main__, он не лежит ни в каком пакете. Куда тогда указывает точка?",
+   "explanation": "Импорт с точкой ищет соседа в пакете текущего модуля, а у запущенного файла пакета нет: ImportError: attempted relative import with no known parent package. Из главного файла пишут полный путь: from store.prices import tax.",
+   "code": "import sys\nfrom pathlib import Path\n\npkg = Path(\"store\")\npkg.mkdir()\n(pkg / \"__init__.py\").write_text(\"\")\n(pkg / \"prices.py\").write_text(\n    \"def tax(p):\\n    return p * 1.2\\n\")\nsys.path.insert(0, str(Path.cwd()))\n\nfrom .prices import tax\nprint(tax(100))",
+   "payload": {
+    "line": 10,
+    "accepted": [
+     "from store.prices import tax"
+    ],
+    "expectedOutput": "120.0\n"
+   },
+   "solution": {
+    "code": "import sys\nfrom pathlib import Path\n\npkg = Path(\"store\")\npkg.mkdir()\n(pkg / \"__init__.py\").write_text(\"\")\n(pkg / \"prices.py\").write_text(\n    \"def tax(p):\\n    return p * 1.2\\n\")\nsys.path.insert(0, str(Path.cwd()))\n\nfrom store.prices import tax\nprint(tax(100))",
+    "output": "120.0\n"
+   }
+  },
+  {
+   "id": "py_proj_014",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Что выполнится при импорте",
+   "prompt": "Файл tools.py импортируют командой import tools. Что из него выполнится?",
+   "topic": "proj_modules",
+   "difficulty": 3,
+   "hint": "Импорт выполняет модуль сверху вниз, как при запуске. Что из этого откладывает выполнение?",
+   "explanation": "При импорте выполняется весь верхний уровень модуля: присваивания, import, print, создание функций и классов вместе с телом класса. Тело функции ждёт вызова, а блок под проверкой __name__ ждёт запуска файла напрямую.",
+   "payload": {
+    "categories": [
+     "Выполнится при импорте",
+     "Не выполнится"
+    ],
+    "items": [
+     {
+      "text": "print(\"загрузка\") на верхнем уровне",
+      "category": 0
+     },
+     {
+      "text": "RATE = 0.2 на верхнем уровне",
+      "category": 0
+     },
+     {
+      "text": "import json в начале файла",
+      "category": 0
+     },
+     {
+      "text": "тело функции def report()",
+      "category": 1,
+      "feedback": "def только создаёт функцию, тело выполнится при вызове."
+     },
+     {
+      "text": "код под if __name__ == \"__main__\":",
+      "category": 1,
+      "feedback": "При импорте __name__ равно \"tools\", условие ложно."
+     },
+     {
+      "text": "тело класса class Cart:",
+      "category": 0,
+      "feedback": "Тело класса выполняется сразу, когда Python доходит до class: так создаются его атрибуты и методы."
+     }
+    ]
+   }
+  },
+  {
+   "id": "nx_main_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Точка входа",
+   "prompt": "Строка 4 с ошибкой. Перепишите её правильно",
+   "topic": "proj_structure",
+   "difficulty": 1,
+   "hint": "Какое значение у __name__ у запущенного файла?",
+   "explanation": "У запущенного файла __name__ — \"__main__\" с подчёркиваниями. С \"main\" условие ложно, и программа молчит.",
+   "code": "def main():\n    print(\"программа работает\")\n\nif __name__ == \"main\":\n    main()",
+   "payload": {
+    "line": 3,
+    "accepted": [
+     "if __name__ == \"__main__\":"
+    ],
+    "expectedOutput": "программа работает\n"
+   },
+   "solution": {
+    "code": "def main():\n    print(\"программа работает\")\n\nif __name__ == \"__main__\":\n    main()",
+    "output": "программа работает\n"
    }
   },
   {

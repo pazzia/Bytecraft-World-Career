@@ -19,7 +19,13 @@ abstract final class Routes {
   static String practiceTask(String taskId) =>
       '$playground/task/${Uri.encodeComponent(taskId)}';
 
-  static String topic(String topicId) => '/topic/${Uri.encodeComponent(topicId)}';
+  static const String fromQuery = 'from';
+
+  /// [from] — the topic the reader came from by a link ("‹ К теме X").
+  static String topic(String topicId, {String? from}) => Uri(
+        path: '/topic/${Uri.encodeComponent(topicId)}',
+        queryParameters: from == null ? null : {fromQuery: from},
+      ).toString();
   static const String shop = '/shop';
   static const String premium = '/premium';
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/widgets/code_block.dart';
 import '../../courses/domain/level_definition.dart';
 import '../../courses/domain/level_type.dart';
 import '../domain/answer.dart';
@@ -10,6 +11,7 @@ import 'fill_code_renderer.dart';
 import 'match_pairs_renderer.dart';
 import 'multi_select_renderer.dart';
 import 'multiple_choice_renderer.dart';
+import 'new_types_renderers.dart';
 import 'type_output_renderer.dart';
 import 'unsupported_renderer.dart';
 
@@ -44,6 +46,15 @@ abstract class QuestionRenderer {
   /// Renderers that draw the code themselves return false.
   bool get showsLevelCode => true;
 
+  /// What stays pinned under the prompt while the answers scroll: the code
+  /// the question is about. By default `level.code` (when [showsLevelCode]).
+  Widget? buildStage(BuildContext context, QuestionContext question) {
+    final code = question.level.code;
+    if (!showsLevelCode || code == null) return null;
+    return CodeBlock(code: code, expandable: true);
+  }
+
+  /// The answer area (scrolls under the stage).
   Widget build(BuildContext context, QuestionContext question);
 }
 
@@ -60,6 +71,9 @@ class QuestionRendererRegistry {
     LevelType.typeOutput: TypeOutputRenderer(),
     LevelType.matchPairs: MatchPairsRenderer(),
     LevelType.multiSelect: MultiSelectRenderer(),
+    LevelType.traceTable: TraceTableRenderer(),
+    LevelType.categorize: CategorizeRenderer(),
+    LevelType.fixLine: FixLineRenderer(),
   });
 
   final Map<LevelType, QuestionRenderer> _renderers;

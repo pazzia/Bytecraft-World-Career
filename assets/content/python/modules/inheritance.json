@@ -174,7 +174,7 @@
    "role": "practice",
    "title": "Абстрактный класс",
    "prompt": "Что произойдёт при вызове Shape()?",
-   "topic": "inh_mro",
+   "topic": "inh_abc",
    "difficulty": 2,
    "hint": "Зачем методу пометка @abstractmethod?",
    "explanation": "Класс с нереализованным абстрактным методом нельзя создать: TypeError. Его подклассы обязаны реализовать area.",
@@ -260,6 +260,42 @@
    "solution": {
     "code": "class Rect:\n    def __init__(self, w, h):\n        self.w, self.h = w, h\n    def set_w(self, w):\n        self.w = w\n    def area(self):\n        return self.w * self.h\n\nclass Square(Rect):\n    def __init__(self, a):\n        super().__init__(a, a)\n    def set_w(self, w):\n        self.w = self.h = w\n\ndef stretch(r):\n    r.set_w(10)\n    return r.area()\n\nprint(stretch(Rect(2, 5)), stretch(Square(5)))",
     "output": "50 100\n"
+   }
+  },
+  {
+   "id": "nx_inh_tf",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Про наследование",
+   "prompt": "Верно ли утверждение?",
+   "topic": "inh_basics",
+   "difficulty": 2,
+   "hint": "Проверьте каждое утверждение на коротком классе.",
+   "explanation": "Подкласс наследует методы и может их переопределить. Свой __init__ заменяет родительский — тот вызывают явно через super().",
+   "payload": {
+    "categories": [
+     "Верно",
+     "Неверно"
+    ],
+    "items": [
+     {
+      "text": "Дочерний класс получает методы родителя",
+      "category": 0
+     },
+     {
+      "text": "super().__init__() вызывать не нужно: Python сделает это сам",
+      "category": 1,
+      "feedback": "Если в дочернем классе есть свой __init__, родительский сам не вызовется."
+     },
+     {
+      "text": "isinstance(dog, Animal) — True для объекта подкласса Animal",
+      "category": 0
+     },
+     {
+      "text": "Метод дочернего класса с тем же именем заменяет родительский",
+      "category": 0
+     }
+    ]
    }
   },
   {

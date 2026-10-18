@@ -3,7 +3,6 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 
 import '../../../core/theme/app_spacing.dart';
-import '../../../core/theme/app_typography.dart';
 import '../../../core/theme/game_colors.dart';
 import '../../../shared/widgets/code_block.dart';
 import '../../courses/domain/level_payload.dart';
@@ -230,13 +229,17 @@ class _LineKey extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Text.rich(
-                TextSpan(children: highlightPython(text, colors)),
-                style: AppTypography.code(color: colors.codeText, size: 17),
-                softWrap: false,
-              ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: Spacing.sm),
+              child: Builder(builder: (context) {
+                final (indent, rest) = splitIndent(text);
+                return CodeLineText(
+                  indent: indent,
+                  spans: highlightPython(rest, colors),
+                  fit: const CodeFit.fixed(15),
+                  color: colors.codeText,
+                );
+              }),
             ),
           ),
           if (showHandle)

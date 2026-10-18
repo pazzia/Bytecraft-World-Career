@@ -10,6 +10,16 @@ abstract final class AppTypography {
   static const double codeSize = 18;
   static const double codeLineHeight = 1.5;
 
+  /// JetBrains Mono draws `>=`, `==`, `->` as single glyphs (≥, ═, →).
+  /// A learner must see the characters they type, so ligatures are off.
+  static const List<FontFeature> codeFeatures = [
+    FontFeature.disable('calt'),
+    FontFeature.disable('liga'),
+  ];
+
+  /// Advance width of one JetBrains Mono character, in ems.
+  static const double codeAdvance = 0.6;
+
   static TextStyle code({
     Color? color,
     double size = codeSize,
@@ -22,6 +32,7 @@ abstract final class AppTypography {
         height: codeLineHeight,
         color: color,
         fontWeight: weight,
+        fontFeatures: codeFeatures,
       );
 
   /// Type scale (px): 30 / 26 / 24 / 20 / 17 / 15 / 13.

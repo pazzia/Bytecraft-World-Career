@@ -221,6 +221,79 @@
    }
   },
   {
+   "id": "nx_ops_result",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Что получится",
+   "prompt": "Разложите выражения по результату",
+   "topic": "ops_compare",
+   "difficulty": 2,
+   "hint": "Вычислите каждое выражение. Цепочки сравнений Python читает как and.",
+   "explanation": "7 // 2 — 3, 7 % 2 — 1, 2 ** 3 — 8. Цепочка 1 < 5 < 4 ложна, потому что ложно 5 < 4. Строки сравниваются по буквам.",
+   "payload": {
+    "categories": [
+     "True",
+     "False"
+    ],
+    "items": [
+     {
+      "text": "7 // 2 == 3",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "7 % 2 == 0",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "2 ** 3 > 7",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "not 3 > 2",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "1 < 5 < 4",
+      "category": 1,
+      "code": true,
+      "feedback": "Цепочка 1 < 5 < 4 значит 1 < 5 and 5 < 4 — второе ложно."
+     },
+     {
+      "text": "'a' < 'b'",
+      "category": 0,
+      "code": true
+     }
+    ]
+   }
+  },
+  {
+   "id": "nx_ops_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Среднее арифметическое",
+   "prompt": "Строка 2 с ошибкой. Перепишите её правильно",
+   "topic": "ops_precedence",
+   "difficulty": 2,
+   "hint": "Деление выполняется раньше сложения. Как заставить сложить первым?",
+   "explanation": "a + b / 2 — это 4 + 4.0 = 8.0. Нужны скобки: (a + b) / 2 = 6.0.",
+   "code": "a, b = 4, 8\navg = a + b / 2\nprint(avg)",
+   "payload": {
+    "line": 1,
+    "accepted": [
+     "avg = (a + b) / 2"
+    ],
+    "expectedOutput": "6.0\n"
+   },
+   "solution": {
+    "code": "a, b = 4, 8\navg = (a + b) / 2\nprint(avg)",
+    "output": "6.0\n"
+   }
+  },
+  {
    "id": "py_ops_005",
    "type": "predict_output",
    "role": "boss",

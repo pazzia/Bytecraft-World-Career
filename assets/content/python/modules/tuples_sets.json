@@ -223,6 +223,60 @@
    }
   },
   {
+   "id": "nx_mutable_sort",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Изменяемое или нет",
+   "prompt": "Разложите типы: можно ли менять объект после создания?",
+   "topic": "tuple_basics",
+   "difficulty": 2,
+   "hint": "Неизменяемые объекты можно класть в множество и делать ключами словаря.",
+   "explanation": "Списки, множества и словари меняются на месте. Кортежи, строки, числа и frozenset — нет, поэтому они хешируемы.",
+   "payload": {
+    "categories": [
+     "Изменяемые",
+     "Неизменяемые"
+    ],
+    "items": [
+     {
+      "text": "[1, 2]",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "(1, 2)",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "{1, 2}",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "'abc'",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "{'a': 1}",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "frozenset({1})",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "42",
+      "category": 1,
+      "code": true
+     }
+    ]
+   }
+  },
+  {
    "id": "py_set_005",
    "type": "type_output",
    "role": "boss",

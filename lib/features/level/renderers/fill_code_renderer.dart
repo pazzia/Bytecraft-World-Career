@@ -17,17 +17,29 @@ class FillCodeRenderer extends QuestionRenderer {
   bool get showsLevelCode => false;
 
   @override
+  Widget? buildStage(BuildContext context, QuestionContext question) =>
+      FillCodeView(question: question, part: FillCodePart.board);
+
+  @override
   Widget build(BuildContext context, QuestionContext question) =>
-      FillCodeView(question: question);
+      FillCodeView(question: question, part: FillCodePart.keys);
 }
+
+/// The board with slots is pinned above the answers; the keys scroll.
+enum FillCodePart { board, keys, both }
 
 /// Code on the board with slots + a bank of token keys.
 /// Tap a key to drop it into the next empty slot; tap a slot to take the
 /// key back out.
 class FillCodeView extends StatelessWidget {
-  const FillCodeView({super.key, required this.question});
+  const FillCodeView({super.key, required this.question, this.part = FillCodePart.both});
 
   final QuestionContext question;
+  final FillCodePart part;
+
+  /// A slot is as wide as the longest option plus its frame.
+  static int slotColumns(List<String> options) =>
+      options.fold(0, (longest, option) => option.length > longest ? option.length : longest) + 3;
 
   /// Which option keys are already placed (supports duplicate tokens).
   static Set<int> usedOptionIndexes(List<String> options, List<String?> tokens) {
@@ -52,6 +64,7 @@ class FillCodeView extends StatelessWidget {
     required GameColors colors,
     required Set<int> wrong,
     required bool isCorrect,
+    required double fontSize,
   }) {
     switch (segment) {
       case TextSegment(:final text):
@@ -65,6 +78,7 @@ class FillCodeView extends StatelessWidget {
             token: index < answer.tokens.length ? answer.tokens[index] : null,
             isWrong: wrong.contains(index),
             isCorrect: isCorrect,
+            fontSize: fontSize,
             onTap: question.isLocked
                 ? null
                 : () => question.onChanged(answer.clear(index)),
@@ -86,68 +100,103 @@ class FillCodeView extends StatelessWidget {
     final isCorrect = question.outcome?.isCorrect ?? false;
     final lines = FillCodeTemplate.lines(payload.template);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        CodeBoard(
-          padding: const EdgeInsets.all(Spacing.lg),
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var i = 0; i < lines.length; i++)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 26,
-                          child: Text(
-                            '${i + 1}',
-                            style: AppTypography.code(
-                              color: colors.codeLineNumber,
-                              size: 13,
-                            ),
-                          ),
+    final slotWidth = slotColumns(payload.options);
+    final board = CodeBoard(
+      padding: const EdgeInsets.symmetric(vertical: Spacing.lg, horizontal: Spacing.md),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final columns = lines.fold<int>(0, (longest, line) {
+            var width = 0;
+            for (final segment in line) {
+              width += switch (segment) {
+                TextSegment(:final text) => text.length,
+                BlankSegment() => slotWidth,
+              };
+            }
+            return width > longest ? width : longest;
+          });
+          final fit = CodeFit.forWidth(constraints.maxWidth - CodeFit.gutterWidth, columns);
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < lines.length; i++)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: Spacing.xs),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: CodeFit.gutterWidth,
+                        child: Text(
+                          '${i + 1}',
+                          style: AppTypography.code(
+                            color: colors.codeLineNumber,
+                            size: 13,
+                          ).copyWith(height: fit.fontSize * AppTypography.codeLineHeight / 13),
                         ),
-                        Text.rich(
-                          TextSpan(
-                            children: [
-                              for (final segment in lines[i])
-                                _spanFor(
-                                  segment,
-                                  answer: answer,
-                                  colors: colors,
-                                  wrong: wrong,
-                                  isCorrect: isCorrect,
-                                ),
-                            ],
-                          ),
-                          style: AppTypography.code(color: colors.codeText),
-                          softWrap: false,
-                        ),
-                      ],
-                    ),
+                      ),
+                      Expanded(child: _line(lines[i], answer, colors, wrong, isCorrect, fit)),
+                    ],
                   ),
-              ],
-            ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+    final keys = _TokenGrid(
+      children: [
+        for (var i = 0; i < payload.options.length; i++)
+          TokenChip(
+            key: ValueKey('token_$i'),
+            label: payload.options[i],
+            isUsed: used.contains(i),
+            onTap: question.isLocked || used.contains(i) || answer.isComplete
+                ? null
+                : () => question.onChanged(answer.place(payload.options[i])),
           ),
+      ],
+    );
+    return switch (part) {
+      FillCodePart.board => board,
+      FillCodePart.keys => keys,
+      FillCodePart.both => Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [board, const SizedBox(height: Spacing.xxl), keys],
         ),
-        const SizedBox(height: Spacing.xxl),
-        _TokenGrid(
-          children: [
-            for (var i = 0; i < payload.options.length; i++)
-              TokenChip(
-                key: ValueKey('token_$i'),
-                label: payload.options[i],
-                isUsed: used.contains(i),
-                onTap: question.isLocked || used.contains(i) || answer.isComplete
-                    ? null
-                    : () => question.onChanged(answer.place(payload.options[i])),
-              ),
-          ],
-        ),
+    };
+  }
+
+  Widget _line(
+    List<TemplateSegment> segments,
+    FillCodeAnswer answer,
+    GameColors colors,
+    Set<int> wrong,
+    bool isCorrect,
+    CodeFit fit,
+  ) {
+    // The leading indentation becomes a hanging indent for wrapped parts.
+    var indent = 0;
+    final rest = <TemplateSegment>[...segments];
+    if (rest.isNotEmpty && rest.first is TextSegment) {
+      final (spaces, text) = splitIndent((rest.first as TextSegment).text);
+      indent = spaces;
+      rest[0] = TextSegment(text);
+    }
+    return CodeLineText(
+      indent: indent,
+      fit: fit,
+      color: colors.codeText,
+      spans: [
+        for (final segment in rest)
+          _spanFor(
+            segment,
+            answer: answer,
+            colors: colors,
+            wrong: wrong,
+            isCorrect: isCorrect,
+            fontSize: fit.fontSize,
+          ),
       ],
     );
   }
@@ -188,6 +237,7 @@ class _BlankSlot extends StatelessWidget {
     required this.isWrong,
     required this.isCorrect,
     required this.onTap,
+    required this.fontSize,
   });
 
   final int index;
@@ -195,20 +245,21 @@ class _BlankSlot extends StatelessWidget {
   final bool isWrong;
   final bool isCorrect;
   final VoidCallback? onTap;
+  final double fontSize;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.gameColors;
     final slotStyle = AppTypography.code(
       color: colors.onReward,
-      size: 18,
+      size: fontSize,
       weight: FontWeight.w700,
     ).copyWith(height: 1.2);
     if (token == null) {
       return Semantics(
         label: 'Пропуск ${index + 1}, пустой',
         child: Container(
-          constraints: const BoxConstraints(minWidth: 60, minHeight: 34),
+          constraints: BoxConstraints(minWidth: fontSize * 3.2, minHeight: fontSize * 1.9),
           margin: const EdgeInsets.symmetric(horizontal: Spacing.xs),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(9),

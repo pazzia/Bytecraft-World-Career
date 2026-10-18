@@ -14,6 +14,7 @@ import builtins
 import contextlib
 import io
 import itertools
+import linecache
 import os
 import signal
 import sys
@@ -73,6 +74,10 @@ def run(code, stdin="", time_limit=TIME_LIMIT_SECONDS):
     tmp = tempfile.mkdtemp(prefix="bytecraft_")
     old_handler = signal.signal(signal.SIGALRM, _on_alarm)
     signal.setitimer(signal.ITIMER_REAL, time_limit)
+    # A program is compiled from memory as "main.py": tracebacks must not
+    # show lines that another tool put into linecache under that name
+    # (doctest caches the generator's own source there).
+    linecache.cache.pop("main.py", None)
     try:
         sys.stdin = io.StringIO(stdin)
         os.chdir(tmp)
@@ -384,8 +389,30 @@ def topic(topic_id, title, summary, body, examples, pitfalls=()):
             example["stdin"] = flags["stdin"]
         built.append(example)
     assert built, (topic_id, "a topic needs an example")
+    for pitfall in pitfalls:
+        assert isinstance(pitfall, (str, dict)), (topic_id, "pitfall must be text or pitfall(...)")
     return dict(id=topic_id, title=title, summary=summary, body=dedent(body),
                 examples=built, pitfalls=list(pitfalls))
+
+
+def pitfall(why, *, bad=None, good=None, syntax_error=False):
+    """A typical mistake as «так нельзя / так можно». `bad` and `good` are
+    fragments (not executed) but must be valid Python, unless the point is
+    a SyntaxError (`syntax_error=True`, then only `good` is parsed)."""
+    import ast
+    item = dict(why=why)
+    for key, code in (("bad", bad), ("good", good)):
+        if code is None:
+            continue
+        code = dedent(code)
+        if not (key == "bad" and syntax_error):
+            try:
+                ast.parse(code)
+            except SyntaxError as error:
+                raise AssertionError(("pitfall code is not valid Python", key, code, error.msg))
+        item[key] = code
+    assert ("bad" in item) == ("good" in item), ("pitfall needs both bad and good", why)
+    return item
 
 
 def task(task_id, title, prompt, *, solution, tests, starter="", hint=None, difficulty=1,
@@ -432,4 +459,168 @@ def native(level):
     the Pyodide check in CI skips its solution."""
     assert "solution" in level, (level["id"], "no solution to mark")
     level["solution"]["nativeOnly"] = True
+    return level
+
+
+# ------------------------------------------------------------ trace tables
+def _trace_rows(code, watch):
+    """Runs code and records the watched variables after each executed
+    line of main.py (module level and functions). Returns rows of
+    (line, {name: repr})."""
+    rows = []
+    last = {}
+
+    def snapshot(frame):
+        scope = frame.f_locals
+        return {name: repr(scope[name]) for name in watch if name in scope}
+
+    def tracer(frame, event, arg):
+        if frame.f_code.co_filename != "main.py":
+            return tracer
+        if event in ("line", "return") and frame in last:
+            values = snapshot(frame)
+            if values:
+                rows.append((last[frame], values))
+        if event == "line":
+            last[frame] = frame.f_lineno
+        elif event == "return":
+            last.pop(frame, None)
+        return tracer
+
+    out = io.StringIO()
+    old = sys.gettrace()
+    try:
+        with contextlib.redirect_stdout(out):
+            sys.settrace(tracer)
+            exec(compile(code, "main.py", "exec"), {"__name__": "__main__", "__builtins__": builtins})
+    finally:
+        sys.settrace(old)
+    return rows, out.getvalue()
+
+
+def _neighbours(value):
+    try:
+        number = int(value)
+    except ValueError:
+        return []
+    return [str(number - 1), str(number + 1)]
+
+
+def trace(level_id, title, code, watch, *, topic, hint, explanation, lines=None,
+          prompt="Заполните значения переменных", extra=(), role="practice", difficulty=2,
+          max_rows=8, max_blanks=8, first_given=True):
+    """Trace table. The program is executed with sys.settrace; a row is
+    recorded after each executed line (only `lines`, 1-based, if given)
+    whenever a watched variable changed. Changed cells are blanks; the bank
+    holds the answers, `extra` values and neighbours of numbers."""
+    code = dedent(code)
+    _ok(level_id, code)
+    raw, output = _trace_rows(code, watch)
+    rows, previous = [], None
+    for line, values in raw:
+        if lines is not None and line not in lines:
+            continue
+        full = tuple(values.get(name, "—") for name in watch)
+        if full != previous:
+            rows.append((line, list(full)))
+            previous = full
+    assert 2 <= len(rows) <= max_rows, (level_id, "rows", len(rows), rows)
+    blanks = []
+    for r in range(len(rows)):
+        for c in range(len(watch)):
+            before = rows[r - 1][1][c] if r else "—"
+            if r == 0 and first_given:
+                continue
+            if rows[r][1][c] != before and rows[r][1][c] != "—":
+                blanks.append([r, c])
+    assert 2 <= len(blanks) <= max_blanks, (level_id, "blanks", len(blanks))
+    answers = {rows[r][1][c] for r, c in blanks}
+    bank = set(answers) | set(extra)
+    for value in answers:
+        bank.update(_neighbours(value))
+    def order(value):
+        try:
+            return (0, int(value), value)
+        except ValueError:
+            return (1, 0, value)
+    level = _base(level_id, "trace_table", role, title, prompt, topic, difficulty, hint, explanation, code)
+    level["payload"] = dict(columns=list(watch),
+                            rows=[dict(line=line, values=values) for line, values in rows],
+                            blanks=blanks, bank=sorted(bank, key=order))
+    level["solution"] = dict(code=code, output=output)
+    return level
+
+
+# --------------------------------------------------------------- categorize
+def categorize(level_id, title, prompt, categories, items, *, topic, hint, explanation, check=None,
+               code_items=False, code=None, role="practice", difficulty=2):
+    """Sort items into 2–4 groups. `items` are (text, group index[, feedback]).
+    With `check(text) -> group index` every item is verified."""
+    assert 2 <= len(categories) <= 4, (level_id, "categories")
+    assert 3 <= len(items) <= 10, (level_id, "item count")
+    built = []
+    for item in items:
+        text, group = item[0], item[1]
+        assert 0 <= group < len(categories), (level_id, "group", text)
+        if check is not None:
+            assert check(text) == group, (level_id, "check disagrees", text, check(text), group)
+        entry = dict(text=text, category=group)
+        if code_items:
+            entry["code"] = True
+        if len(item) > 2 and item[2]:
+            entry["feedback"] = item[2]
+        built.append(entry)
+    assert len({b["text"] for b in built}) == len(built), (level_id, "duplicate items")
+    assert len({b["category"] for b in built}) == len(categories), (level_id, "an empty group")
+    if code is not None:
+        code = dedent(code)
+        _ok(level_id, code)
+    level = _base(level_id, "categorize", role, title, prompt, topic, difficulty, hint, explanation, code)
+    level["payload"] = dict(categories=list(categories), items=built)
+    if code is not None:
+        level["solution"] = dict(code=code, output=run(code).out)
+    return level
+
+
+def true_false(level_id, title, prompt, statements, *, topic, hint, explanation, check=None, code=None,
+               code_items=False, role="practice", difficulty=2):
+    """A series of statements to mark «Верно» / «Неверно». `statements` are
+    (text, is_true[, feedback]); `check(text) -> bool` verifies them."""
+    items = [(s[0], 0 if s[1] else 1, *(s[2:])) for s in statements]
+    wrapped = None if check is None else (lambda text: 0 if check(text) else 1)
+    return categorize(level_id, title, prompt, ["Верно", "Неверно"], items, topic=topic, hint=hint,
+                      explanation=explanation, check=wrapped, code=code, code_items=code_items,
+                      role=role, difficulty=difficulty)
+
+
+# ----------------------------------------------------------------- fix line
+def fix_line(level_id, title, code, line, fixes, *, topic, hint, explanation,
+             prompt=None, expect_error=None, role="challenge", difficulty=3):
+    """The player retypes the broken line `line` (0-based). Every accepted
+    fix (written without indentation) must make the program print the same
+    as the first one, and the broken program must not."""
+    code = dedent(code)
+    lines = code.split("\n")
+    assert 0 <= line < len(lines), (level_id, "line")
+    indent = lines[line][:len(lines[line]) - len(lines[line].lstrip())]
+    outputs = []
+    for fix in fixes:
+        assert fix == fix.strip(), (level_id, "write fixes without indentation", fix)
+        patched = list(lines)
+        patched[line] = indent + fix
+        outputs.append(_ok(level_id, "\n".join(patched)).out)
+    assert outputs[0], (level_id, "fixed program prints nothing")
+    assert len(set(outputs)) == 1, (level_id, "fixes disagree", outputs)
+    buggy = run(code)
+    if expect_error:
+        assert buggy.error == expect_error, (level_id, "expected", expect_error, buggy.error)
+    else:
+        assert not (buggy.ok and buggy.out == outputs[0]), (level_id, "the bug does not show")
+    level = _base(level_id, "fix_line", role, title,
+                  prompt or f"Строка {line + 1} с ошибкой. Перепишите её правильно",
+                  topic, difficulty, hint, explanation, code)
+    level["payload"] = dict(line=line, accepted=list(fixes), expectedOutput=outputs[0])
+    fixed = list(lines)
+    fixed[line] = indent + fixes[0]
+    level["solution"] = dict(code="\n".join(fixed), output=outputs[0])
     return level

@@ -211,6 +211,120 @@
    }
   },
   {
+   "id": "nx_var_trace",
+   "type": "trace_table",
+   "role": "practice",
+   "title": "Следим за переменными",
+   "prompt": "Заполните значения переменных",
+   "topic": "var_assign",
+   "difficulty": 2,
+   "hint": "Python вычисляет правую часть, потом связывает имя слева. b = a копирует текущее значение.",
+   "explanation": "b = a даёт b текущее значение 5 — дальше a и b живут отдельно. a, b = b, a меняет их местами за один шаг: сначала вычисляется пара (b, a), потом раздаётся.",
+   "code": "a = 5\nb = a\na = a + 2\nb = b * 2\na, b = b, a",
+   "payload": {
+    "columns": [
+     "a",
+     "b"
+    ],
+    "rows": [
+     {
+      "line": 1,
+      "values": [
+       "5",
+       "—"
+      ]
+     },
+     {
+      "line": 2,
+      "values": [
+       "5",
+       "5"
+      ]
+     },
+     {
+      "line": 3,
+      "values": [
+       "7",
+       "5"
+      ]
+     },
+     {
+      "line": 4,
+      "values": [
+       "7",
+       "10"
+      ]
+     },
+     {
+      "line": 5,
+      "values": [
+       "10",
+       "7"
+      ]
+     }
+    ],
+    "blanks": [
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      0
+     ],
+     [
+      3,
+      1
+     ],
+     [
+      4,
+      0
+     ],
+     [
+      4,
+      1
+     ]
+    ],
+    "bank": [
+     "4",
+     "5",
+     "6",
+     "7",
+     "8",
+     "9",
+     "10",
+     "11"
+    ]
+   },
+   "solution": {
+    "code": "a = 5\nb = a\na = a + 2\nb = b * 2\na, b = b, a",
+    "output": ""
+   }
+  },
+  {
+   "id": "nx_var_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Имя с ошибкой",
+   "prompt": "Строка 3 с ошибкой. Перепишите её правильно",
+   "topic": "var_names",
+   "difficulty": 2,
+   "hint": "Python различает большие и маленькие буквы в именах.",
+   "explanation": "Count и count — разные имена. Переменной Count нет, поэтому NameError.",
+   "code": "price = 120\ncount = 3\ntotal = price * Count\nprint(total)",
+   "payload": {
+    "line": 2,
+    "accepted": [
+     "total = price * count"
+    ],
+    "expectedOutput": "360\n"
+   },
+   "solution": {
+    "code": "price = 120\ncount = 3\ntotal = price * count\nprint(total)",
+    "output": "360\n"
+   }
+  },
+  {
    "id": "py_var_005",
    "type": "bug_finder",
    "role": "boss",

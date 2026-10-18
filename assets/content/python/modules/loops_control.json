@@ -275,6 +275,96 @@
    }
   },
   {
+   "id": "nx_break_trace",
+   "type": "trace_table",
+   "role": "practice",
+   "title": "Поиск с break",
+   "prompt": "Заполните значения переменных",
+   "topic": "loopx_break",
+   "difficulty": 3,
+   "hint": "break выходит из цикла сразу — оставшиеся элементы не проверяются.",
+   "explanation": "4 и 7 не делятся на 3. На 9 found становится 9 и break завершает цикл — 12 уже не проверяется, checked остаётся 3.",
+   "code": "found = None\nchecked = 0\nfor x in [4, 7, 9, 12]:\n    checked = checked + 1\n    if x % 3 == 0:\n        found = x\n        break",
+   "payload": {
+    "columns": [
+     "x",
+     "checked",
+     "found"
+    ],
+    "rows": [
+     {
+      "line": 4,
+      "values": [
+       "4",
+       "1",
+       "None"
+      ]
+     },
+     {
+      "line": 4,
+      "values": [
+       "7",
+       "2",
+       "None"
+      ]
+     },
+     {
+      "line": 4,
+      "values": [
+       "9",
+       "3",
+       "None"
+      ]
+     },
+     {
+      "line": 6,
+      "values": [
+       "9",
+       "3",
+       "9"
+      ]
+     }
+    ],
+    "blanks": [
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      0
+     ],
+     [
+      2,
+      1
+     ],
+     [
+      3,
+      2
+     ]
+    ],
+    "bank": [
+     "1",
+     "2",
+     "3",
+     "4",
+     "6",
+     "7",
+     "8",
+     "9",
+     "10"
+    ]
+   },
+   "solution": {
+    "code": "found = None\nchecked = 0\nfor x in [4, 7, 9, 12]:\n    checked = checked + 1\n    if x % 3 == 0:\n        found = x\n        break",
+    "output": ""
+   }
+  },
+  {
    "id": "py_loopx_009",
    "type": "code_ordering",
    "role": "boss",

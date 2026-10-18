@@ -252,6 +252,73 @@
    }
   },
   {
+   "id": "nx_scope_trace",
+   "type": "trace_table",
+   "role": "practice",
+   "title": "Глобальная и локальная",
+   "prompt": "Заполните значения переменных",
+   "topic": "scope_legb",
+   "difficulty": 3,
+   "hint": "Присваивание внутри функции создаёт локальную переменную — глобальная x не меняется.",
+   "explanation": "Внутри change своя x = 99; функция возвращает её. Глобальная x осталась 1, поэтому z = 1.",
+   "code": "x = 1\n\ndef change():\n    x = 99\n    return x\n\ny = change()\nz = x",
+   "payload": {
+    "columns": [
+     "x",
+     "y",
+     "z"
+    ],
+    "rows": [
+     {
+      "line": 1,
+      "values": [
+       "1",
+       "—",
+       "—"
+      ]
+     },
+     {
+      "line": 7,
+      "values": [
+       "1",
+       "99",
+       "—"
+      ]
+     },
+     {
+      "line": 8,
+      "values": [
+       "1",
+       "99",
+       "1"
+      ]
+     }
+    ],
+    "blanks": [
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      2
+     ]
+    ],
+    "bank": [
+     "0",
+     "1",
+     "2",
+     "98",
+     "99",
+     "100"
+    ]
+   },
+   "solution": {
+    "code": "x = 1\n\ndef change():\n    x = 99\n    return x\n\ny = change()\nz = x",
+    "output": ""
+   }
+  },
+  {
    "id": "py_scope_009",
    "type": "predict_output",
    "role": "boss",

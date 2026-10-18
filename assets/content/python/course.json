@@ -11,7 +11,7 @@
    "description": "Как хранить данные",
    "icon": "📦",
    "file": "modules/variables.json",
-   "timedRunSeconds": 620
+   "timedRunSeconds": 760
   },
   {
    "id": "types",
@@ -19,7 +19,7 @@
    "description": "Числа, строки и логика",
    "icon": "🔢",
    "file": "modules/types.json",
-   "timedRunSeconds": 620
+   "timedRunSeconds": 760
   },
   {
    "id": "operators",
@@ -27,7 +27,7 @@
    "description": "Считаем и сравниваем",
    "icon": "➗",
    "file": "modules/operators.json",
-   "timedRunSeconds": 620
+   "timedRunSeconds": 760
   },
   {
    "id": "strings",
@@ -35,7 +35,7 @@
    "description": "Индексы, срезы, методы",
    "icon": "🔤",
    "file": "modules/strings.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 830
   },
   {
    "id": "io",
@@ -43,7 +43,7 @@
    "description": "print, input и форматирование",
    "icon": "⌨️",
    "file": "modules/io.json",
-   "timedRunSeconds": 550
+   "timedRunSeconds": 620
   },
   {
    "id": "conditions",
@@ -51,7 +51,7 @@
    "description": "if, elif, else",
    "icon": "🔀",
    "file": "modules/conditions.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 830
   },
   {
    "id": "loops",
@@ -59,7 +59,7 @@
    "description": "for и while",
    "icon": "🔁",
    "file": "modules/loops.json",
-   "timedRunSeconds": 620
+   "timedRunSeconds": 760
   },
   {
    "id": "loops_control",
@@ -67,7 +67,7 @@
    "description": "break, continue, else, вложенные циклы",
    "icon": "🎛️",
    "file": "modules/loops_control.json",
-   "timedRunSeconds": 830
+   "timedRunSeconds": 900
   },
   {
    "id": "lists",
@@ -75,7 +75,7 @@
    "description": "Изменяемые последовательности",
    "icon": "📋",
    "file": "modules/lists.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 900
   },
   {
    "id": "tuples_sets",
@@ -83,7 +83,7 @@
    "description": "Неизменяемые пары и уникальные значения",
    "icon": "🧩",
    "file": "modules/tuples_sets.json",
-   "timedRunSeconds": 620
+   "timedRunSeconds": 690
   },
   {
    "id": "dicts",
@@ -91,7 +91,7 @@
    "description": "Ключ → значение",
    "icon": "📒",
    "file": "modules/dicts.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 830
   },
   {
    "id": "comprehensions",
@@ -99,7 +99,7 @@
    "description": "Списки, словари и множества в одну строку (comprehensions)",
    "icon": "⚡",
    "file": "modules/comprehensions.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "functions",
@@ -107,7 +107,7 @@
    "description": "def, параметры и return",
    "icon": "🧩",
    "file": "modules/functions.json",
-   "timedRunSeconds": 830
+   "timedRunSeconds": 970
   },
   {
    "id": "args",
@@ -115,7 +115,7 @@
    "description": "*args, **kwargs и распаковка",
    "icon": "🎛️",
    "file": "modules/args.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 830
   },
   {
    "id": "scope",
@@ -123,7 +123,7 @@
    "description": "LEGB, global, nonlocal, замыкания",
    "icon": "🔭",
    "file": "modules/scope.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 830
   },
   {
    "id": "functional",
@@ -131,7 +131,7 @@
    "description": "lambda, sorted, map, filter, functools",
    "icon": "λ",
    "file": "modules/functional.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 830
   },
   {
    "id": "recursion",
@@ -139,7 +139,7 @@
    "description": "Функция вызывает саму себя",
    "icon": "🪆",
    "file": "modules/recursion.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 830
   },
   {
    "id": "exceptions",
@@ -147,15 +147,15 @@
    "description": "try, except, raise",
    "icon": "🛟",
    "file": "modules/exceptions.json",
-   "timedRunSeconds": 830
+   "timedRunSeconds": 970
   },
   {
    "id": "files",
    "title": "Файлы",
-   "description": "open, with, pathlib",
+   "description": "open, with, pathlib, bytes",
    "icon": "📄",
    "file": "modules/files.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 970
   },
   {
    "id": "stdlib",
@@ -163,7 +163,7 @@
    "description": "import, collections, itertools",
    "icon": "🧰",
    "file": "modules/stdlib.json",
-   "timedRunSeconds": 690
+   "timedRunSeconds": 760
   },
   {
    "id": "textdata",
@@ -179,7 +179,7 @@
    "description": "class, __init__, self",
    "icon": "🏗️",
    "file": "modules/classes.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 900
   },
   {
    "id": "inheritance",
@@ -187,7 +187,7 @@
    "description": "super, полиморфизм, ABC",
    "icon": "🌳",
    "file": "modules/inheritance.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 830
   },
   {
    "id": "dunder",
@@ -195,7 +195,7 @@
    "description": "__str__, __eq__, __add__, __len__",
    "icon": "✨",
    "file": "modules/dunder.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 830
   },
   {
    "id": "properties",
@@ -203,7 +203,7 @@
    "description": "@property, @classmethod, @staticmethod",
    "icon": "🔐",
    "file": "modules/properties.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 830
   },
   {
    "id": "dataclasses",
@@ -211,7 +211,7 @@
    "description": "Классы данных и перечисления",
    "icon": "🗃️",
    "file": "modules/dataclasses.json",
-   "timedRunSeconds": 830
+   "timedRunSeconds": 900
   },
   {
    "id": "generators",
@@ -219,7 +219,7 @@
    "description": "iter, next, yield, ленивые вычисления",
    "icon": "🌀",
    "file": "modules/generators.json",
-   "timedRunSeconds": 830
+   "timedRunSeconds": 900
   },
   {
    "id": "decorators",
@@ -227,7 +227,7 @@
    "description": "Функции, которые меняют функции",
    "icon": "🎀",
    "file": "modules/decorators.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 830
   },
   {
    "id": "contexts",
@@ -235,7 +235,7 @@
    "description": "with, __enter__, __exit__, contextlib",
    "icon": "🚪",
    "file": "modules/contexts.json",
-   "timedRunSeconds": 830
+   "timedRunSeconds": 900
   },
   {
    "id": "typing",
@@ -243,7 +243,7 @@
    "description": "Подсказки типов, Protocol, дженерики",
    "icon": "🏷️",
    "file": "modules/typing.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 830
   },
   {
    "id": "algorithms",
@@ -251,7 +251,7 @@
    "description": "O-большое, поиск, сортировка, графы",
    "icon": "🧮",
    "file": "modules/algorithms.json",
-   "timedRunSeconds": 830
+   "timedRunSeconds": 970
   },
   {
    "id": "pythonic",
@@ -259,15 +259,15 @@
    "description": "match/case, :=, распаковка, EAFP",
    "icon": "🐍",
    "file": "modules/pythonic.json",
-   "timedRunSeconds": 900
+   "timedRunSeconds": 970
   },
   {
    "id": "testing",
    "title": "Тестирование и отладка",
-   "description": "assert, unittest, mock, logging",
+   "description": "assert, unittest, mock, logging, pdb",
    "icon": "🧪",
    "file": "modules/testing.json",
-   "timedRunSeconds": 830
+   "timedRunSeconds": 1110
   },
   {
    "id": "async",
@@ -275,7 +275,7 @@
    "description": "async/await, задачи, gather, таймауты, очереди",
    "icon": "⏳",
    "file": "modules/async.json",
-   "timedRunSeconds": 1040
+   "timedRunSeconds": 1110
   },
   {
    "id": "concurrency",
@@ -283,7 +283,7 @@
    "description": "threading, Lock, очереди, пулы, GIL",
    "icon": "🧵",
    "file": "modules/concurrency.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 830
   },
   {
    "id": "performance",
@@ -291,15 +291,15 @@
    "description": "Замеры, кэш, память, быстрые идиомы",
    "icon": "🚀",
    "file": "modules/performance.json",
-   "timedRunSeconds": 760
+   "timedRunSeconds": 830
   },
   {
    "id": "project",
    "title": "Программа как проект",
-   "description": "__main__, argparse, logging, PEP 8, docstring",
+   "description": "Модули и пакеты, __main__, argparse, logging, PEP 8",
    "icon": "🏗️",
    "file": "modules/project.json",
-   "timedRunSeconds": 830
+   "timedRunSeconds": 1110
   }
  ]
 }

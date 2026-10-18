@@ -1,6 +1,6 @@
 """Модули 27–30: итераторы и генераторы, декораторы, контекстные
 менеджеры, аннотации типов."""
-from bclib import choice, fill, match, multi, order, predict, bug, typed, topic, task, run
+from bclib import choice, fill, match, multi, order, predict, bug, typed, topic, task, run, pitfall
 
 
 def runs(code):
@@ -15,81 +15,273 @@ MODULES.append(dict(
     icon="🌀",
     topics=[
         topic("gen_iter", "Протокол итерации",
-              "Итерируемый объект отдаёт итератор через iter(); итератор выдаёт значения через next(), а в конце выбрасывает StopIteration.",
+              "Цикл `for` получает у объекта итератор через `iter()` и берёт из него значения через `next()`, пока они не кончатся.",
               """
-              for x in items на самом деле делает так: it = iter(items), затем много раз x = next(it), пока не возникнет StopIteration — тогда цикл тихо заканчивается.
+              `for` перебирает списки, строки, словари, файлы и `range` одинаково. За этим стоит один общий механизм — протокол итерации. Зная его, можно сделать перебираемым и свой объект.
 
-              Итерируемые объекты (список, строка, range, словарь) можно пройти сколько угодно раз: каждый for получает новый итератор. Итератор (результат iter(), map, filter, zip, генератор) — одноразовый: он помнит позицию и после конца пуст.
+              ## Итерируемый объект и итератор
 
-              Проверить: у итератора есть метод __next__, а iter(it) возвращает его самого.
+              - Итерируемый объект (список, строка, `range`, словарь) отдаёт каждому `for` новый итератор.
+              - Итератор выдаёт значения по одному и помнит позицию. Он одноразовый: после конца он пуст.
+
+              Итераторы возвращают `iter()`, `map`, `filter`, `zip`, `enumerate` и [[gen_yield|генераторы]].
+
+              ## Что делает for
+
+              Цикл `for x in items` выполняет шаги:
+
+              1. `it = iter(items)` — получает итератор;
+              2. `x = next(it)` — берёт следующее значение и выполняет тело;
+              3. повторяет шаг 2, пока `next` не выбросит `StopIteration`;
+              4. перехватывает `StopIteration` и тихо завершает цикл.
+
+              `next(it, значение)` в конце не выбрасывает исключение, а возвращает значение по умолчанию.
+
+              ## Свой итератор
+
+              Итератор — объект с двумя методами:
+
+              - `__iter__` возвращает сам объект;
+              - `__next__` возвращает следующее значение или выбрасывает `StopIteration`.
+
+              Короче то же самое записывают функцией с `yield`.
               """,
               [("""\
-                it = iter("xyz")
-                print(next(it), next(it))
-                print(list(it))
-                print(list(it))""", "Итератор помнит позицию и после конца пуст."),
+                it = iter(["a", "b"])
+                print(next(it))
+                print(next(it))
+                print(next(it, "конец"))""",
+                "Значения кончились — next вернул значение по умолчанию"),
                ("""\
-                it = iter("ab")
-                print(next(it), next(it), next(it, "конец"))""", "Второй аргумент next — значение вместо StopIteration.")],
-              ["Ждать, что второй проход по итератору (map, zip, генератору) снова выдаст значения.",
-               "Путать range (итерируемый, многоразовый) и итератор (одноразовый)."]),
+                sizes = map(abs, [-1, -2])
+                print(list(sizes))
+                print(list(sizes))
+
+                nums = [1, 2]
+                print(sum(nums), sum(nums))""",
+                "map — одноразовый итератор, список — многоразовый"),
+               ("""\
+                items = ["x", "y"]
+                it = iter(items)
+                while True:
+                    try:
+                        x = next(it)
+                    except StopIteration:
+                        break
+                    print(x)""",
+                "Так for работает изнутри: next до StopIteration"),
+               ("""\
+                class Countdown:
+                    def __init__(self, n):
+                        self.n = n
+                    def __iter__(self):
+                        return self
+                    def __next__(self):
+                        if self.n == 0:
+                            raise StopIteration
+                        self.n -= 1
+                        return self.n + 1
+
+                for x in Countdown(3):
+                    print(x)""",
+                "Свой итератор: __next__ выдал 3, 2, 1 и закончил")],
+              [pitfall("Итератор одноразовый: второй проход по `map`, `zip` или генератору пуст.",
+                       bad='''
+                           evens = filter(is_even, nums)
+                           print(list(evens))
+                           print(list(evens))''',
+                       good='''
+                           evens = list(filter(is_even, nums))
+                           print(evens)
+                           print(evens)'''),
+               pitfall("Список — не итератор: {`next([1, 2])`} даёт `TypeError: 'list' object is not an iterator`.",
+                       bad="first = next(names)", good="first = next(iter(names))"),
+               pitfall("`__next__` без `StopIteration`: цикл `for` по такому объекту никогда не закончится.",
+                       bad='''
+                           def __next__(self):
+                               self.n -= 1
+                               return self.n''',
+                       good='''
+                           def __next__(self):
+                               if self.n == 0:
+                                   raise StopIteration
+                               self.n -= 1
+                               return self.n''')]),
         topic("gen_yield", "Функции-генераторы и yield",
-              "Функция с yield возвращает генератор: тело выполняется по шагам, на каждом yield отдаёт значение и замирает до следующего next().",
+              "Функция с `yield` возвращает генератор: она отдаёт значения по одному и замирает между ними.",
               """
-              Вызов функции-генератора не выполняет её тело — он только создаёт объект-генератор. Код запускается при первом next() и идёт до ближайшего yield. Локальные переменные сохраняются между шагами.
+              Свой итератор-класс требует `__iter__`, `__next__` и ручного хранения позиции. Функция-генератор делает то же самое короче: значения отдаются по одному через `yield`, а место остановки Python запоминает сам.
 
-              Когда функция доходит до конца (или до return), генератор заканчивается: next() выбрасывает StopIteration, а for завершает цикл. Если внутри генератора «вылетает» чужой StopIteration (например, от next() без значения по умолчанию), Python превращает его в RuntimeError — чтобы ошибка не выглядела как тихий конец (PEP 479).
+              ## Как записать
 
-              yield from другой_генератор отдаёт все его значения по очереди — так генераторы складывают в цепочки. Значение return вложенного генератора становится результатом выражения yield from.
+              ```syntax
+              def имя(параметры):
+                  действия
+                  yield значение
+              ```
 
-              Генератор умеет и принимать данные: x = yield отдаёт значение и ждёт, что пришлёт g.send(значение). g.close() останавливает генератор (срабатывает его finally).
+              Функция, в теле которой есть `yield`, — функция-генератор. Её вызов возвращает объект-генератор, это [[gen_iter|итератор]].
 
-              Генераторное выражение (x * x for x in data) — короткая запись простого генератора.
+              ## Как выполняется тело
+
+              1. Вызов `g = имя()` не выполняет ни строчки тела.
+              2. `next(g)` выполняет тело до ближайшего `yield` и отдаёт его значение.
+              3. Функция замирает, локальные переменные сохраняются.
+              4. Следующий `next(g)` продолжает с места остановки.
+              5. Конец функции или `return` завершает генератор: `next` выбрасывает `StopIteration`, `for` заканчивается.
+
+              Значение после `return` в генераторе не попадает в поток значений.
+
+              ## yield from
+
+              `yield from другой` по очереди отдаёт все значения другого генератора или коллекции. Так генератор собирают из частей. Значение `return` вложенного генератора становится результатом выражения `yield from`.
+
+              ## Обмен с генератором
+
+              - `x = yield v` отдаёт `v` и ждёт значение от `g.send(значение)`. Первый шаг всегда `next(g)`.
+              - `g.close()` останавливает генератор; его блок `finally` выполняется.
+              - Если внутри генератора вылетел чужой `StopIteration`, Python заменит его на `RuntimeError`.
+
+              Простой генератор записывают и одной строкой — [[comp_dict_set|генераторным выражением]] `(x * x for x in data)`.
               """,
               [("""\
-                def evens(limit):
-                    n = 0
-                    while n <= limit:
-                        yield n
-                        n += 2
+                def ticks(n):
+                    for i in range(1, n + 1):
+                        yield f"тик {i}"
 
-                print(list(evens(6)))
-                g = evens(2)
-                print(next(g), next(g), next(g, "стоп"))""", None),
+                for t in ticks(3):
+                    print(t)""",
+                "for получает значения по одному, пока функция не закончится"),
                ("""\
-                def inner():
-                    yield 1
-                    yield 2
+                def running_total(nums):
+                    total = 0
+                    for n in nums:
+                        total += n
+                        yield total
 
-                def outer():
-                    yield 0
-                    yield from inner()
-                    yield 3
+                sums = running_total([5, 3, 2])
+                print(list(sums))""",
+                "Переменная total сохранилась между шагами"),
+               ("""\
+                def letters():
+                    yield "a"
+                    yield "b"
 
-                print(list(outer()))""", None)],
-              ["Писать return вместо yield внутри цикла: функция вернёт одно значение и закончится.",
-               "Ждать, что вызов генераторной функции сразу выполнит её тело."]),
+                def chars():
+                    yield from letters()
+                    yield from "12"
+
+                print(list(chars()))""",
+                "yield from отдал значения генератора, затем строки"),
+               ("""\
+                def echo():
+                    reply = None
+                    while True:
+                        msg = yield reply
+                        reply = msg.upper()
+
+                g = echo()
+                next(g)
+                print(g.send("привет"))
+                print(g.send("пока"))""",
+                "next запустил генератор, send передаёт значение внутрь")],
+              [pitfall("`return` в цикле завершает функцию на первом значении; для потока значений нужен `yield`.",
+                       bad='''
+                           for n in nums:
+                               return n * 2''',
+                       good='''
+                           for n in nums:
+                               yield n * 2'''),
+               pitfall("Вызов генераторной функции ничего не выполняет: результат перебирают через `for` или `list`.",
+                       bad="ticks(3)", good="print(list(ticks(3)))"),
+               pitfall("`send` до первого `next`: `TypeError: can't send non-None value to a just-started generator`.",
+                       bad='''
+                           g = echo()
+                           g.send("привет")''',
+                       good='''
+                           g = echo()
+                           next(g)
+                           g.send("привет")''')]),
         topic("gen_lazy", "Ленивые вычисления и конвейеры",
-              "Генераторы считают значения по требованию: можно обрабатывать бесконечные потоки и огромные файлы, не держа всё в памяти.",
+              "Ленивые вычисления считают каждое значение только тогда, когда его просят, и не держат весь поток в памяти.",
               """
-              Бесконечный генератор (while True: yield n) безопасен, если брать из него ограниченное число значений: itertools.islice(gen, 5), next() или цикл с break.
+              Список хранит все значения сразу. Если строк в файле миллион, а нужна первая подходящая, считать и хранить остальные незачем. Генераторы считают значения по требованию.
 
-              Конвейер из генераторов (прочитать → отфильтровать → преобразовать) обрабатывает данные по одному элементу: каждый элемент проходит всю цепочку, прежде чем начнётся следующий.
+              ## Ленивое и жадное
 
-              list(...) или sum(...) по генератору «прокручивает» его до конца — для бесконечного генератора это зависание.
+              - {`[x * 2 for x in data]`} — список: всё считается сразу и лежит в памяти.
+              - `(x * 2 for x in data)` — генераторное выражение: значения считаются по одному.
+
+              Значения по запросу выдают [[gen_yield|генераторы]], `map`, `filter`, `zip` и открытый файл. `range` тоже не хранит числа, а вычисляет их.
+
+              Если перебор остановился раньше — `any` нашёл истину, сработал `break`, — остальные значения не считаются вовсе. Сколько памяти экономит генератор — в теме [[perf_tricks|Быстрые идиомы и память]].
+
+              ## Конвейер
+
+              Генераторы соединяют в цепочку: каждый берёт значения у предыдущего.
+
+              ```syntax
+              чистые = (s.strip() for s in источник)
+              непустые = (s for s in чистые if s)
+              числа = (int(s) for s in непустые)
+              ```
+
+              Пока результат не перебирают, ничего не считается. При переборе каждое значение проходит всю цепочку, и только потом берётся следующее. В памяти одновременно одно значение.
+
+              ## Бесконечный поток
+
+              Генератор с `while True` сам не заканчивается. Из него берут столько, сколько нужно:
+
+              - `islice(поток, n)` из [[std_itertools|itertools]] — первые `n` значений;
+              - `next(поток)` — одно значение;
+              - цикл `for` с [[loopx_break|break]].
+
+              `list`, `sum` и `sorted` перебирают поток до конца: на бесконечном генераторе программа зависнет.
+
+              `batched(поток, n)` режет поток на пачки по `n` (с Python 3.12).
               """,
               [("""\
-                from itertools import islice, batched
+                def is_big(price):
+                    print("проверяю", price)
+                    return price > 20
 
-                def squares_forever():
-                    n = 0
-                    while True:
-                        yield n * n
-                        n += 1
+                prices = [5, 30, 7, 50]
+                print(any(is_big(p) for p in prices))
+                print("---")
+                print(any([is_big(p) for p in prices]))""",
+                "Генератор остановился на 30, список проверил все цены заранее"),
+               ("""\
+                lines = ["10", " ", "7 ", "x", "3"]
+                clean = (s.strip() for s in lines)
+                digits = (s for s in clean
+                          if s.isdigit())
+                nums = (int(s) for s in digits)
+                print(sum(nums))""",
+                "Конвейер: очистка, фильтр и перевод в числа за один проход"),
+               ("""\
+                from itertools import count, islice
 
-                print(list(islice(squares_forever(), 6)))
-                print(list(batched("abcde", 2)))""", "itertools.batched (Python 3.12) режет поток на пачки.")],
-              ["Вызвать list() у бесконечного генератора — программа никогда не закончится."]),
+                ids = (f"user{n}" for n in count(1))
+                print(list(islice(ids, 3)))
+                print(next(ids))""",
+                "Бесконечный поток: islice взял три, next — следующий"),
+               ("""\
+                from itertools import batched
+
+                for pack in batched(range(1, 8), 3):
+                    print(pack)""",
+                "batched режет поток на пачки по 3, последняя короче")],
+              [pitfall("`list()` перебирает поток до конца: на бесконечном генераторе программа зависнет.",
+                       bad="ids = list(count(1))", good="ids = list(islice(count(1), 5))"),
+               pitfall("Генератор одноразовый: после `sum` он пуст, и `max` даёт `ValueError`.",
+                       bad='''
+                           nums = (int(s) for s in data)
+                           print(sum(nums), max(nums))''',
+                       good='''
+                           nums = [int(s) for s in data]
+                           print(sum(nums), max(nums))'''),
+               pitfall("У генератора нет длины: `TypeError: object of type 'generator' has no len()`.",
+                       bad="n = len(nums)", good="n = sum(1 for _ in nums)")]),
     ],
     tasks=[
         task("t_gen_chunks", "Пачки",
@@ -314,59 +506,251 @@ MODULES.append(dict(
     id="decorators", title="Декораторы", description="Функции, которые меняют функции", icon="🎀",
     topics=[
         topic("deco_basics", "Как работает декоратор",
-              "Декоратор — функция, которая принимает функцию и возвращает новую (обычно обёртку). @deco над def f — по сути то же, что f = deco(f).",
+              "Декоратор — функция, которая принимает функцию и возвращает её дополненную версию; `@имя` над `def` применяет его.",
               """
-              Функции в Python — обычные значения: их можно передать в другую функцию и вернуть из неё. Декоратор пользуется этим: получает функцию, создаёт внутри обёртку wrapper, которая что-то делает до и после вызова оригинала, и возвращает wrapper.
+              Одно и то же действие часто нужно добавить ко многим функциям: записать вызов в лог, замерить время, проверить права. Декоратор описывает добавку один раз и подключает её одной строкой.
 
-              Чтобы обёртка подходила к любой функции, она принимает *args, **kwargs и передаёт их дальше: func(*args, **kwargs). И обязательно возвращает результат — иначе декорированная функция будет возвращать None.
+              ## На чём это держится
 
-              @functools.wraps(func) над wrapper копирует имя, docstring и другие атрибуты оригинала — без этого f.__name__ станет «wrapper».
+              Функция в Python — такое же значение, как число или строка. Её можно передать в другую функцию, создать внутри функции и вернуть как результат.
 
-              Декоратор срабатывает один раз — в момент объявления функции, а не при каждом вызове: при каждом вызове работает уже обёртка.
+              Вложенная функция помнит переменные внешней — это [[scope_closure|замыкание]]. Декоратор использует всё это сразу.
 
-              Несколько декораторов применяются снизу вверх: @a @b def f — это f = a(b(f)). Декорировать можно и классы: декоратор получает класс (так устроены реестры плагинов и @dataclass).
+              ## Как записать
+
+              ```syntax
+              def декоратор(func):
+                  def wrapper(*args, **kwargs):
+                      действия_до
+                      result = func(*args, **kwargs)
+                      действия_после
+                      return result
+                  return wrapper
+              ```
+
+              - `func` — исходная функция, `wrapper` — обёртка: она вызывает `func` и добавляет действия до или после.
+              - [[args_star|`*args, **kwargs`]] передают в `func` любые аргументы без изменений, поэтому обёртка подходит к любой функции.
+              - `return result` обязателен: без него функция будет возвращать `None`.
+
+              ## Что значит @
+
+              Запись `@декоратор` над `def f` — то же, что `f = декоратор(f)` сразу после объявления. Имя `f` теперь указывает на обёртку, а исходная функция живёт внутри неё.
+
+              **Декоратор вызывается один раз — когда Python выполняет `def`.** При каждом вызове `f()` работает уже обёртка.
+
+              ## Имя исходной функции
+
+              У обёртки своё имя — `wrapper`, поэтому `f.__name__` и `help(f)` показывают не ту функцию. `@functools.wraps(func)` над обёрткой копирует имя и описание оригинала. Его ставят всегда.
+
+              ## Несколько декораторов
+
+              Декораторы применяются снизу вверх: `@a` над `@b` над `def f` означает `f = a(b(f))`. При вызове первой срабатывает внешняя обёртка `a`.
+
+              Декоратор с настройкой, например `@repeat(3)`, — это три уровня функций: см. [[deco_params|Параметры и состояние декоратора]].
+
+              Готовые декораторы уже встречались в курсе: [[prop_property|`@property`]] и [[dc_basics|`@dataclass`]].
+              """,
+              [("""\
+                def loud(func):
+                    def wrapper():
+                        print("до")
+                        func()
+                        print("после")
+                    return wrapper
+
+                def hello():
+                    print("привет")
+
+                hello = loud(hello)
+                hello()""",
+                "Декоратор без @: функция подменена обёрткой"),
+               ("""\
+                from functools import wraps
+
+                def trace(func):
+                    @wraps(func)
+                    def wrapper(*args, **kwargs):
+                        print("аргументы:", args)
+                        result = func(*args, **kwargs)
+                        print("результат:", result)
+                        return result
+                    return wrapper
+
+                @trace
+                def area(w, h):
+                    return w * h
+
+                print(area(2, 3) * 10)
+                print(area.__name__)""",
+                "Обёртка передала аргументы и вернула результат; имя сохранил wraps"),
+               ("""\
+                def register(func):
+                    print("регистрирую", func.__name__)
+                    return func
+
+                @register
+                def start():
+                    print("старт")
+
+                print("до вызова")
+                start()
+                start()""",
+                "Декоратор сработал один раз — при def, ещё до вызовов"),
+               ("""\
+                def bold(func):
+                    def wrapper():
+                        return "<b>" + func() + "</b>"
+                    return wrapper
+
+                def italic(func):
+                    def wrapper():
+                        return "<i>" + func() + "</i>"
+                    return wrapper
+
+                @bold
+                @italic
+                def word():
+                    return "py"
+
+                print(word())""",
+                "Снизу вверх: italic обернул первым, bold — снаружи")],
+              [pitfall("Обёртка не вернула результат, и функция стала возвращать `None`.",
+                       bad='''
+                           def wrapper(*args, **kwargs):
+                               func(*args, **kwargs)''',
+                       good='''
+                           def wrapper(*args, **kwargs):
+                               return func(*args, **kwargs)'''),
+               pitfall("Декоратор должен вернуть функцию, а не результат её вызова.",
+                       bad="return wrapper()", good="return wrapper"),
+               pitfall("Обёртка без параметров ломается на аргументах: `TypeError: wrapper() takes 0 positional arguments`.",
+                       bad='''
+                           def wrapper():
+                               return func()''',
+                       good='''
+                           def wrapper(*args, **kwargs):
+                               return func(*args, **kwargs)'''),
+               pitfall("`@log()` вызывает `log` без функции: `TypeError: log() missing 1 required positional argument`.",
+                       bad='''
+                           @log()
+                           def area(w, h): ...''',
+                       good='''
+                           @log
+                           def area(w, h): ...''')]),
+        topic("deco_params", "Параметры и состояние декоратора",
+              "Декоратор с параметром — функция, которая по настройке создаёт декоратор; обёртка может помнить данные между вызовами.",
+              """
+              Декоратору часто нужна настройка: сколько раз повторить, какой уровень лога писать, какую роль проверять. Ещё ему бывает нужна память между вызовами: счётчик, кэш, время последнего запуска.
+
+              ## Как записать
+
+              ```syntax
+              def фабрика(настройка):
+                  def декоратор(func):
+                      @wraps(func)
+                      def wrapper(*args, **kwargs):
+                          действия_с_настройкой
+                          return func(*args, **kwargs)
+                      return wrapper
+                  return декоратор
+              ```
+
+              ## Три уровня функций
+
+              Запись `@фабрика(3)` над `def f` выполняется в два шага:
+
+              1. `фабрика(3)` вызывается и возвращает декоратор; настройка запоминается в [[scope_closure|замыкании]].
+              2. Этот декоратор применяется к функции, как обычный [[deco_basics|`@декоратор`]].
+
+              Итого `f = фабрика(3)(f)`. Скобки здесь обязательны: без них фабрика получит функцию вместо настройки.
+
+              ## Состояние между вызовами
+
+              Обёртка живёт столько же, сколько функция, поэтому может хранить данные:
+
+              - атрибут обёртки: `wrapper.calls = 0`, затем `wrapper.calls += 1`;
+              - словарь в замыкании декоратора — например, кэш результатов.
+
+              Чтобы изменить число из замыкания, нужен [[scope_global|`nonlocal`]]. Атрибут обёртки и содержимое словаря меняются без него.
+
+              ## Где это встречается
+
+              - [[rec_memo|`lru_cache(maxsize=128)`]] — кэш с настройкой размера;
+              - проверка прав в веб-фреймворках: `@require("admin")`;
+              - повтор при ошибке, замер времени, ограничение частоты вызовов.
               """,
               [("""\
                 from functools import wraps
 
-                def log(func):
-                    @wraps(func)
-                    def wrapper(*args, **kwargs):
-                        print("вызов", func.__name__, args)
-                        return func(*args, **kwargs)
-                    return wrapper
-
-                @log
-                def add(a, b):
-                    return a + b
-
-                print(add(2, 3), add.__name__)""", None)],
-              ["Забыть return в обёртке — функция станет возвращать None.",
-               "Обёртка без *args, **kwargs ломается на функциях с аргументами.",
-               "Без @wraps у всех декорированных функций одинаковое имя wrapper."]),
-        topic("deco_params", "Декораторы с параметрами и состояние",
-              "@repeat(3) — это вызов фабрики, которая возвращает декоратор. Обёртка может хранить состояние: счётчик вызовов, кэш.",
-              """
-              Декоратор с параметром — три уровня функций: repeat(n) возвращает deco(func), deco возвращает wrapper. @repeat(3) сначала вызывает repeat(3), а результат применяет к функции.
-
-              Обёртке можно добавить атрибуты (wrapper.calls = 0) или хранить данные в замыкании (словарь-кэш). Так устроены functools.lru_cache, повтор при ошибке (retry), замер времени, проверка прав доступа в веб-фреймворках.
-
-              Стандартные декораторы: @property, @staticmethod, @classmethod, @functools.lru_cache, @functools.cache, @dataclasses.dataclass.
-              """,
-              [("""\
-                def repeat(n):
+                def tag(name):
                     def deco(func):
+                        @wraps(func)
                         def wrapper(*args):
-                            return [func(*args) for _ in range(n)]
+                            text = func(*args)
+                            return f"<{name}>{text}</{name}>"
                         return wrapper
                     return deco
 
-                @repeat(3)
-                def hello(name):
-                    return f"привет, {name}"
+                @tag("b")
+                def hello(who):
+                    return "привет, " + who
 
-                print(hello("Ада"))""", None)],
-              ["Писать @repeat без скобок, если декоратор ждёт параметр: repeat получит функцию вместо числа."]),
+                print(hello("Ада"))
+                print(hello.__name__)""",
+                "tag(\"b\") вернул декоратор, а настройка name запомнилась"),
+               ("""\
+                def limit(n):
+                    def deco(func):
+                        def wrapper():
+                            if wrapper.left == 0:
+                                return "лимит"
+                            wrapper.left -= 1
+                            return func()
+                        wrapper.left = n
+                        return wrapper
+                    return deco
+
+                hint = limit(2)(lambda: "совет")
+                for _ in range(3):
+                    print(hint())""",
+                "limit(2) без @: настройка в замыкании, остаток — в атрибуте"),
+               ("""\
+                def tag(name):
+                    def deco(func):
+                        return func
+                    return deco
+
+                @tag
+                def hello():
+                    return "привет"
+
+                print(hello.__name__)""",
+                "Без скобок tag получил функцию, и hello стал декоратором deco")],
+              [pitfall("Без скобок фабрика получает функцию вместо настройки, и вызов ломается.",
+                       bad='''
+                           @tag
+                           def hello(who): ...''',
+                       good='''
+                           @tag("b")
+                           def hello(who): ...'''),
+               pitfall("Число из замыкания меняют через `nonlocal`, иначе `UnboundLocalError`.",
+                       bad='''
+                           def wrapper():
+                               calls += 1''',
+                       good='''
+                           def wrapper():
+                               nonlocal calls
+                               calls += 1'''),
+               pitfall("Фабрика без `return deco`: `TypeError: 'NoneType' object is not callable`.",
+                       bad='''
+                           def tag(name):
+                               def deco(func):
+                                   return func''',
+                       good='''
+                           def tag(name):
+                               def deco(func):
+                                   return func
+                               return deco''')]),
     ],
     tasks=[
         task("t_deco_memo", "Свой кэш",
@@ -599,57 +983,228 @@ MODULES.append(dict(
     id="contexts", title="Контекстные менеджеры", description="with, __enter__, __exit__, contextlib", icon="🚪",
     topics=[
         topic("ctx_protocol", "Протокол with",
-              "with obj as x: вызывает obj.__enter__() (его результат попадает в x), а при выходе — obj.__exit__(тип, ошибка, трассировка), даже если внутри было исключение.",
+              "Блок `with` вызывает `__enter__` при входе и `__exit__` при любом выходе, даже если внутри случилась ошибка.",
               """
-              Контекстный менеджер гарантирует «закрытие» ресурса: файла, соединения, блокировки. __exit__ вызывается при любом выходе из блока — нормальном, по return или по исключению.
+              Файл нужно закрыть, блокировку — снять, соединение — разорвать. Причём даже если в середине работы случилась ошибка. Блок `with` гарантирует такую уборку, а объект, который её выполняет, называют контекстным менеджером.
 
-              Если внутри блока было исключение, __exit__ получает его тип, объект и трассировку; если нет — три None. Если __exit__ вернёт истинное значение (обычно True), исключение подавляется и программа продолжается после with. Обычно возвращают None — тогда исключение летит дальше.
+              ## Как записать
 
-              Если ошибка возникла в самом __enter__, блок не начинается и __exit__ не вызывается.
+              ```syntax
+              with менеджер as имя:
+                  действия
+              ```
 
-              Несколько менеджеров: with a() as x, b() as y: — выход идёт в обратном порядке.
+              Часть `as имя` необязательна. Несколько менеджеров перечисляют через запятую: `with a() as x, b() as y:`. Самый частый пример — [[files_open|open]].
+
+              ## Что делает with
+
+              1. Вызывает `__enter__()` у менеджера; результат попадает в `имя`.
+              2. Выполняет тело блока.
+              3. При любом выходе — обычном, по `return` или по исключению — вызывает `__exit__`.
+
+              Если ошибка случилась в самом `__enter__`, блок не начинается и `__exit__` не вызывается. Несколько менеджеров закрываются в обратном порядке.
+
+              ## Свой менеджер
+
+              ```syntax
+              class Менеджер:
+                  def __enter__(self):
+                      return значение_для_as
+                  def __exit__(self, exc_type, exc, tb):
+                      уборка
+              ```
+
+              `__exit__` получает тип исключения, само исключение и трассировку. Если блок закончился без ошибки, все три равны `None`.
+
+              ## Подавление ошибки
+
+              Если `__exit__` вернул истинное значение, исключение гасится, и программа идёт дальше после `with`. Обычно `__exit__` ничего не возвращает — тогда ошибка летит дальше, к [[exc_try|try / except]]. Гасить стоит только ожидаемые ошибки, проверив `exc_type`.
+
+              Менеджер без класса делают через [[ctx_contextlib|contextlib]].
               """,
               [("""\
+                class Door:
+                    def __enter__(self):
+                        print("открыл")
+                        return "ключ"
+                    def __exit__(self, exc_type, exc, tb):
+                        print("закрыл")
+
+                with Door() as k:
+                    print("внутри:", k)
+                print("дальше")""",
+                "В as попал результат __enter__, __exit__ сработал после тела"),
+               ("""\
                 class Tag:
                     def __init__(self, name):
                         self.name = name
                     def __enter__(self):
                         print(f"<{self.name}>")
-                        return self
-                    def __exit__(self, exc_type, exc, tb):
+                    def __exit__(self, *exc):
                         print(f"</{self.name}>")
 
-                with Tag("div"), Tag("p"):
-                    print("текст")""", "Закрываются в обратном порядке.")],
-              ["Возвращать True из __exit__ всегда — так молча проглатываются любые ошибки.",
-               "Делать уборку после with-блока вручную, а не в __exit__: при исключении она не выполнится."]),
-        topic("ctx_contextlib", "contextlib",
-              "@contextmanager делает менеджер из генератора: код до yield — вход, после — выход. suppress, redirect_stdout и ExitStack закрывают типовые задачи.",
-              """
-              @contextmanager над функцией с одним yield: всё до yield выполняется при входе (значение yield попадает в as), всё после — при выходе. Чтобы выход выполнился и при исключении, yield оборачивают в try/finally.
+                with Tag("ul"), Tag("li"):
+                    print("пункт")""",
+                "Два менеджера: закрываются в обратном порядке"),
+               ("""\
+                class Door:
+                    def __enter__(self):
+                        return self
+                    def __exit__(self, exc_type, exc, tb):
+                        print("закрыл:", exc_type.__name__)
 
-              suppress(KeyError) игнорирует указанные исключения внутри блока. redirect_stdout(buffer) временно направляет print в другой поток. ExitStack позволяет войти в заранее неизвестное число менеджеров и выйти из всех в обратном порядке.
+                try:
+                    with Door():
+                        int("x")
+                except ValueError:
+                    print("ошибка дошла до except")""",
+                "__exit__ сработал до except и получил тип ошибки"),
+               ("""\
+                class Skip:
+                    def __enter__(self):
+                        return self
+                    def __exit__(self, exc_type, exc, tb):
+                        if exc_type is ZeroDivisionError:
+                            print("пропуск:", exc)
+                            return True
+
+                with Skip():
+                    print(1 / 0)
+                print("работаем дальше")""",
+                "__exit__ вернул True — ошибка погашена")],
+              [pitfall("`__exit__` всегда возвращает `True`: любые ошибки в блоке молча пропадут.",
+                       bad="return True", good="return exc_type is KeyError"),
+               pitfall("Если `read` упадёт, `close` не выполнится; `with` закроет файл при любом выходе.",
+                       bad='''
+                           f = open(path)
+                           data = f.read()
+                           f.close()''',
+                       good='''
+                           with open(path) as f:
+                               data = f.read()'''),
+               pitfall("`__enter__` без `return`: в `as` попадёт `None`, и обращение к атрибуту даст `AttributeError`.",
+                       bad='''
+                           def __enter__(self):
+                               self.start = 0''',
+                       good='''
+                           def __enter__(self):
+                               self.start = 0
+                               return self'''),
+               pitfall("`__exit__` принимает три аргумента: `TypeError: … takes 1 positional argument but 4 were given`.",
+                       bad='''
+                           def __exit__(self):
+                               self.close()''',
+                       good='''
+                           def __exit__(self, exc_type, exc, tb):
+                               self.close()''')]),
+        topic("ctx_contextlib", "contextlib",
+              "Модуль `contextlib` делает контекстный менеджер из функции с `yield` и даёт готовые менеджеры для частых задач.",
+              """
+              Писать класс с `__enter__` и `__exit__` ради пары строк до и после блока — долго. Модуль `contextlib` даёт короткий способ сделать свой менеджер и несколько готовых.
+
+              ## Как записать
+
+              ```syntax
+              from contextlib import contextmanager
+
+              @contextmanager
+              def имя(параметры):
+                  подготовка
+                  try:
+                      yield значение_для_as
+                  finally:
+                      уборка
+              ```
+
+              ## Как работает @contextmanager
+
+              Функция с одним [[gen_yield|`yield`]] превращается в менеджер:
+
+              1. код до `yield` выполняется при входе в `with`;
+              2. значение `yield` попадает в `as`;
+              3. на месте `yield` выполняется тело блока;
+              4. код после `yield` выполняется при выходе.
+
+              Ошибка из тела блока появляется в функции на строке `yield`. Поэтому уборку ставят в `finally`: иначе при исключении она не выполнится.
+
+              ## Готовые менеджеры
+
+              - `suppress(KeyError)` — гасит указанные исключения внутри блока;
+              - `redirect_stdout(buf)` — временно направляет `print` в другой поток;
+              - `ExitStack()` — вход в заранее неизвестное число менеджеров;
+              - `nullcontext()` — пустой менеджер, когда `with` нужен только для формы.
+
+              ## ExitStack
+
+              `stack.enter_context(m)` входит в менеджер и возвращает результат его `__enter__`. При выходе из `with ExitStack() as stack` все менеджеры закрываются в обратном порядке. Так открывают, например, список файлов, длина которого известна только при запуске.
               """,
               [("""\
-                from contextlib import contextmanager, suppress
+                from contextlib import contextmanager
 
                 @contextmanager
-                def section(title):
-                    print("начало", title)
+                def box(title):
+                    print("+--", title)
                     try:
-                        yield title.upper()
+                        yield len(title)
                     finally:
-                        print("конец", title)
+                        print("+-- конец")
 
-                with section("отчёт") as name:
-                    print("внутри", name)
+                with box("итоги") as n:
+                    print("длина заголовка", n)""",
+                "До yield — вход, значение yield — в as, после yield — выход"),
+               ("""\
+                from contextlib import contextmanager
 
+                @contextmanager
+                def guard():
+                    try:
+                        yield
+                    finally:
+                        print("уборка")
+
+                try:
+                    with guard():
+                        int("x")
+                except ValueError:
+                    print("ошибка дошла")""",
+                "finally сработал, а ошибка ушла дальше, к except"),
+               ("""\
+                from contextlib import suppress
+
+                stock = {"чай": 3}
                 with suppress(KeyError):
-                    {}["нет"]
-                print("ошибка подавлена")""", None)],
-              ["Писать уборку после yield без try/finally: при исключении внутри with она не выполнится.",
-               "Перехватить исключение вокруг yield и не пробросить его дальше (raise): @contextmanager тогда тихо проглотит ошибку.",
-               "Использовать объект из @contextmanager дважды: он одноразовый, для второго with нужен новый вызов."]),
+                    stock["кофе"] -= 1
+                    print("не выполнится")
+                print(stock)""",
+                "KeyError погашен, остаток блока пропущен")],
+              [pitfall("Без `try/finally` код после `yield` не выполнится, если в блоке случилась ошибка.",
+                       bad='''
+                           print("вход")
+                           yield
+                           print("выход")''',
+                       good='''
+                           print("вход")
+                           try:
+                               yield
+                           finally:
+                               print("выход")'''),
+               pitfall("`except` вокруг `yield` без `raise` гасит ошибку: вызывающий код о ней не узнает.",
+                       bad='''
+                           try:
+                               yield
+                           except ValueError:
+                               rollback()''',
+                       good='''
+                           try:
+                               yield
+                           except ValueError:
+                               rollback()
+                               raise'''),
+               pitfall("Два `yield` в одной функции: `RuntimeError: generator didn't stop`.",
+                       bad='''
+                           yield 1
+                           yield 2''',
+                       good="yield 1")]),
     ],
     tasks=[
         task("t_ctx_tags", "Вложенные теги",
@@ -885,61 +1440,335 @@ MODULES.append(dict(
     id="typing", title="Аннотации типов", description="Подсказки типов, Protocol, дженерики", icon="🏷️",
     topics=[
         topic("typing_basics", "Аннотации и проверка типов",
-              "def f(x: int) -> str — подсказка для людей и инструментов (mypy, IDE). Python при выполнении их не проверяет.",
+              "Аннотации типов записывают, что функция принимает и возвращает; Python их не проверяет, это делают анализаторы.",
               """
-              Аннотации пишутся после двоеточия у параметров и после -> у результата: def add(a: int, b: int) -> int. У переменных: count: int = 0.
+              В большой программе трудно помнить, что функция принимает и что возвращает. Аннотации типов записывают это прямо в коде. Их читают люди, редактор кода и анализаторы, которые находят ошибки до запуска.
 
-              Встроенные коллекции параметризуются прямо: list[int], dict[str, float], tuple[int, ...] (любой длины), set[str]. «Значение или None» — int | None (раньше писали Optional[int]). Функции описывают через Callable[[аргументы], результат] из collections.abc.
+              ## Как записать
 
-              Python не проверяет типы при выполнении: add("4", "2") вернёт «42». Ошибки находят статические анализаторы — mypy, pyright — до запуска программы. Аннотации доступны как f.__annotations__ или typing.get_type_hints(f).
+              ```syntax
+              def функция(имя: тип) -> тип_результата:
+                  тело
+
+              переменная: тип = значение
+              ```
+
+              Аннотация параметра стоит после двоеточия, аннотация результата — после `->`. Значение по умолчанию пишут после аннотации: `times: int = 1`.
+
+              ## Типы коллекций
+
+              | Запись | Значит |
+              |---|---|
+              | {`list[int]`} | список целых |
+              | {`dict[str, float]`} | словарь: строка и число |
+              | {`tuple[int, str]`} | пара: число и строка |
+              | {`tuple[int, ...]`} | кортеж любой длины |
+              | {`Callable[[int], str]`} | функция из {`int`} в {`str`} |
+
+              «Значение или `None`» записывают как `int | None`. `Callable` импортируют из `collections.abc`. Старые записи {`List[int]`} и {`Optional[int]`} из модуля `typing` встречаются в чужом коде; сейчас пишут {`list[int]`} и `int | None`.
+
+              ## Python не проверяет типы
+
+              Аннотации не влияют на выполнение: функция с `x: int` спокойно примет строку. Ошибки ищут анализаторы — `mypy`, `pyright` или встроенный в редактор. Они читают код, не запуская его.
+
+              Аннотации хранятся в словаре `f.__annotations__`.
+
+              ## Что аннотировать
+
+              Сначала — параметры и результат функций. Переменные — когда тип не очевиден, например у пустого списка: {`names: list[str] = []`}.
+
+              Для сложных случаев есть [[typing_generics|дженерики]] и [[typing_advanced|Protocol]].
               """,
               [("""\
-                def mul(a: int, b: int) -> int:
-                    return a * b
+                def double(x: int) -> int:
+                    return x * 2
 
-                print(mul(2, 3), mul("ab", 3))
-                print(mul.__annotations__)""", "Аннотации не мешают передать строку."),
+                print(double(21))
+                print(double("ab"))""",
+                "Аннотация не помешала передать строку"),
                ("""\
-                def first_word(text: str) -> str | None:
-                    words = text.split()
-                    return words[0] if words else None
+                def age(name: str) -> int | None:
+                    ages = {"Ада": 36}
+                    return ages.get(name)
 
-                print(first_word("Привет, мир"), first_word("   "))""", None)],
-              ["Ждать, что аннотация защитит от неверного типа во время выполнения.",
-               "Писать List[int] без from typing import List — в Python 3.9+ просто list[int]."]),
-        topic("typing_advanced", "Protocol, дженерики, TypedDict",
-              "Protocol описывает «утиный» интерфейс, def first[T](x: list[T]) -> T — обобщённую функцию, TypedDict — словарь с известными ключами.",
+                print(age("Ада"))
+                print(age("Боб"))""",
+                "Результат — число или None, аннотация это описывает"),
+               ("""\
+                from collections.abc import Callable
+
+                Op = Callable[[int], int]
+
+                def twice(f: Op, x: int) -> int:
+                    return f(f(x))
+
+                print(twice(lambda n: n + 3, 1))""",
+                "Callable описывает функцию: принимает int, возвращает int")],
+              [pitfall("Аннотация не остановит `pay(\"5\")`: вернётся `\"55\"`. Данные извне проверяйте сами.",
+                       bad='''
+                           def pay(amount: int) -> int:
+                               return amount * 2''',
+                       good='''
+                           def pay(amount: int) -> int:
+                               if not isinstance(amount, int):
+                                   raise TypeError("нужно int")
+                               return amount * 2'''),
+               pitfall("`List` без импорта: `NameError: name 'List' is not defined`. Сейчас пишут {`list[int]`}.",
+                       bad="def total(xs: List[int]): ...", good="def total(xs: list[int]): ..."),
+               pitfall("Параметр со значением `None` по умолчанию имеет тип `str | None`, а не `str`.",
+                       bad="def greet(name: str = None): ...", good="def greet(name: str | None = None): ...")]),
+        topic("typing_advanced", "Protocol: интерфейс по форме",
+              "`Protocol` описывает, какие методы нужны объекту, и любой класс с ними подходит без наследования.",
               """
-              Protocol: класс-протокол перечисляет методы. Любой класс с такими методами подходит, даже не наследуя протокол (структурная типизация). @runtime_checkable разрешает isinstance с протоколом — но проверяет только наличие атрибутов с такими именами, а не их сигнатуры и типы.
+              Функции часто нужен не конкретный класс, а умение: «объект, у которого есть `read`». Наследовать все такие классы от общего родителя неудобно, а чужие классы не поменять. `Protocol` описывает умение для анализатора типов без наследования.
 
-              Дженерики (Python 3.12): def first[T](items: list[T]) -> T и class Box[T]: — параметр типа T связывает вход и выход: first([1, 2]) — это int, first(["a"]) — str. type UserId = int — псевдоним типа.
+              ## Как записать
 
-              TypedDict задаёт ключи и типы значений словаря для анализатора. Во время выполнения это обычный dict — никакой проверки нет. Literal["r", "w"] — только перечисленные значения, Callable[[int], str] — функция int → str.
+              ```syntax
+              from typing import Protocol
+
+              class Умеет(Protocol):
+                  def метод(self, x: int) -> str: ...
+              ```
+
+              Тело методов — `...`: протокол только перечисляет, что должно быть. Протокол может требовать и атрибуты: `name: str`.
+
+              ## Подходит по форме
+
+              Класс подходит под протокол, если у него есть методы с нужными именами и типами. Наследовать протокол не нужно. Это [[inh_poly|утиная типизация]], которую понимает анализатор: он проверит вызов `load(obj)` до запуска программы.
+
+              Сам протокол объект не создаёт: `Reader()` даёт `TypeError`.
+
+              ## isinstance с протоколом
+
+              Обычный протокол нельзя передать в `isinstance`: будет `TypeError`. Декоратор `@runtime_checkable` это разрешает, но проверка грубая: смотрит только, есть ли атрибуты с такими именами. Сигнатуры и типы не проверяются.
+
+              ## Что выбрать
+
+              - `Protocol` — классы не связаны, менять их нельзя или не нужно.
+              - Абстрактный класс {`ABC`} — классы ваши, и общий родитель даёт им готовые методы.
               """,
               [("""\
-                from typing import Protocol, runtime_checkable
+                from typing import Protocol
+
+                class Reader(Protocol):
+                    def read(self) -> str: ...
+
+                class Disk:
+                    def read(self) -> str:
+                        return "данные с диска"
+
+                def load(src: Reader) -> str:
+                    return src.read()
+
+                print(load(Disk()))""",
+                "Disk не наследует Reader, но подходит по форме"),
+               ("""\
+                from typing import Protocol
+                from typing import runtime_checkable
 
                 @runtime_checkable
-                class Speaker(Protocol):
-                    def speak(self) -> str: ...
+                class Sized(Protocol):
+                    def size(self) -> int: ...
 
-                class Dog:
-                    def speak(self) -> str:
-                        return "гав"
+                class Box:
+                    def size(self) -> int:
+                        return 3
 
-                def talk(s: Speaker) -> str:
-                    return s.speak()
-
-                print(talk(Dog()), isinstance(Dog(), Speaker), isinstance(42, Speaker))""", "Dog не наследует Speaker, но подходит по форме."),
+                print(isinstance(Box(), Sized))
+                print(isinstance("abc", Sized))""",
+                "isinstance с протоколом: у Box есть size, у строки — нет"),
                ("""\
+                from typing import Protocol
+
+                class Named(Protocol):
+                    name: str
+
+                try:
+                    isinstance("x", Named)
+                except TypeError as e:
+                    print(e)""",
+                "Без @runtime_checkable isinstance с протоколом — TypeError")],
+              [pitfall("`isinstance` с протоколом без `@runtime_checkable` даёт `TypeError`.",
+                       bad='''
+                           class Reader(Protocol):
+                               def read(self) -> str: ...''',
+                       good='''
+                           @runtime_checkable
+                           class Reader(Protocol):
+                               def read(self) -> str: ...'''),
+               pitfall("`@runtime_checkable` проверяет только имена: объект с `read = 5` пройдёт `isinstance`, а вызов упадёт.",
+                       bad='''
+                           if isinstance(src, Reader):
+                               text = src.read()''',
+                       good='''
+                           if callable(getattr(src, "read", None)):
+                               text = src.read()'''),
+               pitfall("Протокол — описание, а не класс для объектов: `TypeError: Protocols cannot be instantiated`.",
+                       bad="src = Reader()", good="src = Disk()")]),
+        topic("typing_generics", "Дженерики и псевдонимы типов",
+              "Параметр типа `T` связывает типы входа и выхода, а `type` даёт длинной аннотации короткое имя.",
+              """
+              Функция `first(items)` возвращает элемент списка: для списка чисел — число, для списка строк — строку. Аннотация `-> object` теряет эту связь. С параметром типа анализатор знает точный тип результата.
+
+              ## Как записать
+
+              ```syntax
+              def функция[T](items: list[T]) -> T:
+                  тело
+
+              class Класс[T]:
+                  тело
+
+              type Псевдоним = тип
+              ```
+
+              Запись {`[T]`} после имени появилась в Python 3.12. В старом коде то же пишут через `TypeVar` и `Generic` из модуля `typing`.
+
+              ## Параметр типа
+
+              `T` — переменная для типа. В одном вызове все `T` означают один и тот же тип: для {`first([1, 2])`} анализатор выведет `int`, для {`first(["a"])`} — `str`. Параметров может быть несколько: {`[K, V]`}.
+
+              Запись {`[N: (int, float)]`} разрешает только перечисленные типы.
+
+              ## Обобщённый класс
+
+              {`class Stack[T]`} — контейнер для значений одного типа: {`Stack[int]`} хранит числа. При выполнении {`Stack[int]()`} — обычный вызов класса, тип элементов никто не проверяет.
+
+              ## Псевдоним типа
+
+              {`type UserId = int`} даёт аннотации короткое или говорящее имя. Это подсказка для анализатора, а не новый класс: `isinstance(5, UserId)` даёт `TypeError`.
+              """,
+              [("""\
                 def first[T](items: list[T]) -> T:
                     return items[0]
 
-                print(first([3, 1]), first(["a", "b"]), first.__type_params__)""", "Синтаксис дженериков Python 3.12.")],
-              ["isinstance с Protocol без @runtime_checkable — TypeError.",
-               "Полагаться на isinstance с runtime_checkable-протоколом: он пропустит даже speak = 5, если имя совпадает.",
-               "type UserId = int — псевдоним только для анализатора: isinstance(5, UserId) даёт TypeError.",
-               "Думать, что TypedDict проверяет значения при создании: это обычный dict."]),
+                print(first([10, 20]))
+                print(first(["чай", "кофе"]))""",
+                "Одна функция для любых списков; T связывает вход и выход"),
+               ("""\
+                class Stack[T]:
+                    def __init__(self) -> None:
+                        self.items: list[T] = []
+                    def push(self, x: T) -> None:
+                        self.items.append(x)
+                    def pop(self) -> T:
+                        return self.items.pop()
+
+                s = Stack[int]()
+                s.push(1)
+                s.push(2)
+                print(s.pop())""",
+                "Stack[int] — подсказка анализатору, при запуске обычный класс"),
+               ("""\
+                type Point = tuple[float, float]
+
+                def dist(p: Point) -> float:
+                    return (p[0]**2 + p[1]**2) ** 0.5
+
+                print(dist((3.0, 4.0)))
+                print(Point.__value__)""",
+                "Псевдоним Point — короткое имя для tuple[float, float]")],
+              [pitfall("Псевдоним из `type` — не класс: `isinstance(5, UserId)` даёт `TypeError`.",
+                       bad="isinstance(uid, UserId)", good="isinstance(uid, int)"),
+               pitfall("`T` без объявления в {`[T]`}: `NameError: name 'T' is not defined`.",
+                       bad="def first(items: list[T]) -> T: ...", good="def first[T](items: list[T]) -> T: ..."),
+               pitfall("{`Stack[int]`} при запуске примет и строку: ошибку покажет только анализатор. Приводите тип сами.",
+                       bad='''
+                           s = Stack[int]()
+                           s.push(input())''',
+                       good='''
+                           s = Stack[int]()
+                           s.push(int(input()))''')]),
+        topic("typing_typeddict", "TypedDict, Literal и Final",
+              "`TypedDict` описывает ключи словаря, `Literal` — допустимые значения, `Final` — константу; это подсказки анализатору.",
+              """
+              Данные из [[data_json|JSON]] приходят словарями: `{"id": 7, "name": "Ада"}`. Аннотация {`dict[str, object]`} ничего не говорит о ключах. {`TypedDict`}, {`Literal`} и `Final` уточняют такие места для анализатора.
+
+              ## Словарь с известными ключами
+
+              ```syntax
+              from typing import TypedDict
+
+              class Имя(TypedDict):
+                  ключ: тип
+                  другой_ключ: тип
+              ```
+
+              Анализатор проверит, что у словаря есть все ключи и значения нужных типов, и заметит опечатку в ключе. Во время выполнения это обычный `dict`, проверок нет. Необязательный ключ помечают {`NotRequired[тип]`}.
+
+              ## Только перечисленные значения
+
+              {`Literal["asc", "desc"]`} разрешает только эти значения. Подходит для параметров-режимов. Если вариантов много или им нужно поведение, лучше [[dc_enum|Enum]].
+
+              ## Константа
+
+              `MAX: Final = 3` объявляет константу: анализатор сообщит о повторном присваивании. Сам Python присваивание не запретит.
+
+              ## Общее правило
+
+              Все три — подсказки, как и остальные [[typing_basics|аннотации]]. Проверку данных во время выполнения пишут сами: через `isinstance` или в `__post_init__` у [[dc_basics|dataclass]].
+              """,
+              [("""\
+                from typing import TypedDict
+
+                class Song(TypedDict):
+                    title: str
+                    year: int
+
+                s: Song = {
+                    "title": "Тишина",
+                    "year": 1965,
+                }
+                print(s["title"])
+                print(s["year"] + 1)""",
+                "Значение Song создаётся обычным словарём"),
+               ("""\
+                from typing import TypedDict
+
+                class Song(TypedDict):
+                    title: str
+                    year: int
+
+                bad: Song = {"title": "X", "year": "65"}
+                print(bad["year"] * 2)""",
+                "Строка вместо числа прошла: при запуске проверки нет"),
+               ("""\
+                from typing import Literal
+
+                Order = Literal["asc", "desc"]
+
+                def arrange(xs: list[int], order: Order):
+                    rev = order == "desc"
+                    return sorted(xs, reverse=rev)
+
+                print(arrange([3, 1, 2], "asc"))
+                print(arrange([3, 1, 2], "desc"))""",
+                "Literal перечисляет допустимые строки-режимы")],
+              [pitfall("{`TypedDict`} ничего не проверяет при создании: это обычный `dict`. Данные из JSON проверяют сами.",
+                       bad='''
+                           song: Song = json.loads(text)
+                           print(song["year"] + 1)''',
+                       good='''
+                           song: Song = json.loads(text)
+                           if not isinstance(song["year"], int):
+                               raise ValueError("year — не число")'''),
+               pitfall("{`Literal`} при запуске пропустит опечатку: с `\"down\"` список молча отсортируется по возрастанию.",
+                       bad='''
+                           def arrange(xs, order: Order):
+                               return sorted(xs, reverse=order == "desc")''',
+                       good='''
+                           def arrange(xs, order: Order):
+                               if order not in get_args(Order):
+                                   raise ValueError(order)
+                               return sorted(xs, reverse=order == "desc")'''),
+               pitfall("`Final` не запрещает присваивание при выполнении: `LIMIT = 4` сработает, предупредит только анализатор.",
+                       bad='''
+                           LIMIT: Final = 3
+                           LIMIT = 4''',
+                       good='''
+                           LIMIT: Final = 3
+                           limit = LIMIT + 1''')]),
     ],
     tasks=[
         task("t_typing_parse", "Разбор настроек",
@@ -1040,7 +1869,7 @@ MODULES.append(dict(
 
               print(Box(5).item, Box[str]("x").item)
               print(Box.__type_params__)""",
-              topic="typing_advanced", hint="[T] после имени класса объявляет параметр типа. Box[str] при выполнении ничего не проверяет.",
+              topic="typing_generics", hint="[T] после имени класса объявляет параметр типа. Box[str] при выполнении ничего не проверяет.",
               explanation="Box хранит значение любого типа. Box[str](...) работает как обычный вызов. __type_params__ — кортеж из параметра T, он печатается как (T,).",
               role="practice", difficulty=3),
         bug("py_typing_008", "Забытый None", """\
@@ -1064,7 +1893,7 @@ MODULES.append(dict(
                     return m
 
                 print(LIMIT, open_mode("x"))""",
-                ["3 x", "TypeError", "4 r"], position=0, topic="typing_advanced",
+                ["3 x", "TypeError", "4 r"], position=0, topic="typing_typeddict",
                 hint="Final и Literal — подсказки для анализатора. Что из этого проверяется при выполнении?",
                 explanation="Python не мешает переприсвоить Final и передать в Literal другое значение: программа печатает 4 x. Ошибки покажет только статический анализатор (mypy, pyright) — до запуска.",
                 role="practice", difficulty=3,
@@ -1082,7 +1911,7 @@ MODULES.append(dict(
 
                 u: User = {"id": "7", "name": "Ада"}
                 print(type(u).__name__, repr(u["id"]), list(get_type_hints(User)))""",
-                ["User '7' ['id', 'name']", "dict 7 ['id', 'name']", "TypeError"], position=1, topic="typing_advanced",
+                ["User '7' ['id', 'name']", "dict 7 ['id', 'name']", "TypeError"], position=1, topic="typing_typeddict",
                 hint="TypedDict существует только для анализатора: во время выполнения — обычный словарь без проверок.",
                 explanation="u — обычный dict, и строка «7» вместо числа проходит без ошибки. get_type_hints(User) возвращает объявленные ключи: id и name.",
                 role="boss", difficulty=4,

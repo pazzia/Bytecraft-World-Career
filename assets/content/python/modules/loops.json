@@ -209,6 +209,106 @@
    }
   },
   {
+   "id": "nx_loop_trace",
+   "type": "trace_table",
+   "role": "practice",
+   "title": "Сумма в цикле",
+   "prompt": "Заполните значения переменных",
+   "topic": "loop_for",
+   "difficulty": 2,
+   "hint": "После каждого прохода total увеличивается на текущий n.",
+   "explanation": "n по очереди принимает 3, 5, 2; total копит сумму: 3, 8, 10.",
+   "code": "total = 0\nfor n in [3, 5, 2]:\n    total = total + n\ndone = True",
+   "payload": {
+    "columns": [
+     "n",
+     "total"
+    ],
+    "rows": [
+     {
+      "line": 3,
+      "values": [
+       "3",
+       "3"
+      ]
+     },
+     {
+      "line": 3,
+      "values": [
+       "5",
+       "8"
+      ]
+     },
+     {
+      "line": 3,
+      "values": [
+       "2",
+       "10"
+      ]
+     }
+    ],
+    "blanks": [
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      0
+     ],
+     [
+      2,
+      1
+     ]
+    ],
+    "bank": [
+     "1",
+     "2",
+     "3",
+     "4",
+     "5",
+     "6",
+     "7",
+     "8",
+     "9",
+     "10",
+     "11"
+    ]
+   },
+   "solution": {
+    "code": "total = 0\nfor n in [3, 5, 2]:\n    total = total + n\ndone = True",
+    "output": ""
+   }
+  },
+  {
+   "id": "nx_loop_fix",
+   "type": "fix_line",
+   "role": "challenge",
+   "title": "Обратный отсчёт",
+   "prompt": "Строка 4 с ошибкой. Перепишите её правильно",
+   "topic": "loop_while",
+   "difficulty": 2,
+   "hint": "Условие n > 0 должно когда-нибудь стать ложным.",
+   "explanation": "n + 1 уводит n от нуля — цикл бесконечный. Нужно уменьшать: n -= 1, тогда напечатается 3, 2, 1 и «Старт!».",
+   "code": "n = 3\nwhile n > 0:\n    print(n)\n    n = n + 1\nprint(\"Старт!\")",
+   "payload": {
+    "line": 3,
+    "accepted": [
+     "n = n - 1",
+     "n -= 1"
+    ],
+    "expectedOutput": "3\n2\n1\nСтарт!\n"
+   },
+   "solution": {
+    "code": "n = 3\nwhile n > 0:\n    print(n)\n    n = n - 1\nprint(\"Старт!\")",
+    "output": "3\n2\n1\nСтарт!\n"
+   }
+  },
+  {
    "id": "py_loop_005",
    "type": "bug_finder",
    "role": "boss",

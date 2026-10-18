@@ -13,6 +13,11 @@ final topicCatalogProvider = FutureProvider<TopicCatalog>((ref) async {
   return ref.watch(topicRepositoryProvider).load(courseId);
 });
 
+final glossaryProvider = FutureProvider<Glossary>((ref) async {
+  final courseId = await ref.watch(activeCourseIdProvider.future);
+  return ref.watch(topicRepositoryProvider).loadGlossary(courseId);
+});
+
 /// The active course's journal; recomputed after every player-state write.
 final journalProvider = FutureProvider<Journal>((ref) async {
   ref.watch(progressRevisionProvider);

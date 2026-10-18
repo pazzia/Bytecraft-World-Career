@@ -149,3 +149,33 @@ final class MatchAnswer extends Answer {
     return null;
   }
 }
+
+/// Values put into numbered slots: cells of a trace table, groups of a
+/// categorize level (the value is the group index as text).
+final class AssignmentAnswer extends Answer {
+  AssignmentAnswer(Map<int, String> values, {required this.slotCount})
+      : values = Map.unmodifiable(values);
+
+  factory AssignmentAnswer.empty(int slotCount) =>
+      AssignmentAnswer(const {}, slotCount: slotCount);
+
+  final Map<int, String> values;
+  final int slotCount;
+
+  @override
+  bool get isComplete => values.length == slotCount;
+
+  AssignmentAnswer assign(int slot, String value) =>
+      AssignmentAnswer({...values, slot: value}, slotCount: slotCount);
+
+  AssignmentAnswer clear(int slot) =>
+      AssignmentAnswer({...values}..remove(slot), slotCount: slotCount);
+
+  /// First slot without a value, or null when all are filled.
+  int? get firstEmpty {
+    for (var slot = 0; slot < slotCount; slot++) {
+      if (!values.containsKey(slot)) return slot;
+    }
+    return null;
+  }
+}

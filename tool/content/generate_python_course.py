@@ -36,6 +36,7 @@ SECONDS_PER_LEVEL = 70
 def load_modules():
     folder = os.path.join(HERE, "course")
     modules = []
+    extras = []
     for name in sorted(os.listdir(folder)):
         if not (name.startswith("c") and name.endswith(".py")):
             continue
@@ -43,6 +44,15 @@ def load_modules():
         source = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(source)
         modules.extend(source.MODULES)
+        extras.append(getattr(source, "EXTRA_LEVELS", {}))
+    # Levels kept in separate files (e.g. new mechanics) join their module
+    # right before its boss.
+    by_id = {module["id"]: module for module in modules}
+    for extra in extras:
+        for module_id, levels in extra.items():
+            assert module_id in by_id, ("extra levels for unknown module", module_id)
+            target = by_id[module_id]["levels"]
+            target[-1:-1] = levels
     return modules
 
 
@@ -79,12 +89,73 @@ def write_json(path, data):
         f.write("\n")
 
 
+def load_glossary(topic_ids):
+    """glossary.py -> entries with verified example outputs and the lookup
+    tables used by autolinking."""
+    import bclib
+    import glossary
+    terms, exact, methods = {}, {}, {}
+    for entry in glossary.TERMS:
+        key = entry["key"]
+        assert key not in terms, ("duplicate glossary term", key)
+        assert entry["topic"] is None or entry["topic"] in topic_ids, ("glossary: unknown topic", key, entry["topic"])
+        item = dict(brief=entry["brief"])
+        if entry["topic"]:
+            item["topic"] = entry["topic"]
+        if entry["basic"]:
+            item["basic"] = True
+        if entry["example"]:
+            code = bclib.dedent(entry["example"])
+            result = bclib.run(code)
+            assert result.ok and result.out, ("glossary example fails or prints nothing", key, result.error, result.message)
+            item["example"] = code
+            item["output"] = result.out
+        terms[key] = item
+        if entry["auto"]:
+            for spelling in [key, *entry["match"]]:
+                table = methods if spelling.startswith(".") else exact
+                assert spelling not in table or table[spelling] == key, ("glossary: spelling used twice", spelling)
+                table[spelling] = key
+    return dict(terms=terms, exact=exact, methods=methods)
+
+
+def link_topics(modules):
+    """Autolinks, link validation and style warnings for every topic."""
+    import topic_markup
+    topic_module = {t["id"]: m["id"] for m in modules for t in m.get("topics", [])}
+    module_rank = {m["id"]: i for i, m in enumerate(modules)}
+    glossary = load_glossary(set(topic_module))
+    basic_after = module_rank.get("functions", len(modules))
+    warnings = []
+    for module in modules:
+        for topic in module.get("topics", []):
+            topic_markup.autolink(topic, glossary, module_rank, topic_module, basic_after)
+            try:
+                warnings += topic_markup.lint(topic)
+            except AssertionError as error:
+                # Strict once every topic is migrated to the markup.
+                if os.environ.get("BYTECRAFT_STRICT_TOPICS", "1") == "1":
+                    raise
+                warnings.append(f"ERROR {error}")
+            texts = [topic["body"]] + [p["why"] for p in topic["pitfalls"] if isinstance(p, dict)]
+            for text in texts:
+                for target, _, term in topic_markup.links_in(text):
+                    if target.startswith("g:"):
+                        assert target[2:] in glossary["terms"], (topic["id"], "unknown glossary link", target)
+                    else:
+                        assert target in topic_module, (topic["id"], "link to an unknown topic", target)
+                        assert target != topic["id"], (topic["id"], "link to itself")
+                    assert term is None or term in glossary["terms"], (topic["id"], "unknown term", term)
+    return glossary, warnings
+
+
 def main(out_dir):
     # The app runs Pyodide 0.27 (CPython 3.12): outputs and error messages
     # must come from the same Python version.
     assert sys.version_info[:2] == (3, 12), "run the generator with python3.12"
     modules = load_modules()
     levels, topics, tasks = validate(modules)
+    glossary, warnings = link_topics(modules)
     os.makedirs(os.path.join(out_dir, "modules"), exist_ok=True)
     for stale in os.listdir(os.path.join(out_dir, "modules")):
         os.remove(os.path.join(out_dir, "modules", stale))
@@ -107,6 +178,7 @@ def main(out_dir):
             all_tasks.append(dict(task, module=module["id"]))
     write_json(os.path.join(out_dir, "course.json"), manifest)
     write_json(os.path.join(out_dir, "topics.json"), dict(schemaVersion=1, topics=all_topics))
+    write_json(os.path.join(out_dir, "glossary.json"), dict(schemaVersion=1, terms=glossary["terms"]))
     with open(os.path.join(HERE, "requirements_checker.py"), encoding="utf-8") as f:
         checker = f.read()
     write_json(os.path.join(out_dir, "practice.json"),
@@ -115,7 +187,8 @@ def main(out_dir):
     for module in modules:
         for level in module["levels"]:
             kinds[level["type"]] = kinds.get(level["type"], 0) + 1
-    print(f"modules: {len(modules)}  levels: {levels}  topics: {topics}  tasks: {tasks}")
+    print(f"modules: {len(modules)}  levels: {levels}  topics: {topics}  tasks: {tasks}  "
+          f"glossary: {len(glossary['terms'])}  style warnings: {len(warnings)}")
     print("types:", ", ".join(f"{k}={v}" for k, v in sorted(kinds.items())))
 
 

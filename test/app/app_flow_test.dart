@@ -44,7 +44,7 @@ void main() {
     await tester.tap(find.text('К карте'));
     await tester.pumpAndSettle();
 
-    expect(find.text('1 из 8'), findsOneWidget);
+    expect(find.text('1 из 10'), findsOneWidget);
     expect(find.text('Обучение'), findsOneWidget);
 
     // Progress was persisted.

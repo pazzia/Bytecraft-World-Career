@@ -11,6 +11,9 @@ enum LevelType {
   typeOutput('type_output'),
   matchPairs('match_pairs'),
   multiSelect('multi_select'),
+  traceTable('trace_table'),
+  categorize('categorize'),
+  fixLine('fix_line'),
   robotPuzzle('robot_puzzle'),
   optimization('optimization'),
   unknown('unknown');

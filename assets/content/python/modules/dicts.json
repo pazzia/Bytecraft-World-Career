@@ -228,6 +228,113 @@
    }
   },
   {
+   "id": "nx_dict_trace",
+   "type": "trace_table",
+   "role": "practice",
+   "title": "Подсчёт букв",
+   "prompt": "Заполните значения переменных",
+   "topic": "dict_counting",
+   "difficulty": 3,
+   "hint": "get(ch, 0) возвращает 0, если ключа ещё нет.",
+   "explanation": "Каждая буква увеличивает свой счётчик. Порядок ключей — порядок первого появления: 'а', потом 'б'.",
+   "code": "counts = {}\nfor ch in \"абба\":\n    counts[ch] = counts.get(ch, 0) + 1\nsize = len(counts)",
+   "payload": {
+    "columns": [
+     "ch",
+     "counts"
+    ],
+    "rows": [
+     {
+      "line": 3,
+      "values": [
+       "'а'",
+       "{'а': 1}"
+      ]
+     },
+     {
+      "line": 3,
+      "values": [
+       "'б'",
+       "{'а': 1, 'б': 1}"
+      ]
+     },
+     {
+      "line": 3,
+      "values": [
+       "'б'",
+       "{'а': 1, 'б': 2}"
+      ]
+     },
+     {
+      "line": 3,
+      "values": [
+       "'а'",
+       "{'а': 2, 'б': 2}"
+      ]
+     }
+    ],
+    "blanks": [
+     [
+      1,
+      0
+     ],
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      1
+     ],
+     [
+      3,
+      0
+     ],
+     [
+      3,
+      1
+     ]
+    ],
+    "bank": [
+     "'а'",
+     "'б'",
+     "{'а': 1, 'б': 1}",
+     "{'а': 1, 'б': 2}",
+     "{'а': 2, 'б': 1}",
+     "{'а': 2, 'б': 2}",
+     "{'а': 2}",
+     "{'б': 1}"
+    ]
+   },
+   "solution": {
+    "code": "counts = {}\nfor ch in \"абба\":\n    counts[ch] = counts.get(ch, 0) + 1\nsize = len(counts)",
+    "output": ""
+   }
+  },
+  {
+   "id": "nx_dict_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Безопасное чтение",
+   "prompt": "Строка 2 с ошибкой. Перепишите её правильно",
+   "topic": "dict_methods",
+   "difficulty": 2,
+   "hint": "Как прочитать ключ, которого может не быть, и получить значение по умолчанию?",
+   "explanation": "stock[\"груши\"] падает с KeyError. get(ключ, по_умолчанию) возвращает 0, если ключа нет.",
+   "code": "stock = {\"яблоки\": 5}\nprint(stock[\"груши\"])",
+   "payload": {
+    "line": 1,
+    "accepted": [
+     "print(stock.get(\"груши\", 0))"
+    ],
+    "expectedOutput": "0\n"
+   },
+   "solution": {
+    "code": "stock = {\"яблоки\": 5}\nprint(stock.get(\"груши\", 0))",
+    "output": "0\n"
+   }
+  },
+  {
    "id": "py_dict_008",
    "type": "code_ordering",
    "role": "boss",

@@ -238,6 +238,141 @@
    }
   },
   {
+   "id": "nx_str_trace",
+   "type": "trace_table",
+   "role": "practice",
+   "title": "Строка по шагам",
+   "prompt": "Заполните значения переменных",
+   "topic": "str_methods",
+   "difficulty": 2,
+   "hint": "upper() возвращает новую строку — её нужно присвоить. len считает символы.",
+   "explanation": "Строки неизменяемы: каждый шаг создаёт новую строку и связывает с ней имя word. После «КОТИК» длина 5, первый символ — «К».",
+   "code": "word = \"кот\"\nword = word.upper()\nword = word + \"ИК\"\nsize = len(word)\nfirst = word[0]",
+   "payload": {
+    "columns": [
+     "word",
+     "size",
+     "first"
+    ],
+    "rows": [
+     {
+      "line": 1,
+      "values": [
+       "'кот'",
+       "—",
+       "—"
+      ]
+     },
+     {
+      "line": 2,
+      "values": [
+       "'КОТ'",
+       "—",
+       "—"
+      ]
+     },
+     {
+      "line": 3,
+      "values": [
+       "'КОТИК'",
+       "—",
+       "—"
+      ]
+     },
+     {
+      "line": 4,
+      "values": [
+       "'КОТИК'",
+       "5",
+       "—"
+      ]
+     },
+     {
+      "line": 5,
+      "values": [
+       "'КОТИК'",
+       "5",
+       "'К'"
+      ]
+     }
+    ],
+    "blanks": [
+     [
+      1,
+      0
+     ],
+     [
+      2,
+      0
+     ],
+     [
+      3,
+      1
+     ],
+     [
+      4,
+      2
+     ]
+    ],
+    "bank": [
+     "4",
+     "5",
+     "6",
+     "'К'",
+     "'КОТ'",
+     "'КОТИК'",
+     "'к'",
+     "'кот'",
+     "'котИК'"
+    ]
+   },
+   "solution": {
+    "code": "word = \"кот\"\nword = word.upper()\nword = word + \"ИК\"\nsize = len(word)\nfirst = word[0]",
+    "output": ""
+   }
+  },
+  {
+   "id": "nx_str_tf",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Про строки",
+   "prompt": "Верно ли утверждение?",
+   "topic": "str_basics",
+   "difficulty": 2,
+   "hint": "Проверьте каждое утверждение мысленно в интерпретаторе.",
+   "explanation": "Методы строк возвращают новые строки, индекс -1 — последний символ, срез [1:] — всё без первого, len считает символы.",
+   "payload": {
+    "categories": [
+     "Верно",
+     "Неверно"
+    ],
+    "items": [
+     {
+      "text": "s.upper() меняет строку s на месте",
+      "category": 1,
+      "feedback": "Строки неизменяемы: upper возвращает новую строку."
+     },
+     {
+      "text": "'abc'[-1] — это 'c'",
+      "category": 0
+     },
+     {
+      "text": "'abc'[1:] — это 'bc'",
+      "category": 0
+     },
+     {
+      "text": "len('привет') равно 12",
+      "category": 1,
+      "feedback": "len считает символы, а не байты: 6."
+     },
+     {
+      "text": "f'{2 + 3}' даёт строку '5'",
+      "category": 0
+     }
+    ]
+   }
+  },
+  {
    "id": "py_str_009",
    "type": "type_output",
    "role": "boss",

@@ -238,6 +238,104 @@
    }
   },
   {
+   "id": "nx_cond_trace",
+   "type": "trace_table",
+   "role": "practice",
+   "title": "Какая ветка сработает",
+   "prompt": "Заполните значения переменных",
+   "topic": "cond_if",
+   "difficulty": 2,
+   "hint": "Условия проверяются сверху вниз; выполняется первая подходящая ветка.",
+   "explanation": "18 > 25 — нет, 18 > 15 — да: clothes становится «свитер», else пропускается. Последняя строка меняет только temp.",
+   "code": "temp = 18\nclothes = \"куртка\"\nif temp > 25:\n    clothes = \"футболка\"\nelif temp > 15:\n    clothes = \"свитер\"\nelse:\n    clothes = \"пальто\"\ntemp = temp + 10",
+   "payload": {
+    "columns": [
+     "temp",
+     "clothes"
+    ],
+    "rows": [
+     {
+      "line": 1,
+      "values": [
+       "18",
+       "—"
+      ]
+     },
+     {
+      "line": 2,
+      "values": [
+       "18",
+       "'куртка'"
+      ]
+     },
+     {
+      "line": 6,
+      "values": [
+       "18",
+       "'свитер'"
+      ]
+     },
+     {
+      "line": 9,
+      "values": [
+       "28",
+       "'свитер'"
+      ]
+     }
+    ],
+    "blanks": [
+     [
+      1,
+      1
+     ],
+     [
+      2,
+      1
+     ],
+     [
+      3,
+      0
+     ]
+    ],
+    "bank": [
+     "27",
+     "28",
+     "29",
+     "'куртка'",
+     "'пальто'",
+     "'свитер'",
+     "'футболка'"
+    ]
+   },
+   "solution": {
+    "code": "temp = 18\nclothes = \"куртка\"\nif temp > 25:\n    clothes = \"футболка\"\nelif temp > 15:\n    clothes = \"свитер\"\nelse:\n    clothes = \"пальто\"\ntemp = temp + 10",
+    "output": ""
+   }
+  },
+  {
+   "id": "nx_cond_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Совершеннолетие",
+   "prompt": "Строка 2 с ошибкой. Перепишите её правильно",
+   "topic": "cond_if",
+   "difficulty": 1,
+   "hint": "18 лет — уже можно. Какой оператор включает границу?",
+   "explanation": "> не включает 18, поэтому 18-летний получает отказ. >= — «больше или равно».",
+   "code": "age = 18\nif age > 18:\n    print(\"доступ разрешён\")\nelse:\n    print(\"доступ закрыт\")",
+   "payload": {
+    "line": 1,
+    "accepted": [
+     "if age >= 18:"
+    ],
+    "expectedOutput": "доступ разрешён\n"
+   },
+   "solution": {
+    "code": "age = 18\nif age >= 18:\n    print(\"доступ разрешён\")\nelse:\n    print(\"доступ закрыт\")",
+    "output": "доступ разрешён\n"
+   }
+  },
+  {
    "id": "py_cond_005",
    "type": "predict_output",
    "role": "boss",

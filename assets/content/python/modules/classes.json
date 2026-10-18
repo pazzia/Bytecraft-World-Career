@@ -265,6 +265,64 @@
    }
   },
   {
+   "id": "nx_class_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Забытый self",
+   "prompt": "Строка 6 с ошибкой. Перепишите её правильно",
+   "topic": "oop_class",
+   "difficulty": 2,
+   "hint": "Как метод обращается к атрибуту своего объекта?",
+   "explanation": "value внутри метода — локальная переменная, а не атрибут. Атрибут объекта — self.value.",
+   "code": "class Counter:\n    def __init__(self):\n        self.value = 0\n\n    def add(self):\n        value += 1\n\nc = Counter()\nc.add()\nprint(c.value)",
+   "payload": {
+    "line": 5,
+    "accepted": [
+     "self.value += 1"
+    ],
+    "expectedOutput": "1\n"
+   },
+   "solution": {
+    "code": "class Counter:\n    def __init__(self):\n        self.value = 0\n\n    def add(self):\n        self.value += 1\n\nc = Counter()\nc.add()\nprint(c.value)",
+    "output": "1\n"
+   }
+  },
+  {
+   "id": "nx_class_attr_sort",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Атрибут класса или объекта",
+   "prompt": "Где хранится атрибут?",
+   "topic": "oop_class_attrs",
+   "difficulty": 2,
+   "hint": "Присваивание через self создаёт атрибут конкретного объекта.",
+   "explanation": "Имена в теле класса принадлежат классу и общие для всех. self.x = ... создаёт атрибут одного объекта.",
+   "payload": {
+    "categories": [
+     "Атрибут класса",
+     "Атрибут объекта"
+    ],
+    "items": [
+     {
+      "text": "species = 'кот' прямо в теле class",
+      "category": 0
+     },
+     {
+      "text": "self.name = name в __init__",
+      "category": 1
+     },
+     {
+      "text": "count, общий для всех объектов",
+      "category": 0
+     },
+     {
+      "text": "self.age = 3 в методе",
+      "category": 1
+     }
+    ]
+   }
+  },
+  {
    "id": "py_cls_009",
    "type": "code_ordering",
    "role": "boss",

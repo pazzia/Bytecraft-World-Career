@@ -259,6 +259,29 @@
    }
   },
   {
+   "id": "nx_prop_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Свойство вызывают без скобок",
+   "prompt": "Строка 10 с ошибкой. Перепишите её правильно",
+   "topic": "prop_property",
+   "difficulty": 2,
+   "hint": "@property превращает метод в атрибут. Как читают атрибут?",
+   "explanation": "c.area уже вычисляет значение (12). c.area() пытается вызвать число — TypeError: 'int' object is not callable.",
+   "code": "class Circle:\n    def __init__(self, r):\n        self.r = r\n\n    @property\n    def area(self):\n        return 3 * self.r ** 2\n\nc = Circle(2)\nprint(c.area())",
+   "payload": {
+    "line": 9,
+    "accepted": [
+     "print(c.area)"
+    ],
+    "expectedOutput": "12\n"
+   },
+   "solution": {
+    "code": "class Circle:\n    def __init__(self, r):\n        self.r = r\n\n    @property\n    def area(self):\n        return 3 * self.r ** 2\n\nc = Circle(2)\nprint(c.area)",
+    "output": "12\n"
+   }
+  },
+  {
    "id": "py_prop_009",
    "type": "code_ordering",
    "role": "boss",

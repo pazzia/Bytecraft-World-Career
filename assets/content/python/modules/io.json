@@ -176,6 +176,29 @@
    }
   },
   {
+   "id": "nx_io_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Сумма двух чисел",
+   "prompt": "Строка 3 с ошибкой. Перепишите её правильно",
+   "topic": "io_input",
+   "difficulty": 2,
+   "hint": "Что делает + со строками? Как превратить строку в число?",
+   "explanation": "Для строк + склеивает: «34». Чтобы сложить числа, строки переводят в int: 3 + 4 = 7.",
+   "code": "a = \"3\"\nb = \"4\"\nprint(a + b)",
+   "payload": {
+    "line": 2,
+    "accepted": [
+     "print(int(a) + int(b))"
+    ],
+    "expectedOutput": "7\n"
+   },
+   "solution": {
+    "code": "a = \"3\"\nb = \"4\"\nprint(int(a) + int(b))",
+    "output": "7\n"
+   }
+  },
+  {
    "id": "py_io_007",
    "type": "code_ordering",
    "role": "boss",

@@ -202,7 +202,7 @@
    "role": "practice",
    "title": "Обобщённый класс",
    "prompt": "Напишите, что выведет код",
-   "topic": "typing_advanced",
+   "topic": "typing_generics",
    "difficulty": 3,
    "hint": "[T] после имени класса объявляет параметр типа. Box[str] при выполнении ничего не проверяет.",
    "explanation": "Box хранит значение любого типа. Box[str](...) работает как обычный вызов. __type_params__ — кортеж из параметра T, он печатается как (T,).",
@@ -242,7 +242,7 @@
    "role": "practice",
    "title": "Final и Literal",
    "prompt": "Что выведет код?",
-   "topic": "typing_advanced",
+   "topic": "typing_typeddict",
    "difficulty": 3,
    "hint": "Final и Literal — подсказки для анализатора. Что из этого проверяется при выполнении?",
    "explanation": "Python не мешает переприсвоить Final и передать в Literal другое значение: программа печатает 4 x. Ошибки покажет только статический анализатор (mypy, pyright) — до запуска.",
@@ -268,12 +268,44 @@
    }
   },
   {
+   "id": "nx_typing_tf",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Аннотации при выполнении",
+   "prompt": "Верно ли утверждение?",
+   "topic": "typing_basics",
+   "difficulty": 2,
+   "hint": "Аннотации — это проверяется при выполнении или нет?",
+   "explanation": "Аннотации не влияют на выполнение. Их проверяют анализаторы до запуска.",
+   "payload": {
+    "categories": [
+     "Верно",
+     "Неверно"
+    ],
+    "items": [
+     {
+      "text": "Python не проверяет аннотации при вызове функции",
+      "category": 0
+     },
+     {
+      "text": "def f(x: int) не даст передать строку",
+      "category": 1,
+      "feedback": "Аннотации — подсказки: f('a') выполнится."
+     },
+     {
+      "text": "Ошибки типов находит статический анализатор (mypy, pyright)",
+      "category": 0
+     }
+    ]
+   }
+  },
+  {
    "id": "py_typing_009",
    "type": "predict_output",
    "role": "boss",
    "title": "Босс: TypedDict и псевдонимы",
    "prompt": "Что выведет код?",
-   "topic": "typing_advanced",
+   "topic": "typing_typeddict",
    "difficulty": 4,
    "hint": "TypedDict существует только для анализатора: во время выполнения — обычный словарь без проверок.",
    "explanation": "u — обычный dict, и строка «7» вместо числа проходит без ошибки. get_type_hints(User) возвращает объявленные ключи: id и name.",

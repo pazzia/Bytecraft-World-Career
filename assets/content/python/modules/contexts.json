@@ -312,6 +312,43 @@
    }
   },
   {
+   "id": "nx_ctx_tf",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Про with",
+   "prompt": "Верно ли утверждение?",
+   "topic": "ctx_protocol",
+   "difficulty": 3,
+   "hint": "Проверьте, что делает __exit__ при исключении.",
+   "explanation": "with гарантирует вызов __exit__ при любом выходе. as получает результат __enter__. suppress глушит только указанные исключения.",
+   "payload": {
+    "categories": [
+     "Верно",
+     "Неверно"
+    ],
+    "items": [
+     {
+      "text": "Файл, открытый в with open(...), закрывается даже при ошибке",
+      "category": 0
+     },
+     {
+      "text": "as x получает объект, который вернул __enter__",
+      "category": 0
+     },
+     {
+      "text": "__exit__ не вызывается, если в блоке было исключение",
+      "category": 1,
+      "feedback": "Вызывается всегда — для этого with и нужен."
+     },
+     {
+      "text": "contextlib.suppress(KeyError) глушит любые исключения",
+      "category": 1,
+      "feedback": "Только перечисленные — здесь KeyError."
+     }
+    ]
+   }
+  },
+  {
    "id": "py_ctx_009",
    "type": "predict_output",
    "role": "boss",

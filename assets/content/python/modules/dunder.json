@@ -269,6 +269,52 @@
    }
   },
   {
+   "id": "nx_dunder_sort",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Какой метод вызовется",
+   "prompt": "Что Python вызывает для этой записи?",
+   "topic": "dunder_protocols",
+   "difficulty": 2,
+   "hint": "Для каждого встроенного действия есть свой «магический» метод.",
+   "explanation": "len → __len__, print и f-строка → __str__, == → __eq__, + → __add__.",
+   "payload": {
+    "categories": [
+     "__len__",
+     "__str__",
+     "__eq__",
+     "__add__"
+    ],
+    "items": [
+     {
+      "text": "len(obj)",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "print(obj)",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "a == b",
+      "category": 2,
+      "code": true
+     },
+     {
+      "text": "a + b",
+      "category": 3,
+      "code": true
+     },
+     {
+      "text": "f'{obj}'",
+      "category": 1,
+      "code": true
+     }
+    ]
+   }
+  },
+  {
    "id": "py_dun_009",
    "type": "predict_output",
    "role": "boss",

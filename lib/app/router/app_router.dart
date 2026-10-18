@@ -149,6 +149,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootKey,
         builder: (context, state) => TopicScreen(
           topicId: state.pathParameters[Routes.topicIdParam]!,
+          fromTopicId: state.uri.queryParameters[Routes.fromQuery],
         ),
       ),
       GoRoute(

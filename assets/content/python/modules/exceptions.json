@@ -38,7 +38,7 @@
    "role": "practice",
    "title": "Какая ошибка",
    "prompt": "Сопоставьте код и исключение, которое он вызовет",
-   "topic": "exc_types",
+   "topic": "exc_traceback",
    "difficulty": 2,
    "hint": "Неверное значение — ValueError, неверный тип — TypeError.",
    "explanation": "int('abc') — ValueError, индекс за пределами — IndexError, нет ключа — KeyError, деление на 0 — ZeroDivisionError, строка + число — TypeError, неизвестное имя — NameError.",
@@ -291,6 +291,80 @@
    "solution": {
     "code": "try:\n    raise ExceptionGroup(\"пакет\", [ValueError(\"a\"), KeyError(\"b\"), ValueError(\"c\")])\nexcept* ValueError as group:\n    print(\"value:\", len(group.exceptions))\nexcept* KeyError as group:\n    print(\"key:\", len(group.exceptions))",
     "output": "value: 2\nkey: 1\n"
+   }
+  },
+  {
+   "id": "nx_exc_sort",
+   "type": "categorize",
+   "role": "practice",
+   "title": "Какое исключение",
+   "prompt": "Разложите ошибки по типу исключения",
+   "topic": "exc_types",
+   "difficulty": 2,
+   "hint": "ValueError — тип верный, значение плохое; TypeError — операция не для этого типа.",
+   "explanation": "int('abc') и float('1,5') — строки не те по содержанию: ValueError. 'a' + 1 и len(5) — неподходящие типы. Нет ключа — KeyError, нет индекса — IndexError.",
+   "payload": {
+    "categories": [
+     "ValueError",
+     "TypeError",
+     "KeyError",
+     "IndexError"
+    ],
+    "items": [
+     {
+      "text": "int('abc')",
+      "category": 0,
+      "code": true
+     },
+     {
+      "text": "'a' + 1",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "{}['x']",
+      "category": 2,
+      "code": true
+     },
+     {
+      "text": "[][0]",
+      "category": 3,
+      "code": true
+     },
+     {
+      "text": "len(5)",
+      "category": 1,
+      "code": true
+     },
+     {
+      "text": "float('1,5')",
+      "category": 0,
+      "code": true
+     }
+    ]
+   }
+  },
+  {
+   "id": "nx_exc_fix",
+   "type": "fix_line",
+   "role": "practice",
+   "title": "Поймать нужное",
+   "prompt": "Строка 3 с ошибкой. Перепишите её правильно",
+   "topic": "exc_try",
+   "difficulty": 2,
+   "hint": "Какое исключение бросает int для строки, которая не число?",
+   "explanation": "int(\"десять\") бросает ValueError, а except ловит только ZeroDivisionError — ошибка вылетает. Нужен except ValueError.",
+   "code": "try:\n    n = int(\"десять\")\nexcept ZeroDivisionError:\n    n = 0\nprint(n)",
+   "payload": {
+    "line": 2,
+    "accepted": [
+     "except ValueError:"
+    ],
+    "expectedOutput": "0\n"
+   },
+   "solution": {
+    "code": "try:\n    n = int(\"десять\")\nexcept ValueError:\n    n = 0\nprint(n)",
+    "output": "0\n"
    }
   },
   {

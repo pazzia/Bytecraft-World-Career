@@ -12,7 +12,6 @@ import '../../../services/feature_flags/feature_flag_service.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_progress_bar.dart';
 import '../../../shared/widgets/async_value_view.dart';
-import '../../../shared/widgets/code_block.dart';
 import '../../../shared/widgets/keycap.dart';
 import '../../../shared/widgets/stat_badges.dart';
 import '../../timed_run/domain/timed_run_service.dart';
@@ -165,12 +164,18 @@ class _PlayingView extends ConsumerWidget {
     final session = state.session!;
     final level = session.level;
     final renderer = renderers.resolve(level.type);
-    final textTheme = Theme.of(context).textTheme;
     final game = context.gameColors;
     final lives = state.lives;
     final position =
         ref.watch(levelPositionProvider((args.courseId, args.levelId))).value;
     final deadline = session.deadline;
+    final question = QuestionContext(
+      level: level,
+      answer: state.answer,
+      onChanged: controller.updateAnswer,
+      isLocked: state.isInputLocked,
+      outcome: state.outcome,
+    );
 
     return Column(
       children: [
@@ -234,30 +239,11 @@ class _PlayingView extends ConsumerWidget {
           ),
         ),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              Spacing.page,
-              Spacing.lg,
-              Spacing.page,
-              Spacing.xxl,
-            ),
-            children: [
-              Text(level.prompt, style: textTheme.headlineSmall),
-              const SizedBox(height: Spacing.xl),
-              if (renderer.showsLevelCode && level.code != null) ...[
-                CodeBlock(code: level.code!),
-                const SizedBox(height: Spacing.xl),
-              ],
-              renderer.build(
-                context,
-                QuestionContext(
-                  level: level,
-                  answer: state.answer,
-                  onChanged: controller.updateAnswer,
-                  isLocked: state.isInputLocked,
-                  outcome: state.outcome,
-                ),
-              ),
+          child: _QuestionLayout(
+            prompt: level.prompt,
+            stage: renderer.buildStage(context, question),
+            answers: [
+              renderer.build(context, question),
               if (state.isHintVisible && level.hint != null) ...[
                 const SizedBox(height: Spacing.xl),
                 _HintCard(text: level.hint!),
@@ -267,6 +253,102 @@ class _PlayingView extends ConsumerWidget {
         ),
         _BottomBar(args: args, state: state, controller: controller),
       ],
+    );
+  }
+}
+
+/// The question and its code stay in view; only the answers scroll.
+///
+/// The stage (code) takes at most [_stageShare] of the height. Longer code
+/// scrolls inside its own frame and can be opened full screen, so the code
+/// never leaves the screen while the player scrolls through the options.
+class _QuestionLayout extends StatefulWidget {
+  const _QuestionLayout({
+    required this.prompt,
+    required this.stage,
+    required this.answers,
+  });
+
+  final String prompt;
+  final Widget? stage;
+  final List<Widget> answers;
+
+  static const double _stageShare = 0.55;
+
+  @override
+  State<_QuestionLayout> createState() => _QuestionLayoutState();
+}
+
+class _QuestionLayoutState extends State<_QuestionLayout> {
+  final _answers = ScrollController();
+  final _stage = ScrollController();
+  bool _answersScrolled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _answers.addListener(() {
+      final scrolled = _answers.hasClients && _answers.offset > 0;
+      if (scrolled != _answersScrolled) setState(() => _answersScrolled = scrolled);
+    });
+  }
+
+  @override
+  void dispose() {
+    _answers.dispose();
+    _stage.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final game = context.gameColors;
+    final prompt = Text(widget.prompt, style: textTheme.titleLarge);
+    final stage = widget.stage;
+    if (stage == null) {
+      return ListView(
+        padding: const EdgeInsets.fromLTRB(Spacing.page, Spacing.lg, Spacing.page, Spacing.xxl),
+        children: [prompt, const SizedBox(height: Spacing.xl), ...widget.answers],
+      );
+    }
+    return LayoutBuilder(
+      builder: (context, constraints) => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: constraints.maxHeight * _QuestionLayout._stageShare,
+            ),
+            child: Scrollbar(
+              controller: _stage,
+              child: SingleChildScrollView(
+                key: const ValueKey('level_stage'),
+                controller: _stage,
+                padding: const EdgeInsets.fromLTRB(Spacing.page, Spacing.lg, Spacing.page, Spacing.md),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [prompt, const SizedBox(height: Spacing.lg), stage],
+                ),
+              ),
+            ),
+          ),
+          // A hairline appears once answers slide under the pinned code.
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            height: 1,
+            color: _answersScrolled ? game.track : Colors.transparent,
+          ),
+          Expanded(
+            child: ListView(
+              key: const ValueKey('level_answers'),
+              controller: _answers,
+              padding: const EdgeInsets.fromLTRB(Spacing.page, Spacing.md, Spacing.page, Spacing.xxl),
+              children: widget.answers,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
