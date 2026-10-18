@@ -102,6 +102,12 @@ class WorldHubScreen extends ConsumerWidget {
                         : Routes.map,
                   ),
                 ),
+                const SizedBox(height: 12),
+                WorldButton(
+                  label: 'Карьера · цель и навыки',
+                  icon: Icons.route_rounded,
+                  onPressed: () => context.push(Routes.career),
+                ),
                 const SizedBox(height: 18),
                 WorldPanel(
                   glow: WorldPalette.purple,

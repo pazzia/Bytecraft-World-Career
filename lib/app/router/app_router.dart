@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/career/presentation/career_screen.dart';
 import '../../features/journal/presentation/topic_screen.dart';
 import '../../features/playground/presentation/playground_screen.dart';
 import '../../features/playground/presentation/practice_task_screen.dart';
@@ -115,6 +116,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: Routes.career,
+        parentNavigatorKey: _rootKey,
+        builder: (context, state) => const CareerScreen(),
       ),
       GoRoute(
         path: Routes.worldCity,

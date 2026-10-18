@@ -44,4 +44,12 @@ class SettingsController extends AsyncNotifier<AppSettings> {
 
   Future<void> setActiveCourse(String courseId) =>
       _update((current) => current.copyWith(activeCourseId: courseId));
+
+  Future<void> setCareerGoal(String goalId) =>
+      _update((current) => current.copyWith(careerGoalId: goalId));
+
+  Future<void> setGitHubUsername(String username) {
+    final clean = username.trim().replaceFirst(RegExp(r'^@'), '');
+    return _update((current) => current.copyWith(githubUsername: clean));
+  }
 }

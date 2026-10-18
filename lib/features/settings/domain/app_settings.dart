@@ -35,6 +35,8 @@ class AppSettings {
     required this.activeCourseId,
     required this.theme,
     this.experience,
+    this.careerGoalId = 'python_backend',
+    this.githubUsername = '',
   });
 
   factory AppSettings.initial(String defaultCourseId) => AppSettings(
@@ -48,11 +50,15 @@ class AppSettings {
     required String defaultCourseId,
   }) {
     final courseId = json['activeCourseId'];
+    final careerGoal = json['careerGoalId'];
+    final githubUsername = json['githubUsername'];
     return AppSettings(
       onboardingCompleted: json['onboardingCompleted'] == true,
       activeCourseId: courseId is String ? courseId : defaultCourseId,
       theme: ThemePreference.fromId(json['theme'] as String?),
       experience: ExperienceLevel.fromId(json['experience'] as String?),
+      careerGoalId: careerGoal is String ? careerGoal : 'python_backend',
+      githubUsername: githubUsername is String ? githubUsername : '',
     );
   }
 
@@ -60,18 +66,24 @@ class AppSettings {
   final String activeCourseId;
   final ThemePreference theme;
   final ExperienceLevel? experience;
+  final String careerGoalId;
+  final String githubUsername;
 
   AppSettings copyWith({
     bool? onboardingCompleted,
     String? activeCourseId,
     ThemePreference? theme,
     ExperienceLevel? experience,
+    String? careerGoalId,
+    String? githubUsername,
   }) =>
       AppSettings(
         onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
         activeCourseId: activeCourseId ?? this.activeCourseId,
         theme: theme ?? this.theme,
         experience: experience ?? this.experience,
+        careerGoalId: careerGoalId ?? this.careerGoalId,
+        githubUsername: githubUsername ?? this.githubUsername,
       );
 
   Map<String, dynamic> toJson() => {
@@ -79,5 +91,7 @@ class AppSettings {
         'activeCourseId': activeCourseId,
         'theme': theme.id,
         if (experience != null) 'experience': experience!.id,
+        'careerGoalId': careerGoalId,
+        if (githubUsername.isNotEmpty) 'githubUsername': githubUsername,
       };
 }

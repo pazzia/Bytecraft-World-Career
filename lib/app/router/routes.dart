@@ -7,6 +7,7 @@ abstract final class Routes {
   static const String onboardingCourse = '/onboarding/course';
   static const String home = '/home';
   static const String map = '/map';
+  static const String career = '/career';
   static const String profile = '/profile';
   static const String journal = '/journal';
   static const String playground = '/code';

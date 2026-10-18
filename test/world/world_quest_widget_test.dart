@@ -71,14 +71,18 @@ void main() {
       final hero = tester.getRect(find.byKey(const ValueKey('expedition-explorer')));
       expect(hero.top, greaterThanOrEqualTo(0));
       expect(hero.bottom, lessThanOrEqualTo(900));
-      await tester.ensureVisible(find.text('Следующее задание'));
+      await tester.scrollUntilVisible(find.text('Следующее задание'), 250,
+        scrollable: find.byType(Scrollable).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('Следующее задание'));
       await tester.pumpAndSettle();
       expect(find.text('Защита от деления на ноль'), findsOneWidget);
       expect(find.byTooltip('Скопировать код'), findsNothing);
+      await tester.scrollUntilVisible(find.text('Проверить ответ'), 250,
+        scrollable: find.byType(Scrollable).first);
       expect(tester.widget<FilledButton>(button).onPressed, isNull);
-      await tester.ensureVisible(find.text('price != 0'));
+      await tester.scrollUntilVisible(find.text('price != 0'), 250,
+        scrollable: find.byType(Scrollable).first);
       await tester.pumpAndSettle();
       await tester.tap(find.text('price != 0'));
       await tester.pumpAndSettle();
