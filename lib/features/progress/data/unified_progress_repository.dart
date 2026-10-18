@@ -35,6 +35,12 @@ class UnifiedProgressRepository extends LocalProgressRepository {
   @override
   Future<UserProfile> loadProfile() => save.transaction(() async {
     final json = await documents.read(StorageKeys.profile);
+    if (json == null && await documents.raw.read(StorageKeys.profile) != null) {
+      throw StateError('Corrupt player profile');
+    }
+    if (json != null && json['schemaVersion'] != StorageKeys.profileSchema) {
+      throw StateError('Unsupported player profile version');
+    }
     final metadata = json != null && json['userId'] is String
         ? UserProfile.fromJson(json, rules)
         : UserProfile.create(userId: ids.newId(), now: clock.now(), rules: rules);

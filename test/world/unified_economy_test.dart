@@ -95,6 +95,39 @@ void main() {
     expect((await c.read(worldRepositoryProvider).load()).gems, 2);
   });
 
+  test('parallel course and World rewards keep both changes and match city bonuses', () async {
+    final initial = WorldState.initial().copyWith(worldXp: 500, coins: 300,
+      cityLevels: {...WorldState.initial().cityLevels, 'python': 3, 'rnd': 2, 'office': 2});
+    final source = InMemoryKeyValueStore({'bytecraft_world_state': jsonEncode({...initial.toJson(), 'schemaVersion': 2})});
+    final c = container(source);
+    addTearDown(c.dispose);
+    final engine = c.read(levelEngineProvider);
+    final session = (await engine.start(courseId: 'test', levelId: 'l1') as LevelStarted).session;
+    final task = WorldChallenges.at(initial, WorldMode.expedition);
+    await Future.wait([
+      engine.submit(session, const ChoiceAnswer(1)),
+      c.read(worldControllerProvider.notifier).submitChallenge(WorldMode.expedition, task.id, task.answer),
+    ]);
+    final world = await c.read(worldRepositoryProvider).load();
+    final profile = await c.read(progressRepositoryProvider).loadProfile();
+    expect(world.worldXp, 500 + 22 + 42);
+    expect(world.seasonXp, 22 + 42);
+    expect(world.coins, 300 + 2 + 21);
+    expect(profile.totalXp, world.worldXp);
+    expect(profile.coins, world.coins);
+  });
+
+  test('corrupt legacy wallet and future version remain intact', () async {
+    for (final raw in ['broken', '{"schemaVersion":99}']) {
+      final source = InMemoryKeyValueStore({'bytecraft_world_state': raw});
+      final c = container(source);
+      await expectLater(c.read(worldRepositoryProvider).load(), throwsStateError);
+      expect(await source.read('bytecraft_world_state'), raw);
+      expect(await source.read(GameSaveStore.saveKey), isNull);
+      c.dispose();
+    }
+  });
+
   test('failed completion commits neither progress nor reward, retry succeeds exactly once', () async {
     final source = _Disk();
     final c = container(source);

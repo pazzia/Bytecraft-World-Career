@@ -18,13 +18,14 @@ class WorldRepository {
     final store = documents;
     final stored = await store.read(key);
     if (stored == null) {
+      if (await store.raw.read(key) != null) throw StateError('Corrupt World save');
       final legacy = await store.read('player.profile');
       if (legacy == null) return WorldState.initial();
       final lives = legacy['lives'] as Map<String, dynamic>?;
       final streak = legacy['streak'] as Map<String, dynamic>?;
       final count = (lives?['current'] as num?)?.toInt() ?? 3;
       final capacity = count.clamp(3, 7);
-      return WorldState.initial().copyWith(
+      return WorldHearts.regenerate(WorldState.initial().copyWith(
         coins: (legacy['coins'] as num?)?.toInt() ?? 0,
         worldXp: (legacy['totalXp'] as num?)?.toInt() ?? 0,
         cityLevels: {...WorldState.initial().cityLevels, 'servers': capacity - 2},
@@ -32,7 +33,7 @@ class WorldRepository {
         heartRegenAnchor: DateTime.tryParse('${lives?['regenAnchor']}'),
         streak: (streak?['current'] as num?)?.toInt() ?? 0,
         lastActiveDay: streak?['lastActiveDay'] as String? ?? '',
-      );
+      ), clock.now());
     }
     if (stored['schemaVersion'] == schema) {
       final loaded = WorldState.fromJson(stored);
@@ -49,6 +50,7 @@ class WorldRepository {
       await store.write(key, migrated.toJson(), schemaVersion: schema);
       return migrated;
     }
+    if (stored['schemaVersion'] != 1) throw StateError('Unsupported World save version');
     // v1 contained demo progress and unvalidated click rewards. Keep currency
     // and purchased buildings, but require evidence for quests and records.
     final old = WorldState.fromJson(stored);
@@ -67,5 +69,5 @@ class WorldRepository {
   }
 
   Future<void> write(WorldState state) => documents.write(
-    key, state.toJson(), schemaVersion: schema);
+    key, WorldHearts.regenerate(state, clock.now()).toJson(), schemaVersion: schema);
 }

@@ -25,7 +25,7 @@ class GameSaveStore implements KeyValueStore {
       try {
         final raw = await source.read(saveKey);
         final json = raw == null ? <String, dynamic>{} : jsonDecode(raw) as Map<String, dynamic>;
-        if (json.isNotEmpty && json['schemaVersion'] != 1) {
+        if (raw != null && json['schemaVersion'] != 1) {
           throw StateError('Unsupported game save version');
         }
         final tx = _Transaction(

@@ -51,7 +51,7 @@ void main() {
   });
 
   test('unknown or corrupt aggregate is not replaced by an empty save', () async {
-    for (final data in ['broken', '{"schemaVersion":99}']) {
+    for (final data in ['broken', '{}', '{"schemaVersion":99}']) {
       final source = InMemoryKeyValueStore({GameSaveStore.saveKey: data});
       final save = GameSaveStore(source);
       await expectLater(save.write('player.coins', '0'), throwsA(anything));

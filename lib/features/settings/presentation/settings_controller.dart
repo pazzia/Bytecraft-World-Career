@@ -14,10 +14,14 @@ class SettingsController extends AsyncNotifier<AppSettings> {
   Future<AppSettings> build() => ref.watch(settingsRepositoryProvider).load();
 
   Future<void> _update(AppSettings Function(AppSettings current) change) async {
-    final current = state.value ?? await future;
-    final next = change(current);
-    state = AsyncData(next);
-    await ref.read(settingsRepositoryProvider).save(next);
+    final next = await ref.read(gameSaveStoreProvider).transaction(() async {
+      final repository = ref.read(settingsRepositoryProvider);
+      final current = await repository.load();
+      final next = change(current);
+      await repository.save(next);
+      return next;
+    });
+    if (ref.mounted) state = AsyncData(next);
   }
 
   Future<void> completeOnboarding({
