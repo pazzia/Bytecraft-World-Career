@@ -7,6 +7,7 @@ import '../domain/world_state.dart';
 import 'world_controller.dart';
 import 'world_ui.dart';
 import 'world_hearts_panel.dart';
+import 'world_help.dart';
 
 class WorldHubScreen extends ConsumerWidget {
   const WorldHubScreen({super.key});
@@ -73,9 +74,14 @@ class WorldHubScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Цель: восстановить API → собрать калькулятор → победить Bug Lord. Только верные ответы открывают этапы. XP открывает улучшения города; монеты оплачивают их. Ошибки попадают в тренировки. Первое решение каждого уровня курса тоже приносит игровой XP и монеты; повторное — без игровой награды.',
+                  'Решай задания Python → получай XP и монеты → улучшай город. Начни с экспедиции: восстанови API, собери калькулятор и победи Bug Lord.',
                   style: TextStyle(color: WorldPalette.muted, fontSize: 13),
                 ),
+                Align(alignment: Alignment.centerLeft, child: TextButton.icon(
+                  onPressed: () => WorldHelp.showResources(context),
+                  icon: const Icon(Icons.help_outline_rounded, size: 18),
+                  label: const Text('Что дают награды и улучшения?'),
+                )),
                 const SizedBox(height: 14),
                 WorldButton(
                   label: world.expeditionStep < 5

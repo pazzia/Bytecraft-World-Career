@@ -7,6 +7,7 @@ import '../domain/world_rules.dart';
 import 'world_challenge_screens.dart';
 import 'world_controller.dart';
 import 'world_ui.dart';
+import 'world_help.dart';
 
 class CodeCityScreen extends ConsumerWidget {
   const CodeCityScreen({super.key});
@@ -19,14 +20,39 @@ class CodeCityScreen extends ConsumerWidget {
     ('team', 'Команда', Icons.groups_rounded, WorldPalette.green),
   ];
 
+  Future<void> _upgrade(BuildContext context, WidgetRef ref, String id,
+      String title, int previousLevel) async {
+    await ref.read(worldControllerProvider.notifier).upgradeBuilding(id);
+    if (!context.mounted) return;
+    final level = ref.read(worldControllerProvider).value?.cityLevels[id];
+    if (level == null || level <= previousLevel) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text('$title: уровень $level. Теперь ${WorldRules.buildingEffect(id, level)}.'),
+    ));
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) => WorldPage(
     title: 'Code City',
-    subtitle: 'Твоя IT-компания растёт вместе с навыками',
+    subtitle: 'Выбирай бонусы за монеты из обучения',
+    actions: [IconButton(tooltip: 'Как работают награды и улучшения',
+      onPressed: () => WorldHelp.showResources(context),
+      icon: const Icon(Icons.help_outline_rounded))],
     child: _WorldData(
       builder: (world) => ListView(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
         children: [
+          WorldPanel(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Text('Решай → получай награды → улучшай город',
+              style: TextStyle(color: WorldPalette.text, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 6),
+            const Text('Здания увеличивают награды или запас жизней. Нажми на здание, чтобы увидеть его эффект.',
+              style: TextStyle(color: WorldPalette.muted, fontSize: 12)),
+            TextButton.icon(onPressed: () => WorldHelp.showResources(context),
+              icon: const Icon(Icons.help_outline_rounded, size: 18),
+              label: const Text('Что дают XP, монеты и алмазы?')),
+          ])),
+          const SizedBox(height: 14),
           AspectRatio(
             aspectRatio: 1,
             child: WorldPanel(
@@ -41,8 +67,9 @@ class CodeCityScreen extends ConsumerWidget {
                     showModalBottomSheet<void>(
                       context: context,
                       backgroundColor: WorldPalette.bg,
+                      isScrollControlled: true,
                       builder: (sheetContext) => SafeArea(
-                        child: Padding(
+                        child: SingleChildScrollView(
                           padding: const EdgeInsets.all(20),
                           child: _BuildingCard(
                             id: id,
@@ -52,11 +79,11 @@ class CodeCityScreen extends ConsumerWidget {
                             level: world.cityLevels[id] ?? 1,
                             coins: world.coins,
                             cap: world.buildingCap,
+                            worldXp: world.worldXp,
                             onUpgrade: () async {
                               Navigator.of(sheetContext).pop();
-                              await ref
-                                  .read(worldControllerProvider.notifier)
-                                  .upgradeBuilding(id);
+                              await _upgrade(context, ref, id, building.$2,
+                                  world.cityLevels[id] ?? 1);
                             },
                           ),
                         ),
@@ -85,7 +112,9 @@ class CodeCityScreen extends ConsumerWidget {
           const SizedBox(height: 20),
           const SectionTitle('Районы компании'),
           Text(
-            'Монеты тратятся на улучшения. Каждые 200 XP открывают следующий уровень зданий, максимум 5. Сейчас доступен уровень ${world.buildingCap}.',
+            world.buildingCap == 5
+                ? 'Все 5 уровней зданий доступны. Выбери нужный бонус и купи улучшение за монеты.'
+                : 'Доступны здания до уровня ${world.buildingCap}. До открытия уровня ${world.buildingCap + 1}: ещё ${world.buildingCap * 200 - world.worldXp} XP. Затем улучшение покупается за монеты.',
             style: const TextStyle(color: WorldPalette.muted),
           ),
           const SizedBox(height: 12),
@@ -98,10 +127,10 @@ class CodeCityScreen extends ConsumerWidget {
               level: world.cityLevels[building.$1] ?? 1,
               coins: world.coins,
               cap: world.buildingCap,
+              worldXp: world.worldXp,
               onUpgrade: () async {
-                await ref
-                    .read(worldControllerProvider.notifier)
-                    .upgradeBuilding(building.$1);
+                await _upgrade(context, ref, building.$1, building.$2,
+                    world.cityLevels[building.$1] ?? 1);
               },
             ),
             const SizedBox(height: 10),
@@ -139,16 +168,9 @@ class CodeCityScreen extends ConsumerWidget {
 }
 
 class _BuildingCard extends StatelessWidget {
-  const _BuildingCard({
-    required this.id,
-    required this.title,
-    required this.icon,
-    required this.color,
-    required this.level,
-    required this.coins,
-    required this.cap,
-    required this.onUpgrade,
-  });
+  const _BuildingCard({required this.id, required this.title, required this.icon,
+    required this.color, required this.level, required this.coins,
+    required this.cap, required this.worldXp, required this.onUpgrade});
 
   final String id;
   final String title;
@@ -157,58 +179,74 @@ class _BuildingCard extends StatelessWidget {
   final int level;
   final int coins;
   final int cap;
+  final int worldXp;
   final VoidCallback onUpgrade;
 
   @override
   Widget build(BuildContext context) {
     final cost = 80 + level * 40;
-    return WorldPanel(
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: .14),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(icon, color: color),
-          ),
+    final maximum = level >= 5;
+    final reasons = <String>[
+      if (!maximum && level >= cap)
+        'Нужно ещё ${level * 200 - worldXp} XP, чтобы открыть уровень ${level + 1}.',
+      if (!maximum && coins < cost)
+        'Не хватает ${cost - coins} монет. Получай их за решения заданий.',
+    ];
+    return WorldPanel(child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(children: [
+          Container(width: 42, height: 42,
+            decoration: BoxDecoration(color: color.withValues(alpha: .14),
+              borderRadius: BorderRadius.circular(12)),
+            child: Icon(icon, color: color)),
           const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: WorldPalette.text,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  'Уровень $level · ${WorldRules.buildingEffect(id, level)}\nСледующий: ${WorldRules.buildingEffect(id, level + 1)}',
-                  style: const TextStyle(
-                    color: WorldPalette.muted,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: coins >= cost && level < cap ? onUpgrade : null,
-            child: Text(
-              level >= 5
-                  ? 'Максимум'
-                  : level >= cap
-                  ? 'Нужен XP'
-                  : '⬆ $cost',
-            ),
-          ),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(title, style: const TextStyle(color: WorldPalette.text,
+              fontWeight: FontWeight.w900)),
+            Text('Уровень $level из 5',
+              style: const TextStyle(color: WorldPalette.muted, fontSize: 12)),
+          ])),
+          IconButton(tooltip: 'Как работает $title',
+            icon: const Icon(Icons.help_outline_rounded, color: WorldPalette.cyan),
+            onPressed: () => WorldHelp.show(context, title, [
+              (WorldHelp.purpose(id), WorldHelp.explanation(id)),
+              ('Где действует', WorldHelp.scope(id)),
+              ('Твой эффект сейчас', WorldRules.buildingEffect(id, level)),
+              if (!maximum) ('После улучшения', WorldRules.buildingEffect(id, level + 1)),
+            ])),
+        ]),
+        const SizedBox(height: 10),
+        Text(WorldHelp.purpose(id), style: const TextStyle(color: WorldPalette.text,
+          fontSize: 14, fontWeight: FontWeight.w700)),
+        const SizedBox(height: 4),
+        Text('Где: ${WorldHelp.scope(id)}',
+          style: const TextStyle(color: WorldPalette.muted, fontSize: 12)),
+        const SizedBox(height: 12),
+        Text('Сейчас: ${WorldRules.buildingEffect(id, level)}',
+          style: const TextStyle(color: WorldPalette.text, fontSize: 13)),
+        if (!maximum) ...[
+          const SizedBox(height: 6),
+          Text('После улучшения: ${WorldRules.buildingEffect(id, level + 1)}',
+            style: const TextStyle(color: WorldPalette.green, fontSize: 13,
+              fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+          Text('Баланс: $coins монет · после покупки: ${coins >= cost ? coins - cost : "недостаточно монет"}',
+            style: const TextStyle(color: WorldPalette.muted, fontSize: 12)),
         ],
-      ),
-    );
+        const SizedBox(height: 12),
+        FilledButton.icon(
+          onPressed: !maximum && reasons.isEmpty ? onUpgrade : null,
+          icon: Icon(maximum ? Icons.check_rounded : Icons.upgrade_rounded),
+          label: Text(maximum ? 'Максимальный уровень' : 'Улучшить за $cost монет'),
+        ),
+        if (reasons.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Text(reasons.join('\n'), style: const TextStyle(color: WorldPalette.orange,
+            fontSize: 12, height: 1.4)),
+        ],
+      ],
+    ));
   }
 }
 
