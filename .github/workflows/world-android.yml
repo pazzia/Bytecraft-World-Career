@@ -1,15 +1,15 @@
-name: Bytecraft World Android
+name: World Career Android
 
 on:
   push:
-    branches: [ bytecraft-world-mvp ]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: bytecraft-world-${{ github.ref }}
+  group: world-career-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

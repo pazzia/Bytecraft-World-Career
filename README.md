@@ -1,49 +1,53 @@
-# Bytecraft
+# Bytecraft World + Career
 
-Игра для обучения программированию короткими головоломками (1–3 минуты). MVP: Flutter, курс **Python Basics** — 5 модулей, 25 уровней, 4 механики.
+Самостоятельный проект игрового обучения Python и развития навыков. Отдельный репозиторий: **pazzia/Bytecraft-World-Career**.
 
-## Быстрый старт
+## Что перенесено
 
-Нужен Flutter (stable, Dart ≥ 3.8).
+В `main` находится актуальная база World: исходники, контент, изображения, тесты и инструменты, включая восстановление жизней 0.4.3 и подготовленные изменения 0.4.4 — полную карту экспедиции с программистом и пояснения зданий / наград.
+
+Исходники Career с историей сохранены в `prototype/career`. Их функции пока не объединены с приложением в `main`. Сохранены также учебная база и дизайн, чтобы при развитии проекта не потерять актуальные материалы.
+
+| Ветка | Назначение |
+| --- | --- |
+| `main` | Рабочая база нового проекта, сейчас на основе World 0.4.4 |
+| `prototype/world` | Снимок World с последними локальными изменениями до переноса |
+| `prototype/career` | Полный прототип Career 0.2.0 с историей и тестами |
+| `reference/course-main` | Снимок основного Bytecraft для выборочного переноса исправлений и контента |
+| `reference/design` | Исходная ветка дизайн-спецификации и 39 заданий |
+
+## Документы и макеты
+
+- [План самостоятельного проекта](docs/product/ROADMAP.md).
+- [Состав и происхождение переноса](docs/product/MIGRATION.md).
+- [Правила применения дизайна](docs/product/DESIGN-WORLD-CAREER.md).
+- [Спецификация UX v2](design/SPEC.md) и [39 заданий на макеты](design/README.md).
+- [Карта: начало, 3/5 и финиш](docs/mockups/Expedition-progress-mockups.png).
+- [Анимация перемещения программиста](docs/mockups/Expedition-programmer-motion.gif).
+- [Программист на прозрачном фоне](docs/mockups/Programmer-explorer.png).
+
+В `docs/reference/` сохранены исходный roadmap основного Bytecraft и прежний README. Это исторические материалы другого направления; решения о заморозке World/Career и дата релиза основного Bytecraft не задают рамки этого проекта.
+
+## Разработка и сборка
+
+Нужен Flutter stable с Dart не ниже 3.8. Платформенные каталоги генерируются при подготовке среды, как и в исходном проекте.
 
 ```bash
-./tool/verify.sh      # создаст android/ios, pub get, проверит контент, analyze + test
+git clone https://github.com/pazzia/Bytecraft-World-Career.git
+cd Bytecraft-World-Career
+bash tool/verify.sh
 flutter run
 ```
 
-`verify.sh` при первом запуске выполняет `flutter create --platforms=android,ios .` — эта команда добавляет только недостающие платформенные папки и не перезаписывает `lib/`, `test/`, `pubspec.yaml`.
-
-## Что работает
-
-- Onboarding (опыт → язык), Home, карта курса, Profile, Shop, Premium (mock-покупки)
-- Механики: Multiple Choice, Fill Missing Code, Code Ordering (drag & drop), Find the Bug
-- XP, звёзды, жизни с восстановлением, streak (+ заморозка), монеты, уровень аккаунта
-- Достижения, задача дня, разблокировка уровней (для «я уже программист» открыты все модули)
-- Прогресс сохраняется локально и переживает перезапуск; светлая и тёмная тема
-
-## Архитектура
-
-См. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): ADR, дерево проекта, Level Engine, data flow, хранилище, роутинг, состояние. Дизайн-система: [docs/DESIGN.md](docs/DESIGN.md).
-
-## Контент
-
-Уровни — JSON в `assets/content/python/modules/`. Источник истины — `tool/content/generate_python_course.py`: он генерирует JSON и **исполняет каждый сниппет реальным Python**, проверяя ожидаемый вывод, полноту допустимых порядков в ordering-задачах и то, что bug-finder уровни действительно ломаются и чинятся.
+Проверка учебного контента и игровых заданий:
 
 ```bash
-python3 tool/content/generate_python_course.py assets/content/python/modules
+python3 tool/world/generate_dna.py --check
+dart run tool/world/export_questions.dart | python3 tool/world/check_questions.py
 ```
 
-Удалённый контент: `flutter run --dart-define=CONTENT_BASE_URL=https://cdn.example.com` — клиент будет запрашивать `GET /courses/python` и кэшировать версию, если её `version` выше бандла.
+Workflow `World Career Android` запускается на `main` и вручную. Он проверяет контент, анализирует Dart, выполняет тесты, собирает APK и проверяет запуск на Android. Первая проверка нового репозитория должна завершиться прежде, чем перенос объявляется проверенной сборкой.
 
-## Как добавить новый тип задания
+Ключ подписи исходного репозитория хранится отдельно от Git и сюда не переносился. Новая сборка может получить другую подпись: совместимость установки поверх старого APK требует отдельного решения. Секреты и настройки сервисов не копируются в публичный Git.
 
-1. `LevelType` + подкласс `LevelPayload` и парсер в `ContentParser.defaultPayloadParsers`
-2. Подкласс `Answer` (если нужна новая форма ответа)
-3. `AnswerValidator` → `ValidatorRegistry.standard()`
-4. `QuestionRenderer` → `QuestionRendererRegistry.standard`
-
-Экраны, engine и прогресс менять не нужно.
-
-## CI
-
-GitHub Actions (`.github/workflows/android.yml`) on every PR and push to `main`: `flutter analyze`, `flutter test`, release APK. On PRs the results are posted as a comment; on `main` the APK is published as a GitHub Release. Release signing setup: [docs/RELEASE.md](docs/RELEASE.md).
+Дальнейшая задача — согласовать общее состояние World/Career и встроить карьерные цели / навыки в игровой маршрут. Автоматическое слияние балансов и старых баз контента не выполняется.
