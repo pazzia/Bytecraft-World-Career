@@ -1,6 +1,5 @@
 """Local functional checks for the player's calculator; no network or services."""
 import contextlib
-import io
 import json
 import math
 
@@ -27,7 +26,14 @@ def raises(kind, action):
         return
     raise AssertionError("Ожидалась ошибка " + kind.__name__)
 
-with contextlib.redirect_stdout(io.StringIO()):
+class QuietOutput:
+    # User logging must not allocate an unbounded StringIO buffer during checks.
+    def write(self, text):
+        return len(text)
+    def flush(self):
+        pass
+
+with contextlib.redirect_stdout(QuietOutput()):
     try:
         exec(compile(request["code"], "calculator.py", "exec"), namespace)
     except BaseException as error:

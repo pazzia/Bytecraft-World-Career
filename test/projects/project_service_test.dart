@@ -42,6 +42,7 @@ void main() {
     expect(wallet.worldXp, 180);
     expect(wallet.hasVerifiedProject, isTrue);
     expect(wallet.completedProjectSteps, 4);
+    expect(wallet.solved['project'], 4);
     expect((await env.service.load()).verifiedCode, 'my program');
     await env.service.check('my program');
     expect((await env.world.load()).coins, 100);
@@ -126,6 +127,16 @@ void main() {
     expect((await env.service.load()).draft, 'broken draft');
     expect((await env.world.load()).hasVerifiedProject, isTrue);
     expect((await env.world.load()).coins, 100);
+  });
+
+  test('old question rewards are retained without paying them again for code checks', () async {
+    final env = Env(state: WorldState.initial().copyWith(expeditionStep: 5,
+      coins: 123, worldXp: 456,
+      projectSteps: {for (final id in WorldState.projectIds) id: true}));
+    for (var i = 0; i < 4; i++) { await env.service.check('program'); }
+    expect((await env.world.load()).coins, 123);
+    expect((await env.world.load()).worldXp, 456);
+    expect((await env.world.load()).hasVerifiedProject, isTrue);
   });
 
   test('locked expedition blocks code checks and preserves balance', () async {

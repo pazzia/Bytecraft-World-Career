@@ -91,6 +91,8 @@ class ProjectService {
         }
         next = WorldRules.active(next.copyWith(
           projectSteps: {...next.projectSteps, component: true},
+          solved: {...next.solved, 'project': nextStep > (next.solved['project'] ?? 0)
+              ? nextStep : next.solved['project']!},
           hasVerifiedProject: nextStep == 4,
         ), clock.now());
       }

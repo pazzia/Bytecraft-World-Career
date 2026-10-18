@@ -38,7 +38,7 @@ class CalculatorChecks(unittest.TestCase):
         self.assertFalse(check("def broken(", 0)[0]["passed"])
 
     def test_printed_noise_cannot_replace_checker_output(self):
-        checks = check('print("pretend passed")\n' + REFERENCE, 3)
+        checks = check('print("pretend passed" * 100000)\n' + REFERENCE, 3)
         self.assertEqual(len(checks), 14)
         self.assertTrue(all(c["passed"] for c in checks))
 
