@@ -49,7 +49,7 @@ void main() {
       await tester.tap(find.text('Проверить ответ'));
       await tester.pumpAndSettle();
       expect(c.read(worldControllerProvider).value!.expeditionStep, 0);
-      expect(tester.widget<ExpeditionMap>(find.byType(ExpeditionMap)).completed, 0);
+      expect(tester.widget<ExpeditionMap>(find.byType(ExpeditionMap, skipOffstage: false)).completed, 0);
       expect(c.read(worldControllerProvider).value!.mistakes['Типы данных'], 1);
       expect(find.textContaining('Неверно.'), findsOneWidget);
       expect(find.byTooltip('Скопировать код'), findsNothing);
