@@ -1,5 +1,6 @@
 class WorldState {
   const WorldState({
+    this.trainingCurriculumVersion = 2,
     this.solved = const {},
     this.failures = const {},
     this.lastActiveDay = '',
@@ -77,6 +78,7 @@ class WorldState {
 
     final initial = WorldState.initial();
     return WorldState(
+      trainingCurriculumVersion: (json['trainingCurriculumVersion'] as num?)?.toInt() ?? 1,
       solved: ints('solved', {}),
       failures: ints('failures', {}),
       lastActiveDay: json['lastActiveDay'] as String? ?? '',
@@ -113,6 +115,7 @@ class WorldState {
     );
   }
 
+  final int trainingCurriculumVersion;
   final Map<String, int> solved;
   final Map<String, int> failures;
   final String lastActiveDay;
@@ -151,6 +154,7 @@ class WorldState {
   int get expeditionProgress => expeditionStep.clamp(0, 5).toInt();
 
   WorldState copyWith({
+    int? trainingCurriculumVersion,
     Map<String, int>? solved,
     Map<String, int>? failures,
     String? lastActiveDay,
@@ -177,6 +181,7 @@ class WorldState {
     Map<String, bool>? projectSteps,
     Map<String, int>? mistakes,
   }) => WorldState(
+    trainingCurriculumVersion: trainingCurriculumVersion ?? this.trainingCurriculumVersion,
     solved: solved ?? this.solved,
     failures: failures ?? this.failures,
     lastActiveDay: lastActiveDay ?? this.lastActiveDay,
@@ -206,6 +211,7 @@ class WorldState {
   );
 
   Map<String, dynamic> toJson() => {
+    'trainingCurriculumVersion': trainingCurriculumVersion,
     'solved': solved,
     'failures': failures,
     'lastActiveDay': lastActiveDay,

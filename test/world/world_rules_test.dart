@@ -149,7 +149,7 @@ void main() {
       ]) {
         var s = WorldState.initial().copyWith(expeditionStep: 2);
         final codes = <String>{};
-        for (var n = 0; n < 40; n++) {
+        for (var n = 0; n < (mode == WorldMode.training ? 20 : 40); n++) {
           final q = WorldChallenges.at(s, mode);
           codes.add(q.code);
           final blank = WorldRules.submit(s, mode, q.id, '', now);
@@ -168,7 +168,7 @@ void main() {
             same(s),
           );
         }
-        expect(codes.length, 40, reason: mode.name);
+        expect(codes.length, mode == WorldMode.training ? 20 : 40, reason: mode.name);
       }
     },
   );

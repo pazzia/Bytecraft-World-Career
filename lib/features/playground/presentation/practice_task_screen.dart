@@ -1,3 +1,5 @@
+import '../../../shared/widgets/code_copy.dart';
+import '../../world/presentation/world_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,6 +32,7 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
   bool _checking = false;
   bool _showSolution = false;
   bool _showHint = false;
+  int _wrongAnswers = 0;
 
   @override
   void initState() {
@@ -59,6 +62,13 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
       final courseId = await ref.read(activeCourseIdProvider.future);
       await ref.read(practiceRepositoryProvider).markSolved(courseId, task.id);
       ref.read(progressRevisionProvider.notifier).bump();
+    } else {
+      _wrongAnswers++;
+      try {
+        final courseId = await ref.read(activeCourseIdProvider.future);
+        await ref.read(worldControllerProvider.notifier).recordLearningMistake(task.moduleId,
+          taskKey: 'practice:$courseId:${task.id}');
+      } catch (_) { /* Learning remains available if meta-game storage fails. */ }
     }
     if (!mounted) return;
     setState(() {
@@ -103,7 +113,8 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
     final report = _report;
     final outcomes = report?.outcomes;
     final passedAll = report != null && report.passedAll(task);
-    return Scaffold(
+    final storedErrors = ref.watch(worldControllerProvider).value?.failures['practice:${ref.watch(activeCourseIdProvider).value}:${task.id}'] ?? 0;
+    return CodeCopyScope(wrongAnswers: _wrongAnswers > storedErrors ? _wrongAnswers : storedErrors, child: Scaffold(
       appBar: AppBar(title: Text(task.title)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(
@@ -229,7 +240,7 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
             ),
         ],
       ),
-    );
+    ));
   }
 }
 

@@ -90,6 +90,10 @@ class FillCodeView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         CodeBoard(
+          copyText: FillCodeTemplate.parse(payload.template).map((segment) => switch (segment) {
+            TextSegment(:final text) => text,
+            BlankSegment(:final index) => index < answer.tokens.length ? (answer.tokens[index] ?? '___') : '___',
+          }).join(),
           padding: const EdgeInsets.all(Spacing.lg),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,

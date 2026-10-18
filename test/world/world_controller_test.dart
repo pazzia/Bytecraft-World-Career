@@ -3,11 +3,44 @@ import 'dart:convert';
 import 'package:bytecraft/app/di/providers.dart';
 import 'package:bytecraft/core/storage/key_value_store.dart';
 import 'package:bytecraft/features/world/domain/world_challenge.dart';
+import 'package:bytecraft/features/world/domain/world_state.dart';
 import 'package:bytecraft/features/world/presentation/world_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('new curriculum resets only old DNA cursors and keeps earned game progress', () async {
+    final old = WorldState.initial().copyWith(coins: 91, worldXp: 150, expeditionStep: 3,
+      trainingCurriculumVersion: 1,
+      solved: {'training:Условия': 73, 'expedition': 3},
+      failures: {'training:Условия:73': 2, 'expedition:3': 3});
+    final store = InMemoryKeyValueStore({'bytecraft_world_state': jsonEncode({...old.toJson(), 'schemaVersion': 2})});
+    final c = ProviderContainer(overrides: [keyValueStoreProvider.overrideWithValue(store)]);
+    addTearDown(c.dispose);
+    final s = await c.read(worldControllerProvider.future);
+    expect(s.trainingCurriculumVersion, DnaCurriculum.revision);
+    expect(s.solved, {'expedition': 3});
+    expect(s.failures, {'expedition:3': 3});
+    expect(s.coins, 91);
+    expect(s.worldXp, 150);
+    expect(s.expeditionStep, 3);
+  });
+  test('course error gates persist independently for level and reference topic', () async {
+    final store = InMemoryKeyValueStore();
+    final c = ProviderContainer(overrides: [keyValueStoreProvider.overrideWithValue(store)]);
+    addTearDown(c.dispose);
+    await c.read(worldControllerProvider.future);
+    for (var n = 0; n < 3; n++) {
+      await c.read(worldControllerProvider.notifier).recordLearningMistake('types',
+        taskKey: 'lesson:python:types_1', topicKey: 'topic:python:types');
+    }
+    final restored = ProviderContainer(overrides: [keyValueStoreProvider.overrideWithValue(store)]);
+    addTearDown(restored.dispose);
+    final s = await restored.read(worldControllerProvider.future);
+    expect(s.failures['lesson:python:types_1'], 3);
+    expect(s.failures['topic:python:types'], 3);
+    expect(s.failures['lesson:python:types_2'], isNull);
+  });
   test('rapid duplicate submissions reward once and survive restart', () async {
     final store = InMemoryKeyValueStore();
     final c = ProviderContainer(

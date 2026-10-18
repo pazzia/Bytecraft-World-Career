@@ -1,3 +1,5 @@
+import '../../../shared/widgets/code_copy.dart';
+import '../../world/presentation/world_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -84,7 +86,9 @@ class TopicScreen extends ConsumerWidget {
                     ),
                   ),
                 const SizedBox(height: Spacing.xxl),
-                TopicContent(topic: topic, showTitle: false),
+                CodeCopyScope(
+                  wrongAnswers: ref.watch(worldControllerProvider).value?.failures['topic:${ref.watch(activeCourseIdProvider).value}:$topicId'] ?? 0,
+                  child: TopicContent(topic: topic, showTitle: false)),
                 if (all.isNotEmpty) ...[
                   const SectionTitle('Практика по теме'),
                   for (final level in all)

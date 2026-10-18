@@ -20,7 +20,17 @@ class WorldController extends AsyncNotifier<WorldState> {
     final store = ref.watch(documentStoreProvider);
     final stored = await store.read(_key);
     if (stored == null) return WorldState.initial();
-    if (stored['schemaVersion'] == _schema) return WorldState.fromJson(stored);
+    if (stored['schemaVersion'] == _schema) {
+      final current = WorldState.fromJson(stored);
+      if (current.trainingCurriculumVersion >= DnaCurriculum.revision) return current;
+      final migrated = current.copyWith(
+        trainingCurriculumVersion: DnaCurriculum.revision,
+        solved: Map.fromEntries(current.solved.entries.where((e) => !e.key.startsWith('training:'))),
+        failures: Map.fromEntries(current.failures.entries.where((e) => !e.key.startsWith('training:'))),
+      );
+      await store.write(_key, migrated.toJson(), schemaVersion: _schema);
+      return migrated;
+    }
     // v1 contained demo progress and unvalidated click rewards. Keep currency
     // and purchased buildings, but require evidence for quests and records.
     final old = WorldState.fromJson(stored);
@@ -103,11 +113,16 @@ class WorldController extends AsyncNotifier<WorldState> {
     await _set(next.copyWith(solved: {...next.solved, key: 1}));
   });
 
-  Future<void> recordLearningMistake(String moduleId) =>
+  Future<void> recordLearningMistake(String moduleId, {String? taskKey, String? topicKey}) =>
       _serial((current) async {
         final category = _mistakeCategory(moduleId);
         await _set(
           current.copyWith(
+            failures: {
+              ...current.failures,
+              for (final key in {taskKey, topicKey}.whereType<String>())
+                key: (current.failures[key] ?? 0) + 1,
+            },
             mistakes: {
               ...current.mistakes,
               category: (current.mistakes[category] ?? 0) + 1,

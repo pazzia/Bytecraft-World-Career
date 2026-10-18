@@ -1,3 +1,5 @@
+import '../../../../shared/widgets/code_copy.dart';
+import '../../../../features/world/presentation/world_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -49,7 +51,9 @@ class LevelReviewSheet extends ConsumerWidget {
     final note = state.mistakeNote;
     final solution = level.solution;
 
-    return DraggableScrollableSheet(
+    final persisted = ref.watch(worldControllerProvider).value?.failures['lesson:${args.courseId}:${args.levelId}'] ?? 0;
+    final errors = state.session?.mistakes ?? 0;
+    return CodeCopyScope(wrongAnswers: errors > persisted ? errors : persisted, child: DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.88,
       minChildSize: 0.4,
@@ -131,6 +135,6 @@ class LevelReviewSheet extends ConsumerWidget {
           ],
         ],
       ),
-    );
+    ));
   }
 }

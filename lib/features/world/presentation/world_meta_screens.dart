@@ -238,7 +238,7 @@ class MistakeDnaScreen extends ConsumerWidget {
         children: [
           const WorldPanel(
             child: Text(
-              'Здесь учитываются реальные неверные ответы из курса и игровых режимов. Верное решение тренировки закрепляет одну ошибку выбранной темы. Можно практиковаться и без ошибок.',
+              'Здесь учитываются реальные неверные ответы из курса и игровых режимов. Верное решение тренировки закрепляет одну ошибку выбранной темы. В каждом разделе 20 разных подтем: от основ до сложных случаев. После обновления программа DNA начинается заново; награды и остальной прогресс сохранены.',
               style: TextStyle(color: WorldPalette.text),
             ),
           ),
@@ -251,7 +251,7 @@ class MistakeDnaScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      '${entry.key}: ${entry.value}',
+                      '${entry.key}: ${entry.value} ошибок · пройдено ${s.solved['training:${entry.key}'] ?? 0}/20',
                       style: const TextStyle(
                         color: WorldPalette.text,
                         fontWeight: FontWeight.bold,
@@ -259,9 +259,9 @@ class MistakeDnaScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 10),
                     WorldButton(
-                      label: 'Решить задачу по теме',
+                      label: WorldChallenges.finished(s, WorldMode.training, category: entry.key) ? 'Все 20 подтем пройдены ✓' : 'Продолжить · ${(s.solved['training:${entry.key}'] ?? 0) + 1}/20',
                       icon: Icons.code,
-                      onPressed: () => Navigator.of(context).push(
+                      onPressed: WorldChallenges.finished(s, WorldMode.training, category: entry.key) ? null : () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => WorldQuestScreen(
                             mode: WorldMode.training,

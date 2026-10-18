@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import '../../../shared/widgets/code_copy.dart';
 
 abstract final class WorldPalette {
   static const bg = Color(0xFF071021);
@@ -277,7 +278,9 @@ class CodeBlock extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0xFF1F3352)),
         ),
-        child: Text(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          CodeCopyButton(code: code),
+          Text(
           code,
           style: const TextStyle(
             color: Color(0xFFCFA7FF),
@@ -286,6 +289,7 @@ class CodeBlock extends StatelessWidget {
             height: 1.55,
           ),
         ),
+        ]),
       );
 }
 

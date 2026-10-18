@@ -52,7 +52,7 @@ print("Квадраты:", squares)
 ''';
 
   @override
-  ({String code, String stdin}) build() => (code: sample, stdin: 'Ада');
+  ({String code, String stdin}) build() => (code: '', stdin: '');
 
   void setCode(String code) => state = (code: code, stdin: state.stdin);
 

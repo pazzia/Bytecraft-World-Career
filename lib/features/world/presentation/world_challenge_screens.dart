@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/routes.dart';
+import '../../../shared/widgets/code_copy.dart';
 import '../domain/world_challenge.dart';
 import '../domain/world_state.dart';
 import 'world_controller.dart';
@@ -95,9 +96,11 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
           data: (s) {
             final mode = widget.mode;
             final lock = WorldChallenges.locked(s, mode);
-            final finished = WorldChallenges.finished(s, mode);
+            final finished = WorldChallenges.finished(s, mode, category: widget.category);
             final cursor = WorldChallenges.cursor(s, mode, widget.category);
-            final task = WorldChallenges.at(s, mode, category: widget.category);
+            final task = finished && mode == WorldMode.training
+                ? DnaCurriculum.at(widget.category, DnaCurriculum.count(widget.category) - 1, 'finished')
+                : WorldChallenges.at(s, mode, category: widget.category);
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
@@ -140,7 +143,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                               ? 'Личный рекорд ещё не установлен'
                               : 'Личный рекорд ${s.ghostBestSeconds} сек.',
                         WorldMode.training =>
-                          'Незакреплённых ошибок: ${s.mistakes[widget.category] ?? 0}',
+                          'Пройдено $cursor/${DnaCurriculum.count(widget.category)} · незакреплённых ошибок: ${s.mistakes[widget.category] ?? 0}',
                         WorldMode.infinite =>
                           'Серия ${s.infiniteCurrent} · рекорд ${s.infiniteRecord} · жизни ${s.hearts}/${s.maxHearts}',
                       }, style: const TextStyle(color: WorldPalette.cyan)),
@@ -183,6 +186,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                         'API восстановлен. Открой сундук и переходи к проекту.',
                       WorldMode.project =>
                         'Калькулятор готов. Можно сразиться с Bug Lord.',
+                      WorldMode.training => 'Все 20 подтем пройдены. Продолжай курс и применяй знания в практике.',
                       WorldMode.guild => 'Проект команды завершён. Бонус уже начислен. Продолжай курс Python.',
                       _ => 'Bug Lord побеждён. Продолжай курс Python и тренируйся в забегах.',
                     }, style: const TextStyle(color: WorldPalette.green)),
@@ -217,6 +221,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                     }),
                   ),
                 ] else if (mode == WorldMode.infinite && s.hearts == 0) ...[
+                  CodeCopyScope(wrongAnswers: s.failures[task.id] ?? 0, child: CodeBlock(task.code)),
                   const Text(
                     'Забег остановлен. Пройденные этапы и рекорд сохранены.',
                     style: TextStyle(color: WorldPalette.text),
@@ -249,6 +254,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                   _ChallengeForm(
                     key: ValueKey(task.id),
                     task: task,
+                    wrongAnswers: s.failures[task.id] ?? 0,
                     submit: (answer, elapsed) async {
                       final result = await ref
                           .read(worldControllerProvider.notifier)
@@ -288,8 +294,9 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
 }
 
 class _ChallengeForm extends StatefulWidget {
-  const _ChallengeForm({required this.task, required this.submit, super.key});
+  const _ChallengeForm({required this.task, required this.submit, required this.wrongAnswers, super.key});
   final WorldChallenge task;
+  final int wrongAnswers;
   final Future<void> Function(String, int) submit;
   @override
   State<_ChallengeForm> createState() => _ChallengeFormState();
@@ -324,7 +331,8 @@ class _ChallengeFormState extends State<_ChallengeForm> {
             ),
           ),
           const SizedBox(height: 12),
-          CodeBlock(task.code),
+          CodeCopyScope(wrongAnswers: widget.wrongAnswers, child: CodeBlock(
+            task.code.replaceAll('___', _selected ?? '___'))),
           const SizedBox(height: 12),
           Text(task.prompt, style: const TextStyle(color: WorldPalette.text)),
           const SizedBox(height: 12),
@@ -332,6 +340,9 @@ class _ChallengeFormState extends State<_ChallengeForm> {
             TextField(
               key: const ValueKey('world-answer'),
               controller: _answer,
+              minLines: 1,
+              maxLines: 5,
+              keyboardType: TextInputType.multiline,
               enabled: !_busy,
               autocorrect: false,
               enableSuggestions: false,

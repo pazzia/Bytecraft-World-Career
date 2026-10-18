@@ -4,6 +4,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/theme/game_colors.dart';
 import '../utils/python_highlighter.dart';
+import 'code_copy.dart';
 
 /// Builds highlighted spans for one line of Python.
 List<TextSpan> highlightPython(String line, GameColors colors) =>
@@ -24,6 +25,7 @@ class CodeBoard extends StatelessWidget {
   const CodeBoard({
     super.key,
     required this.child,
+    this.copyText,
     this.padding = const EdgeInsets.symmetric(
       vertical: Spacing.lg,
       horizontal: Spacing.md,
@@ -31,6 +33,7 @@ class CodeBoard extends StatelessWidget {
   });
 
   final Widget child;
+  final String? copyText;
   final EdgeInsetsGeometry padding;
 
   @override
@@ -45,7 +48,10 @@ class CodeBoard extends StatelessWidget {
         borderRadius: AppRadius.boardAll,
         boxShadow: AppShadows.edge(colors.boardEdge, depth: 6),
       ),
-      child: child,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (copyText != null) CodeCopyButton(code: copyText!),
+        child,
+      ]),
     );
   }
 }
@@ -79,6 +85,7 @@ class CodeBlock extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final lines = code.split('\n');
     return CodeBoard(
+      copyText: code,
       padding: const EdgeInsets.symmetric(vertical: Spacing.md),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,

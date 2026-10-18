@@ -1,3 +1,5 @@
+import '../../../shared/widgets/code_copy.dart';
+import '../../../features/world/presentation/world_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -140,7 +142,9 @@ class LevelScreen extends ConsumerWidget {
         ),
     };
 
-    final scaffold = Scaffold(body: body);
+    final persisted = ref.watch(worldControllerProvider).value?.failures['lesson:${args.courseId}:${args.levelId}'] ?? 0;
+    final errors = state.session?.mistakes ?? 0;
+    final scaffold = Scaffold(body: CodeCopyScope(wrongAnswers: errors > persisted ? errors : persisted, child: body));
     return _isTimed ? Theme(data: AppTheme.timed, child: scaffold) : scaffold;
   }
 }

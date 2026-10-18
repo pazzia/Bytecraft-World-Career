@@ -38,8 +38,8 @@ void main() {
     expect(find.text('Mistake DNA'), findsOneWidget);
     // Starts at zero, then records a real variables/type error.
     expect(find.text('Незакреплённые ошибки по темам'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Типы данных: 1'), 150);
-    expect(find.text('Типы данных: 1'), findsOneWidget);
+    await tester.scrollUntilVisible(find.textContaining('Типы данных: 1 ошибок'), 150);
+    expect(find.textContaining('Типы данных: 1 ошибок'), findsOneWidget);
   });
 
   testWidgets('the sandbox runs code and shows the output', (tester) async {
@@ -51,6 +51,10 @@ void main() {
 
     await openTab(tester, 'Код');
     dumpTexts(tester, 'code');
+    expect(tester.widget<TextField>(find.byKey(const ValueKey('code_editor'))).controller!.text, isEmpty);
+    await tester.enterText(find.byKey(const ValueKey('code_editor')), 'print(input())');
+    await tester.enterText(find.byKey(const ValueKey('sandbox_stdin')), 'Ада');
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const ValueKey('sandbox_run')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const ValueKey('sandbox_run')));

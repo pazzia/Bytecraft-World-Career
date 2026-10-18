@@ -1,3 +1,4 @@
+import '../../../shared/widgets/code_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -104,6 +105,12 @@ class CodeEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+          ValueListenableBuilder<TextEditingValue>(valueListenable: controller,
+            builder: (context, value, _) => CodeCopyButton(code: value.text)),
+          IconButton(tooltip: 'Очистить код', icon: const Icon(Icons.clear_all_rounded),
+            onPressed: () { controller.clear(); onChanged?.call(''); focusNode?.requestFocus(); }),
+        ]),
         Container(
           decoration: BoxDecoration(
             color: game.board,
@@ -131,6 +138,7 @@ class CodeEditor extends StatelessWidget {
             cursorColor: game.codeText,
             style: AppTypography.code(color: game.codeText, size: 15),
             decoration: const InputDecoration(
+              hintText: 'Введите код Python…',
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,

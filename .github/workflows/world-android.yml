@@ -76,7 +76,9 @@ jobs:
           PY
 
       - name: Independently check World answers in CPython
-        run: dart run tool/world/export_questions.dart | python tool/world/check_questions.py
+        run: |
+          python tool/world/generate_dna.py --check
+          dart run tool/world/export_questions.dart | python tool/world/check_questions.py
 
       - name: Check course content
         run: |

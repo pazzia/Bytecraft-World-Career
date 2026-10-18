@@ -10,6 +10,7 @@ void main() {
     final length = switch (mode) {
       WorldMode.expedition => 5,
       WorldMode.project || WorldMode.boss => 4,
+      WorldMode.training => 20,
       _ => 50,
     };
     for (var i = 0; i < length; i++) {
@@ -34,6 +35,7 @@ void main() {
           'code': q.code,
           'answer': q.answer,
           'kind': q.options.isEmpty ? 'output' : 'fill',
+          if (q.verificationOutput != null) 'verificationOutput': q.verificationOutput!,
         });
       }
     }

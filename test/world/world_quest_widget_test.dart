@@ -47,6 +47,14 @@ void main() {
       expect(c.read(worldControllerProvider).value!.expeditionStep, 0);
       expect(c.read(worldControllerProvider).value!.mistakes['Типы данных'], 1);
       expect(find.textContaining('Неверно.'), findsOneWidget);
+      expect(find.byTooltip('Скопировать код'), findsNothing);
+      for (var n = 0; n < 2; n++) {
+        await tester.ensureVisible(find.text('Проверить ответ'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Проверить ответ'));
+        await tester.pumpAndSettle();
+      }
+      expect(find.byTooltip('Скопировать код'), findsOneWidget);
       await tester.enterText(find.byKey(const ValueKey('world-answer')), '170');
       await tester.pump();
       await tester.ensureVisible(find.text('Проверить ответ'));
@@ -59,6 +67,7 @@ void main() {
       await tester.tap(find.text('Следующее задание'));
       await tester.pumpAndSettle();
       expect(find.text('Защита от деления на ноль'), findsOneWidget);
+      expect(find.byTooltip('Скопировать код'), findsNothing);
       expect(tester.widget<FilledButton>(button).onPressed, isNull);
       await tester.ensureVisible(find.text('price != 0'));
       await tester.pumpAndSettle();

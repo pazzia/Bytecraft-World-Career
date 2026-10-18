@@ -59,7 +59,7 @@ abstract final class WorldRules {
   }) {
     final locked = WorldChallenges.locked(s, mode);
     if (locked != null) return WorldSubmission(s, locked);
-    if (WorldChallenges.finished(s, mode))
+    if (WorldChallenges.finished(s, mode, category: category))
       return WorldSubmission(s, 'Этот этап уже завершён.');
     if (mode == WorldMode.infinite && s.hearts <= 0) {
       return WorldSubmission(

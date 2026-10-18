@@ -1,5 +1,7 @@
 import 'world_state.dart';
 
+part 'dna_curriculum.dart';
+
 enum WorldMode {
   expedition,
   project,
@@ -22,9 +24,11 @@ class WorldChallenge {
     required this.explanation,
     required this.category,
     this.options = const [],
+    this.verificationOutput,
   });
   final String id, title, code, prompt, answer, explanation, category;
   final List<String> options;
+  final String? verificationOutput;
 
   bool accepts(String input) =>
       input.trim().isNotEmpty &&
@@ -46,7 +50,8 @@ abstract final class WorldChallenges {
     _ => null,
   };
 
-  static bool finished(WorldState s, WorldMode mode) => switch (mode) {
+  static bool finished(WorldState s, WorldMode mode, {String category = 'Условия'}) => switch (mode) {
+    WorldMode.training => cursor(s, mode, category) >= DnaCurriculum.count(category),
     WorldMode.expedition => s.expeditionStep >= 5,
     WorldMode.project => s.projectUnlocked,
     WorldMode.boss => s.bossCleared,
@@ -72,6 +77,7 @@ abstract final class WorldChallenges {
     if (mode == WorldMode.expedition) return _expedition(n, id);
     if (mode == WorldMode.project) return _project(n, id);
     if (mode == WorldMode.boss) return _boss(n, id);
+    if (mode == WorldMode.training) return DnaCurriculum.at(category, n, id);
     // Every repeatable mode uses its own sequence. Training uses the failed topic.
     final offset = mode.index * 17;
     final topic = mode == WorldMode.training

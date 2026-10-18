@@ -1,3 +1,4 @@
+import '../../../shared/widgets/code_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
@@ -48,6 +49,7 @@ class CodeOrderingView extends StatelessWidget {
       builder: (context, constraints) => Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          CodeCopyButton(code: answer.order.map((i) => payload.lines[i]).join('\n')),
           for (var position = 0; position < answer.order.length; position++)
             Padding(
               padding: const EdgeInsets.only(bottom: Spacing.md),
