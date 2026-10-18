@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:bytecraft/core/storage/key_value_store.dart';
 import 'package:bytecraft/features/world/domain/world_state.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter/material.dart';
+import 'package:bytecraft/features/profile/presentation/profile_screen.dart';
 
 import '../helpers/app_harness.dart';
 
@@ -25,7 +27,17 @@ void main() {
       });
       await pumpBytecraft(tester, store: store);
       await openTab(tester, 'Профиль');
-      await tester.scrollUntilVisible(find.text('Сбросить прогресс'), 200);
+      await tester.scrollUntilVisible(
+        find.text('Сбросить прогресс'),
+        200,
+        scrollable: find
+            .descendant(
+              of: find.byType(ProfileScreen),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Сбросить прогресс'));
       await tester.pumpAndSettle();
       await tester.tap(find.text('Сбросить прогресс').last);

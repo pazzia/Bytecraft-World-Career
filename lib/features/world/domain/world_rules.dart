@@ -141,7 +141,7 @@ abstract final class WorldRules {
         xp = 20 + run;
         coins = 5;
         effect =
-            'Серия $run; рекорд ${next.infiniteRecord}. Следующая задача сложнее.';
+            'Серия $run; рекорд ${next.infiniteRecord}. Следующая задача открыта; сложность растёт каждые 5 решений.';
       case WorldMode.training:
         final old = s.mistakes[category] ?? 0;
         next = next.copyWith(
