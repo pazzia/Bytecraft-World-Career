@@ -14,8 +14,9 @@ import 'fake_python_runner.dart';
 
 /// Bundled content read up front: no real IO inside the fake-async test.
 Map<String, String> readBundledContent() => {
+      for (final directory in ['assets/content', 'assets/projects'])
       for (final file
-          in Directory('assets/content').listSync(recursive: true).whereType<File>())
+          in Directory(directory).listSync(recursive: true).whereType<File>())
         file.path.replaceAll(r'\', '/'): file.readAsStringSync(),
     };
 

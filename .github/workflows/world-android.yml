@@ -80,6 +80,9 @@ jobs:
           python tool/world/generate_dna.py --check
           dart run tool/world/export_questions.dart | python tool/world/check_questions.py
 
+      - name: Verify calculator functional checks in Python
+        run: python -m unittest discover -s tool/projects -p 'test_*.py'
+
       - name: Check course content
         run: |
           python tool/content/generate_python_course.py "$RUNNER_TEMP/content"

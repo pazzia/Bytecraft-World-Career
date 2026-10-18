@@ -42,7 +42,7 @@ abstract final class WorldChallenges {
   static String? locked(WorldState s, WorldMode mode) => switch (mode) {
     WorldMode.project when s.expeditionStep < 5 =>
       'Сначала восстанови API: 5 задач экспедиции.',
-    WorldMode.boss when !s.projectUnlocked =>
+    WorldMode.boss when !s.projectUnlocked || !s.hasVerifiedProject =>
       'Сначала заверши 4 проверяемых шага проекта.',
     WorldMode.ghost || WorldMode.guild || WorldMode.rival
         when s.expeditionStep < 2 =>

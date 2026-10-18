@@ -128,6 +128,7 @@ void main() {
       await c.read(worldControllerProvider.future);
       final state = WorldState.initial().copyWith(
         expeditionStep: 5,
+        hasVerifiedProject: mode == WorldMode.boss,
         projectSteps: {
           for (final id in WorldState.projectIds) id: mode == WorldMode.boss,
         },

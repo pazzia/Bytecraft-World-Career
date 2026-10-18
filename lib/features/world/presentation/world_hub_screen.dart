@@ -88,8 +88,10 @@ class WorldHubScreen extends ConsumerWidget {
                       ? 'Продолжить историю: API ${world.expeditionStep}/5'
                       : !world.expeditionChestClaimed
                       ? 'Забрать сундук экспедиции'
-                      : !world.projectUnlocked
-                      ? 'Собрать калькулятор: ${world.completedProjectSteps}/4'
+                      : !world.projectUnlocked || !world.hasVerifiedProject
+                      ? world.completedProjectSteps == 4 && !world.hasVerifiedProject
+                          ? 'Проверить код калькулятора'
+                          : 'Собрать калькулятор: ${world.completedProjectSteps}/4'
                       : !world.bossCleared
                       ? 'Победить Bug Lord: ${world.bossHp} HP'
                       : 'История пройдена · продолжить курс',
@@ -97,7 +99,7 @@ class WorldHubScreen extends ConsumerWidget {
                   onPressed: () => context.push(
                     world.expeditionStep < 5 || !world.expeditionChestClaimed
                         ? Routes.worldExpedition
-                        : !world.projectUnlocked
+                        : !world.projectUnlocked || !world.hasVerifiedProject
                         ? Routes.worldBuild
                         : !world.bossCleared
                         ? Routes.worldBoss

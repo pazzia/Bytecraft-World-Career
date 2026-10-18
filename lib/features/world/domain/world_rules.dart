@@ -59,6 +59,8 @@ abstract final class WorldRules {
     int? elapsedSeconds,
   }) {
     s = WorldHearts.regenerate(s, now);
+    if (mode == WorldMode.project) return WorldSubmission(s,
+        'Проект проверяется запуском Python. Открой мастерскую калькулятора.');
     final locked = WorldChallenges.locked(s, mode);
     if (locked != null) return WorldSubmission(s, locked);
     if (WorldChallenges.finished(s, mode, category: category))

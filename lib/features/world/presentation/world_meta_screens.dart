@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../domain/world_state.dart';
+import '../../projects/presentation/project_screen.dart';
 import '../domain/world_challenge.dart';
 import '../domain/world_rules.dart';
 import 'world_challenge_screens.dart';
@@ -261,7 +262,7 @@ class BuildUnlockScreen extends StatelessWidget {
   const BuildUnlockScreen({super.key});
   @override
   Widget build(BuildContext context) =>
-      const WorldQuestScreen(mode: WorldMode.project);
+      const ProjectScreen();
 }
 
 class MistakeDnaScreen extends ConsumerWidget {

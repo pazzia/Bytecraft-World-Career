@@ -78,7 +78,7 @@ void main() {
     expect(retry.expeditionStep, 1);
   });
   test(
-    'story gates, 13 distinct questions, final rewards cannot be replayed',
+    'story gates require verified code, world questions cannot be replayed',
     () {
       var s = WorldState.initial();
       expect(WorldChallenges.locked(s, WorldMode.project), isNotNull);
@@ -100,10 +100,12 @@ void main() {
         expect(s.worldXp, greaterThan(before.worldXp));
       }
       expect(WorldChallenges.locked(s, WorldMode.project), isNull);
-      for (var i = 0; i < 4; i++) {
-        codes.add(WorldChallenges.at(s, WorldMode.project).code);
-        s = solve(s, WorldMode.project);
-      }
+      final legacy = WorldChallenges.at(s, WorldMode.project);
+      expect(WorldRules.submit(s, WorldMode.project, legacy.id, legacy.answer, now).correct, isFalse);
+      s = s.copyWith(projectSteps: {for (final id in WorldState.projectIds) id: true});
+      expect(WorldChallenges.locked(s, WorldMode.boss), isNotNull);
+      // The ProjectService tests exercise the code verification that sets this proof.
+      s = s.copyWith(hasVerifiedProject: true);
       expect(s.projectUnlocked, isTrue);
       expect(WorldChallenges.locked(s, WorldMode.boss), isNull);
       for (var i = 0; i < 4; i++) {
@@ -111,7 +113,7 @@ void main() {
         s = solve(s, WorldMode.boss);
         expect(s.bossHp, 100 - (i + 1) * 25);
       }
-      expect(codes.length, 13);
+      expect(codes.length, 9);
       expect(s.bossCleared, isTrue);
       final q = WorldChallenges.at(s, WorldMode.boss);
       expect(
