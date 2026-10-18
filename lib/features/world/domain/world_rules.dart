@@ -150,17 +150,20 @@ abstract final class WorldRules {
         effect =
             'Незакреплённые ошибки «$category»: ${next.mistakes[category]}. Нужен новый ответ для следующей награды.';
       case WorldMode.guild:
-        final contribution = s.cityLevels['team'] ?? 1;
+        final contribution = (s.cityLevels['team'] ?? 1).clamp(
+          0,
+          160 - s.guildTotal,
+        );
         next = next.copyWith(
           guildContribution: s.guildContribution + contribution,
-          guildTotal: s.guildTotal + contribution,
+          guildTotal: (s.guildTotal + contribution).clamp(0, 160),
         );
         if (next.guildTotal >= 160) {
           xp += 150;
           coins += 100;
         }
         effect =
-            '+$contribution к проекту команды. Выполнено ${next.guildTotal}/160.'
+            '+${next.guildTotal - s.guildTotal} к проекту команды. Выполнено ${next.guildTotal}/160.'
             '${next.guildTotal >= 160 ? ' Проект готов! Бонус: 150 XP и 100 монет.' : ''}';
       case WorldMode.rival:
         next = next.copyWith(rivalWins: s.rivalWins + 1);

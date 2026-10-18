@@ -35,6 +35,33 @@ void main() {
     expect(loaded.coins, 20);
     expect(loaded.solved['expedition'], 1);
   });
+  test('chest and season cannot be claimed early or duplicated, revive requires zero lives', () async {
+    final store = InMemoryKeyValueStore();
+    final c = ProviderContainer(
+      overrides: [keyValueStoreProvider.overrideWithValue(store)],
+    );
+    addTearDown(c.dispose);
+    await c.read(worldControllerProvider.future);
+    final controller = c.read(worldControllerProvider.notifier);
+    await controller.claimExpeditionChest();
+    await controller.claimSeasonReward();
+    await controller.reviveInfinite();
+    expect(c.read(worldControllerProvider).value!.coins, 0);
+    expect(c.read(worldControllerProvider).value!.gems, 3);
+    for (var i = 0; i < 5; i++) {
+      final s = c.read(worldControllerProvider).value!;
+      final q = WorldChallenges.at(s, WorldMode.expedition);
+      await controller.submitChallenge(WorldMode.expedition, q.id, q.answer);
+    }
+    await Future.wait(
+      List.generate(10, (_) => controller.claimExpeditionChest()),
+    );
+    final done = c.read(worldControllerProvider).value!;
+    expect(done.expeditionChestClaimed, isTrue);
+    expect(done.coins, 180);
+    expect(done.gems, 5);
+    expect(done.worldXp, 275);
+  });
   test('course replay cannot farm world rewards', () async {
     final c = ProviderContainer(
       overrides: [

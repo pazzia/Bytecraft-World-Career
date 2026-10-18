@@ -47,6 +47,8 @@ class WorldPage extends StatelessWidget {
             children: [
               Text(
                 title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: WorldPalette.text,
                   fontWeight: FontWeight.w900,
@@ -56,6 +58,8 @@ class WorldPage extends StatelessWidget {
               if (subtitle != null)
                 Text(
                   subtitle!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: WorldPalette.muted,
                     fontSize: 11,

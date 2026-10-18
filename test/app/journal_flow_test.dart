@@ -36,18 +36,16 @@ void main() {
     await openTab(tester, 'DNA');
     dumpTexts(tester, 'mistake-dna');
     expect(find.text('Mistake DNA'), findsOneWidget);
-    expect(find.text('Твой профиль ошибок'), findsOneWidget);
-    expect(find.text('Функции'), findsWidgets);
-    // Default 7% + one real mistake = 9%.
-    expect(find.text('9%'), findsOneWidget);
+    // Starts at zero, then records a real variables/type error.
+    expect(find.text('Незакреплённые ошибки по темам'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Типы данных: 1'), 150);
+    expect(find.text('Типы данных: 1'), findsOneWidget);
   });
 
   testWidgets('the sandbox runs code and shows the output', (tester) async {
     final runner = FakePythonRunner(
-      (code, stdin) => RunResult(
-        status: RunStatus.ok,
-        stdout: 'Привет, ${stdin.trim()}!\n',
-      ),
+      (code, stdin) =>
+          RunResult(status: RunStatus.ok, stdout: 'Привет, ${stdin.trim()}!\n'),
     );
     await pumpBytecraft(tester, runner: runner);
 
@@ -59,7 +57,11 @@ void main() {
     await tester.pumpAndSettle();
     dumpTexts(tester, 'code-run');
     expect(runner.calls, isNotEmpty);
-    expect(runner.calls.last.echo, isTrue, reason: 'the sandbox shows input prompts');
+    expect(
+      runner.calls.last.echo,
+      isTrue,
+      reason: 'the sandbox shows input prompts',
+    );
     expect(find.textContaining('Привет, Ада!'), findsOneWidget);
   });
 }

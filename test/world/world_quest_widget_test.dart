@@ -41,11 +41,14 @@ void main() {
         find.byKey(const ValueKey('world-answer')),
         'wrong',
       );
+      await tester.pump();
       await tester.tap(find.text('Проверить ответ'));
       await tester.pumpAndSettle();
       expect(c.read(worldControllerProvider).value!.expeditionStep, 0);
+      expect(c.read(worldControllerProvider).value!.mistakes['Типы данных'], 1);
       expect(find.textContaining('Неверно.'), findsOneWidget);
       await tester.enterText(find.byKey(const ValueKey('world-answer')), '170');
+      await tester.pump();
       await tester.ensureVisible(find.text('Проверить ответ'));
       await tester.tap(find.text('Проверить ответ'));
       await tester.pumpAndSettle();

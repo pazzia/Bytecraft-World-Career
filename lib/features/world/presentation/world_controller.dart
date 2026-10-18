@@ -86,7 +86,11 @@ class WorldController extends AsyncNotifier<WorldState> {
     required int mistakes,
   }) => _serial((current) async {
     final key = 'lesson:$levelId';
-    if (current.solved.containsKey(key)) return;
+    if (current.solved.containsKey(key)) {
+      final active = WorldRules.active(current, ref.read(clockProvider).now());
+      if (!identical(active, current)) await _set(active);
+      return;
+    }
     final next = WorldRules.active(
       WorldRules.reward(
         current,
@@ -113,12 +117,38 @@ class WorldController extends AsyncNotifier<WorldState> {
       });
 
   String _mistakeCategory(String moduleId) {
-    if (moduleId == 'conditions') return 'Условия';
-    if ({'loops', 'loops_control', 'generators'}.contains(moduleId))
+    if ({'conditions', 'exceptions', 'testing'}.contains(moduleId))
+      return 'Условия';
+    if ({
+      'loops',
+      'loops_control',
+      'comprehensions',
+      'generators',
+      'async',
+      'concurrency',
+    }.contains(moduleId))
       return 'Циклы';
-    if ({'lists', 'tuples_sets', 'dicts', 'strings'}.contains(moduleId))
+    if ({
+      'lists',
+      'tuples_sets',
+      'dicts',
+      'strings',
+      'files',
+      'textdata',
+    }.contains(moduleId))
       return 'Индексы';
-    if ({'types', 'operators', 'dataclasses', 'typing'}.contains(moduleId))
+    if ({
+      'variables',
+      'types',
+      'operators',
+      'io',
+      'dataclasses',
+      'typing',
+      'classes',
+      'inheritance',
+      'dunder',
+      'properties',
+    }.contains(moduleId))
       return 'Типы данных';
     return 'Функции';
   }

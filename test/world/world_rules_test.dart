@@ -34,6 +34,28 @@ void main() {
     expect(s.completedProjectSteps, 0);
     expect(s.mistakes.values.every((v) => v == 0), isTrue);
   });
+  test('direct submissions cannot bypass locked story or side modes', () {
+    final s = WorldState.initial();
+    for (final mode in [
+      WorldMode.project,
+      WorldMode.boss,
+      WorldMode.guild,
+      WorldMode.rival,
+      WorldMode.ghost,
+    ]) {
+      final q = WorldChallenges.at(s, mode);
+      final r = WorldRules.submit(
+        s,
+        mode,
+        q.id,
+        q.answer,
+        now,
+        elapsedSeconds: 20,
+      );
+      expect(r.correct, isFalse);
+      expect(r.state, same(s));
+    }
+  });
   test('empty and incorrect answers never advance or reward', () {
     final s = WorldState.initial();
     final q = WorldChallenges.at(s, WorldMode.expedition);
