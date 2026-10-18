@@ -61,6 +61,7 @@ class WorldQuestScreen extends ConsumerStatefulWidget {
 }
 
 class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
+  final _scroll = ScrollController();
   final _feedbackKey = GlobalKey();
   final _expeditionMapKey = GlobalKey();
   String? _feedback;
@@ -87,6 +88,21 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
     WorldMode.training => 'Верное решение закрепляет одну ошибку выбранной темы: 30 XP и 12 монет до бонусов. Неверное добавляет ошибку. Числа обозначают ошибки, а не проценты.',
     WorldMode.infinite => 'За верный ответ: 20 + длина серии XP и 5 монет до бонусов. Ошибка отнимает жизнь и обнуляет серию; рекорд сохраняется. При нуле жизней продолжить нельзя.',
   };
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _showNextQuestion() {
+    setState(() { _next = false; _feedback = null; });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.hasClients) return;
+      unawaited(_scroll.animateTo(_scroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200), curve: Curves.easeOut));
+    });
+  }
+
   Widget? _expeditionAction(BuildContext context) {
     final s = ref.watch(worldControllerProvider).value;
     if (widget.mode != WorldMode.expedition || s == null || (!_next && s.expeditionProgress < 5)) return null;
@@ -99,7 +115,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
             ? Icons.card_giftcard : Icons.arrow_forward_rounded,
         onPressed: () async {
           if (s.expeditionProgress < 5) {
-            setState(() { _next = false; _feedback = null; });
+            _showNextQuestion();
           } else if (!s.expeditionChestClaimed) {
             try {
               await ref.read(worldControllerProvider.notifier).claimExpeditionChest();
@@ -133,6 +149,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                 ? DnaCurriculum.at(widget.category, DnaCurriculum.count(widget.category) - 1, 'finished')
                 : WorldChallenges.at(s, mode, category: widget.category);
             return ListView(
+              controller: _scroll,
               padding: const EdgeInsets.all(16),
               children: [
                 if (mode == WorldMode.infinite) ...[

@@ -18,7 +18,7 @@ class CareerScreen extends ConsumerStatefulWidget {
 }
 
 class _CareerScreenState extends ConsumerState<CareerScreen> {
-  final _goalKey = GlobalKey<FormFieldState<CareerTargetId>>();
+  int _goalRevision = 0;
   bool _savingGoal = false;
 
   @override
@@ -39,7 +39,7 @@ class _CareerScreenState extends ConsumerState<CareerScreen> {
               const Text('Карьерная цель', style: _heading),
               const SizedBox(height: 8),
               DropdownButtonFormField<CareerTargetId>(
-                key: _goalKey,
+                key: ValueKey(_goalRevision),
                 initialValue: vm.targetId,
                 isExpanded: true,
                 decoration: const InputDecoration(
@@ -57,7 +57,7 @@ class _CareerScreenState extends ConsumerState<CareerScreen> {
                     await ref.read(settingsControllerProvider.notifier)
                         .setCareerGoal(target.id);
                   } catch (_) {
-                    _goalKey.currentState?.didChange(vm.targetId);
+                    if (mounted) setState(() => _goalRevision++);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                         content: Text('Не удалось сохранить цель. Повтори выбор.'),
