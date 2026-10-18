@@ -62,6 +62,8 @@ class CareerSkill {
     required this.target,
     this.courseScore = 0,
     this.portfolioBonus = 0,
+    this.completedLevels = 0,
+    this.totalLevels = 0,
   });
 
   final CareerSkillId id;
@@ -70,6 +72,8 @@ class CareerSkill {
   final int target;
   final int courseScore;
   final int portfolioBonus;
+  final int completedLevels;
+  final int totalLevels;
 
   int get gap => (target - score).clamp(0, 100).toInt();
   bool get readyForAssessment => score >= target;
@@ -282,6 +286,10 @@ class CareerDashboardCalculator {
     Set<String> moduleIds,
     GitHubPortfolio portfolio,
   ) {
+    final levels = course.modules
+        .where((module) => moduleIds.contains(module.id))
+        .expand((module) => module.playableLevels)
+        .toList(growable: false);
     final courseScore = _moduleScore(course, progress, moduleIds);
     final portfolioBonus = _portfolioBonus(id, portfolio);
     return CareerSkill(
@@ -291,6 +299,8 @@ class CareerDashboardCalculator {
       target: target,
       courseScore: courseScore,
       portfolioBonus: portfolioBonus,
+      completedLevels: levels.where((level) => progress.isCompleted(level.id)).length,
+      totalLevels: levels.length,
     );
   }
 

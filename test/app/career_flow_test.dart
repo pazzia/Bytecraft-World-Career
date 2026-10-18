@@ -47,7 +47,10 @@ void main() {
     await pumpBytecraft(tester, store: store);
     await openCareer(tester);
     expect(find.textContaining('Пройдено 1 из'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Как считается прогресс?'), 100,
+    await tester.scrollUntilVisible(find.textContaining('Задания навыка: 1/'), 200,
+        scrollable: find.byType(Scrollable).first);
+    expect(find.textContaining('Задания навыка: 1/'), findsWidgets);
+    await tester.scrollUntilVisible(find.text('Как считается прогресс?'), -200,
         scrollable: find.byType(Scrollable).first);
     await tester.tap(find.text('Как считается прогресс?'));
     await tester.pumpAndSettle();
