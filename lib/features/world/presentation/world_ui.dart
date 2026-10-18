@@ -285,85 +285,100 @@ class CodeBlock extends StatelessWidget {
       );
 }
 
-class CityPainter extends CustomPainter {
-  CityPainter({required this.levels});
+enum WorldScene { city, expedition, boss, kai }
 
+/// One bundled texture; quadrant clipping happens at render time, offline.
+class WorldArtwork extends StatelessWidget {
+  const WorldArtwork(this.scene, {super.key});
+  final WorldScene scene;
+
+  @override
+  Widget build(BuildContext context) => ExcludeSemantics(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: SizedBox.expand(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: 512,
+                height: 512,
+                child: ClipRect(
+                  child: OverflowBox(
+                    alignment: switch (scene) {
+                      WorldScene.city => Alignment.topLeft,
+                      WorldScene.expedition => Alignment.topRight,
+                      WorldScene.boss => Alignment.bottomLeft,
+                      WorldScene.kai => Alignment.bottomRight,
+                    },
+                    minWidth: 1024,
+                    maxWidth: 1024,
+                    minHeight: 1024,
+                    maxHeight: 1024,
+                    child: Image.asset(
+                      'assets/world/world-atlas.png',
+                      width: 1024,
+                      height: 1024,
+                      fit: BoxFit.fill,
+                      gaplessPlayback: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+}
+
+class WorldCityScene extends StatelessWidget {
+  const WorldCityScene({required this.levels, super.key, this.onBuilding});
   final Map<String, int> levels;
+  final ValueChanged<String>? onBuilding;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    final road = Paint()..color = const Color(0xFF182640);
-    final grass = Paint()..color = const Color(0xFF142741);
-    final grid = Paint()
-      ..color = const Color(0xFF244A65).withValues(alpha: .24)
-      ..strokeWidth = 1;
-    final glow = Paint()
-      ..color = WorldPalette.purple.withValues(alpha: .18)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18);
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(22)),
-      grass,
-    );
-    for (var x = -size.height; x < size.width; x += 36) {
-      canvas.drawLine(Offset(x, 0), Offset(x + size.height, size.height), grid);
-    }
-    canvas.drawRect(
-      Rect.fromLTWH(0, size.height * .65, size.width, size.height * .13),
-      road,
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(size.width * .43, 0, size.width * .13, size.height),
-      road,
-    );
-
-    final specs = [
-      (const Offset(.12, .16), 'office', WorldPalette.blue, 54.0),
-      (const Offset(.58, .17), 'python', WorldPalette.purple, 68.0),
-      (const Offset(.12, .53), 'rnd', WorldPalette.cyan, 46.0),
-      (const Offset(.61, .55), 'servers', WorldPalette.orange, 50.0),
-      (const Offset(.36, .36), 'team', WorldPalette.green, 40.0),
-    ];
-    for (final spec in specs) {
-      final pos = Offset(size.width * spec.$1.dx, size.height * spec.$1.dy);
-      final level = levels[spec.$2] ?? 1;
-      final h = spec.$4 + (level - 1) * 8;
-      final w = h * .72;
-      final body = Rect.fromLTWH(pos.dx, pos.dy + 72 - h, w, h);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(body.inflate(7), const Radius.circular(12)),
-        glow,
+  Widget build(BuildContext context) => AspectRatio(
+        aspectRatio: 1,
+        child: LayoutBuilder(builder: (context, constraints) {
+          const buildings = [
+            ('office', 'Офис', .18, .40),
+            ('python', 'Python Lab', .51, .27),
+            ('rnd', 'R&D', .82, .47),
+            ('team', 'Команда', .28, .68),
+            ('servers', 'Серверная', .75, .72),
+          ];
+          return Stack(children: [
+            const Positioned.fill(child: WorldArtwork(WorldScene.city)),
+            for (final building in buildings)
+              Positioned(
+                left: (constraints.maxWidth * building.$3 - 50)
+                    .clamp(0.0, constraints.maxWidth - 100).toDouble(),
+                top: constraints.maxHeight * building.$4,
+                width: 100,
+                child: Semantics(
+                  button: onBuilding != null,
+                  label: '${building.$2}, уровень ${levels[building.$1] ?? 1}',
+                  child: Material(
+                    color: const Color(0xE6071021),
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: onBuilding == null ? null : () => onBuilding!(building.$1),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 4),
+                        child: Text(
+                          '${building.$2} · ${levels[building.$1] ?? 1}',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: WorldPalette.text,
+                              fontWeight: FontWeight.w800, fontSize: 11),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ]);
+        }),
       );
-      final paint = Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [spec.$3, spec.$3.withValues(alpha: .38)],
-        ).createShader(body);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(body, const Radius.circular(8)),
-        paint,
-      );
-      final window = Paint()
-        ..color = const Color(0xFFDFF9FF).withValues(alpha: .9);
-      for (var row = 0; row < math.max(2, level); row++) {
-        final y = body.top + 10 + row * 12;
-        if (y > body.bottom - 8) break;
-        canvas.drawRect(
-          Rect.fromLTWH(body.left + 8, y, 7, 5),
-          window,
-        );
-        canvas.drawRect(
-          Rect.fromLTWH(body.left + 22, y, 7, 5),
-          window,
-        );
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CityPainter oldDelegate) =>
-      oldDelegate.levels != levels;
 }
 
 class DonutChart extends StatelessWidget {

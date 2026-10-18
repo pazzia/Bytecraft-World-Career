@@ -24,16 +24,38 @@ class CodeCityScreen extends ConsumerWidget {
           builder: (world) => ListView(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 30),
             children: [
-              SizedBox(
-                height: 300,
+              AspectRatio(
+                aspectRatio: 1,
                 child: WorldPanel(
                   glow: WorldPalette.purple,
                   padding: EdgeInsets.zero,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(18),
-                    child: CustomPaint(
-                      painter: CityPainter(levels: world.cityLevels),
-                      child: const SizedBox.expand(),
+                    child: WorldCityScene(
+                      levels: world.cityLevels,
+                      onBuilding: (id) {
+                        final building = _buildings.firstWhere((b) => b.$1 == id);
+                        showModalBottomSheet<void>(
+                          context: context,
+                          backgroundColor: WorldPalette.bg,
+                          builder: (sheetContext) => SafeArea(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: _BuildingCard(
+                                id: id, title: building.$2,
+                                icon: building.$3, color: building.$4,
+                                level: world.cityLevels[id] ?? 1,
+                                coins: world.coins,
+                                onUpgrade: () async {
+                                  Navigator.of(sheetContext).pop();
+                                  await ref.read(worldControllerProvider.notifier)
+                                      .upgradeBuilding(id);
+                                },
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),

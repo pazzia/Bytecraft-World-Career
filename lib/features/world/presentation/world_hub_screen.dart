@@ -63,14 +63,12 @@ class WorldHubScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SizedBox(
-                        height: 230,
+                      AspectRatio(
+                        aspectRatio: 1,
                         child: Stack(
                           children: [
                             Positioned.fill(
-                              child: CustomPaint(
-                                painter: CityPainter(levels: world.cityLevels),
-                              ),
+                              child: WorldCityScene(levels: world.cityLevels),
                             ),
                             const Positioned(
                               left: 16,
@@ -246,7 +244,7 @@ class _TopBar extends StatelessWidget {
                   style: TextStyle(
                     color: WorldPalette.text,
                     fontWeight: FontWeight.w900,
-                    fontSize: 18,
+                    fontSize: 16,
                   ),
                 ),
                 Text(

@@ -29,6 +29,11 @@ class ExpeditionScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    const AspectRatio(
+                      aspectRatio: 1,
+                      child: WorldArtwork(WorldScene.expedition),
+                    ),
+                    const SizedBox(height: 16),
                     const Row(
                       children: [
                         Icon(Icons.explore_rounded, color: WorldPalette.green),
@@ -206,7 +211,7 @@ class BossFightScreen extends ConsumerWidget {
                 child: Column(
                   children: [
                     Container(
-                      height: 160,
+                      height: 280,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(18),
                         gradient: const RadialGradient(
@@ -216,12 +221,8 @@ class BossFightScreen extends ConsumerWidget {
                       child: Stack(
                         alignment: Alignment.center,
                         children: [
-                          Icon(
-                            Icons.smart_toy_rounded,
-                            color: world.bossCleared
-                                ? WorldPalette.muted
-                                : WorldPalette.red,
-                            size: 104,
+                          const Positioned.fill(
+                            child: WorldArtwork(WorldScene.boss),
                           ),
                           Positioned(
                             bottom: 12,
@@ -490,26 +491,9 @@ class AiRivalScreen extends ConsumerWidget {
                 glow: WorldPalette.cyan,
                 child: Column(
                   children: [
-                    Container(
-                      width: 92,
-                      height: 92,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: const LinearGradient(
-                          colors: [WorldPalette.purple, WorldPalette.cyan],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: WorldPalette.cyan.withValues(alpha: .2),
-                            blurRadius: 28,
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.face_retouching_natural_rounded,
-                        color: Colors.white,
-                        size: 55,
-                      ),
+                    const AspectRatio(
+                      aspectRatio: 1.15,
+                      child: WorldArtwork(WorldScene.kai),
                     ),
                     const SizedBox(height: 10),
                     const Text(
