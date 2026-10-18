@@ -1,5 +1,9 @@
 class WorldState {
   const WorldState({
+    this.solved = const {},
+    this.failures = const {},
+    this.lastActiveDay = '',
+    this.showMigrationNotice = false,
     required this.coins,
     required this.gems,
     required this.worldXp,
@@ -24,53 +28,45 @@ class WorldState {
   });
 
   factory WorldState.initial() => const WorldState(
-        coins: 1240,
-        gems: 15,
-        worldXp: 450,
-        seasonLevel: 12,
-        seasonXp: 450,
-        streak: 23,
-        hearts: 3,
-        expeditionStep: 0,
-        expeditionChestClaimed: false,
-        bossHp: 100,
-        bossTask: 0,
-        bossCleared: false,
-        ghostBestSeconds: 268,
-        guildContribution: 42,
-        guildTotal: 87,
-        rivalWins: 0,
-        infiniteCurrent: 0,
-        infiniteRecord: 37,
-        cityLevels: {
-          'office': 2,
-          'python': 3,
-          'rnd': 1,
-          'servers': 2,
-          'team': 2,
-        },
-        projectSteps: {
-          'basic': true,
-          'history': true,
-          'errors': false,
-          'ui': false,
-        },
-        mistakes: {
-          'Условия': 42,
-          'Циклы': 28,
-          'Индексы': 15,
-          'Типы данных': 8,
-          'Функции': 7,
-        },
-      );
+    coins: 0,
+    gems: 3,
+    worldXp: 0,
+    seasonLevel: 1,
+    seasonXp: 0,
+    streak: 0,
+    hearts: 3,
+    expeditionStep: 0,
+    expeditionChestClaimed: false,
+    bossHp: 100,
+    bossTask: 0,
+    bossCleared: false,
+    ghostBestSeconds: 0,
+    guildContribution: 0,
+    guildTotal: 0,
+    rivalWins: 0,
+    infiniteCurrent: 0,
+    infiniteRecord: 0,
+    cityLevels: {'office': 1, 'python': 1, 'rnd': 1, 'servers': 1, 'team': 1},
+    projectSteps: {
+      'basic': false,
+      'history': false,
+      'errors': false,
+      'ui': false,
+    },
+    mistakes: {
+      'Условия': 0,
+      'Циклы': 0,
+      'Индексы': 0,
+      'Типы данных': 0,
+      'Функции': 0,
+    },
+  );
 
   factory WorldState.fromJson(Map<String, dynamic> json) {
     Map<String, int> ints(String key, Map<String, int> fallback) {
       final raw = json[key];
       if (raw is! Map) return fallback;
-      return raw.map(
-        (k, v) => MapEntry('$k', v is num ? v.toInt() : 0),
-      );
+      return raw.map((k, v) => MapEntry('$k', v is num ? v.toInt() : 0));
     }
 
     Map<String, bool> bools(String key, Map<String, bool> fallback) {
@@ -81,6 +77,10 @@ class WorldState {
 
     final initial = WorldState.initial();
     return WorldState(
+      solved: ints('solved', {}),
+      failures: ints('failures', {}),
+      lastActiveDay: json['lastActiveDay'] as String? ?? '',
+      showMigrationNotice: json['showMigrationNotice'] == true,
       coins: (json['coins'] as num?)?.toInt() ?? initial.coins,
       gems: (json['gems'] as num?)?.toInt() ?? initial.gems,
       worldXp: (json['worldXp'] as num?)?.toInt() ?? initial.worldXp,
@@ -96,11 +96,12 @@ class WorldState {
       bossTask: (json['bossTask'] as num?)?.toInt() ?? initial.bossTask,
       bossCleared: json['bossCleared'] == true,
       ghostBestSeconds:
-          (json['ghostBestSeconds'] as num?)?.toInt() ?? initial.ghostBestSeconds,
-      guildContribution: (json['guildContribution'] as num?)?.toInt() ??
+          (json['ghostBestSeconds'] as num?)?.toInt() ??
+          initial.ghostBestSeconds,
+      guildContribution:
+          (json['guildContribution'] as num?)?.toInt() ??
           initial.guildContribution,
-      guildTotal:
-          (json['guildTotal'] as num?)?.toInt() ?? initial.guildTotal,
+      guildTotal: (json['guildTotal'] as num?)?.toInt() ?? initial.guildTotal,
       rivalWins: (json['rivalWins'] as num?)?.toInt() ?? initial.rivalWins,
       infiniteCurrent:
           (json['infiniteCurrent'] as num?)?.toInt() ?? initial.infiniteCurrent,
@@ -112,6 +113,10 @@ class WorldState {
     );
   }
 
+  final Map<String, int> solved;
+  final Map<String, int> failures;
+  final String lastActiveDay;
+  final bool showMigrationNotice;
   final int coins;
   final int gems;
   final int worldXp;
@@ -134,11 +139,22 @@ class WorldState {
   final Map<String, bool> projectSteps;
   final Map<String, int> mistakes;
 
-  int get completedProjectSteps => projectSteps.values.where((v) => v).length;
+  static const projectIds = ['basic', 'history', 'errors', 'ui'];
+  int get completedProjectSteps =>
+      projectIds.where((id) => projectSteps[id] == true).length;
+  int get maxHearts => 3 + (cityLevels['servers'] ?? 1) - 1;
+  int get buildingCap => (1 + worldXp ~/ 200).clamp(1, 5);
+  int get solvedTotal => solved.entries
+      .where((e) => !e.key.startsWith('lesson:'))
+      .fold(0, (n, e) => n + e.value);
   bool get projectUnlocked => completedProjectSteps >= 4;
   int get expeditionProgress => expeditionStep.clamp(0, 5).toInt();
 
   WorldState copyWith({
+    Map<String, int>? solved,
+    Map<String, int>? failures,
+    String? lastActiveDay,
+    bool? showMigrationNotice,
     int? coins,
     int? gems,
     int? worldXp,
@@ -160,53 +176,60 @@ class WorldState {
     Map<String, int>? cityLevels,
     Map<String, bool>? projectSteps,
     Map<String, int>? mistakes,
-  }) =>
-      WorldState(
-        coins: coins ?? this.coins,
-        gems: gems ?? this.gems,
-        worldXp: worldXp ?? this.worldXp,
-        seasonLevel: seasonLevel ?? this.seasonLevel,
-        seasonXp: seasonXp ?? this.seasonXp,
-        streak: streak ?? this.streak,
-        hearts: hearts ?? this.hearts,
-        expeditionStep: expeditionStep ?? this.expeditionStep,
-        expeditionChestClaimed:
-            expeditionChestClaimed ?? this.expeditionChestClaimed,
-        bossHp: bossHp ?? this.bossHp,
-        bossTask: bossTask ?? this.bossTask,
-        bossCleared: bossCleared ?? this.bossCleared,
-        ghostBestSeconds: ghostBestSeconds ?? this.ghostBestSeconds,
-        guildContribution: guildContribution ?? this.guildContribution,
-        guildTotal: guildTotal ?? this.guildTotal,
-        rivalWins: rivalWins ?? this.rivalWins,
-        infiniteCurrent: infiniteCurrent ?? this.infiniteCurrent,
-        infiniteRecord: infiniteRecord ?? this.infiniteRecord,
-        cityLevels: cityLevels ?? this.cityLevels,
-        projectSteps: projectSteps ?? this.projectSteps,
-        mistakes: mistakes ?? this.mistakes,
-      );
+  }) => WorldState(
+    solved: solved ?? this.solved,
+    failures: failures ?? this.failures,
+    lastActiveDay: lastActiveDay ?? this.lastActiveDay,
+    showMigrationNotice: showMigrationNotice ?? this.showMigrationNotice,
+    coins: coins ?? this.coins,
+    gems: gems ?? this.gems,
+    worldXp: worldXp ?? this.worldXp,
+    seasonLevel: seasonLevel ?? this.seasonLevel,
+    seasonXp: seasonXp ?? this.seasonXp,
+    streak: streak ?? this.streak,
+    hearts: hearts ?? this.hearts,
+    expeditionStep: expeditionStep ?? this.expeditionStep,
+    expeditionChestClaimed:
+        expeditionChestClaimed ?? this.expeditionChestClaimed,
+    bossHp: bossHp ?? this.bossHp,
+    bossTask: bossTask ?? this.bossTask,
+    bossCleared: bossCleared ?? this.bossCleared,
+    ghostBestSeconds: ghostBestSeconds ?? this.ghostBestSeconds,
+    guildContribution: guildContribution ?? this.guildContribution,
+    guildTotal: guildTotal ?? this.guildTotal,
+    rivalWins: rivalWins ?? this.rivalWins,
+    infiniteCurrent: infiniteCurrent ?? this.infiniteCurrent,
+    infiniteRecord: infiniteRecord ?? this.infiniteRecord,
+    cityLevels: cityLevels ?? this.cityLevels,
+    projectSteps: projectSteps ?? this.projectSteps,
+    mistakes: mistakes ?? this.mistakes,
+  );
 
   Map<String, dynamic> toJson() => {
-        'coins': coins,
-        'gems': gems,
-        'worldXp': worldXp,
-        'seasonLevel': seasonLevel,
-        'seasonXp': seasonXp,
-        'streak': streak,
-        'hearts': hearts,
-        'expeditionStep': expeditionStep,
-        'expeditionChestClaimed': expeditionChestClaimed,
-        'bossHp': bossHp,
-        'bossTask': bossTask,
-        'bossCleared': bossCleared,
-        'ghostBestSeconds': ghostBestSeconds,
-        'guildContribution': guildContribution,
-        'guildTotal': guildTotal,
-        'rivalWins': rivalWins,
-        'infiniteCurrent': infiniteCurrent,
-        'infiniteRecord': infiniteRecord,
-        'cityLevels': cityLevels,
-        'projectSteps': projectSteps,
-        'mistakes': mistakes,
-      };
+    'solved': solved,
+    'failures': failures,
+    'lastActiveDay': lastActiveDay,
+    'showMigrationNotice': showMigrationNotice,
+    'coins': coins,
+    'gems': gems,
+    'worldXp': worldXp,
+    'seasonLevel': seasonLevel,
+    'seasonXp': seasonXp,
+    'streak': streak,
+    'hearts': hearts,
+    'expeditionStep': expeditionStep,
+    'expeditionChestClaimed': expeditionChestClaimed,
+    'bossHp': bossHp,
+    'bossTask': bossTask,
+    'bossCleared': bossCleared,
+    'ghostBestSeconds': ghostBestSeconds,
+    'guildContribution': guildContribution,
+    'guildTotal': guildTotal,
+    'rivalWins': rivalWins,
+    'infiniteCurrent': infiniteCurrent,
+    'infiniteRecord': infiniteRecord,
+    'cityLevels': cityLevels,
+    'projectSteps': projectSteps,
+    'mistakes': mistakes,
+  };
 }

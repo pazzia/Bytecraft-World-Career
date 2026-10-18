@@ -75,6 +75,9 @@ jobs:
               im.save(path)
           PY
 
+      - name: Independently check World answers in CPython
+        run: dart run tool/world/export_questions.dart | python tool/world/check_questions.py
+
       - name: Check course content
         run: |
           python tool/content/generate_python_course.py "$RUNNER_TEMP/content"

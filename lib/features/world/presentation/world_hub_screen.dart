@@ -27,6 +27,27 @@ class WorldHubScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 110),
               children: [
                 _TopBar(world: world),
+                if (world.showMigrationNotice) ...[
+                  const SizedBox(height: 12),
+                  WorldPanel(
+                    child: Column(
+                      children: [
+                        const Text(
+                          'Обновлены правила: старые квесты и рекорды засчитывались без проверки. Их нужно пройти заново; игровой XP и серия начаты с нуля. Прогресс курса, монеты, алмазы и здания сохранены (уровни зданий ограничены 5).',
+                          style: TextStyle(color: WorldPalette.text),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            await ref
+                                .read(worldControllerProvider.notifier)
+                                .dismissMigrationNotice();
+                          },
+                          child: const Text('Понятно'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 18),
                 Text(
                   'BYTECRAFT WORLD',
@@ -49,11 +70,8 @@ class WorldHubScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Каждая задача двигает твою IT-империю вперёд.',
-                  style: TextStyle(
-                    color: WorldPalette.muted,
-                    fontSize: 13,
-                  ),
+                  'Цель: восстановить API → собрать калькулятор → победить Bug Lord. Только верные ответы открывают этапы. XP открывает улучшения города; монеты оплачивают их. Ошибки попадают в тренировки.',
+                  style: TextStyle(color: WorldPalette.muted, fontSize: 13),
                 ),
                 const SizedBox(height: 18),
                 WorldPanel(
@@ -127,14 +145,15 @@ class WorldHubScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const SectionTitle('Сегодня'),
+                const SectionTitle('Твой прогресс'),
                 _TodayGrid(world: world),
                 const SizedBox(height: 20),
-                const SectionTitle('Игровые режимы', trailing: '10 механик'),
+                const SectionTitle('Игровые режимы'),
                 _FeatureTile(
                   number: '01',
-                  title: 'Ежедневная экспедиция',
-                  subtitle: '${world.expeditionProgress}/5 задач · сундук в конце',
+                  title: 'Экспедиция · восстановить API',
+                  subtitle:
+                      '${world.expeditionProgress}/5 задач · сундук в конце',
                   icon: Icons.explore_rounded,
                   color: WorldPalette.green,
                   onTap: () => context.push(Routes.worldExpedition),
@@ -143,7 +162,7 @@ class WorldHubScreen extends ConsumerWidget {
                   number: '02',
                   title: 'Boss Fight',
                   subtitle: world.bossCleared
-                      ? 'Bug Lord побеждён · можно переиграть'
+                      ? 'Bug Lord побеждён ✓'
                       : 'Bug Lord · HP ${world.bossHp}%',
                   icon: Icons.smart_toy_rounded,
                   color: WorldPalette.red,
@@ -151,24 +170,24 @@ class WorldHubScreen extends ConsumerWidget {
                 ),
                 _FeatureTile(
                   number: '03',
-                  title: 'Ghost PvP',
-                  subtitle: 'Побей чужой код по времени и качеству',
+                  title: 'Забег на время',
+                  subtitle: 'Реши задачу и установи личный рекорд',
                   icon: Icons.bolt_rounded,
                   color: WorldPalette.violet,
                   onTap: () => context.push(Routes.worldGhost),
                 ),
                 _FeatureTile(
                   number: '04',
-                  title: 'Команда Python Masters',
-                  subtitle: '${world.guildTotal}/160 недельной цели',
+                  title: 'Учебная команда',
+                  subtitle: '${world.guildTotal}/160 · локальный проект',
                   icon: Icons.groups_rounded,
                   color: WorldPalette.blue,
                   onTap: () => context.push(Routes.worldGuild),
                 ),
                 _FeatureTile(
                   number: '05',
-                  title: 'AI Rival · Kai',
-                  subtitle: '${world.rivalWins} побед · бросает вызов твоему коду',
+                  title: 'Учебный соперник · Kai',
+                  subtitle: '${world.rivalWins} побед за проверенные ответы',
                   icon: Icons.psychology_alt_rounded,
                   color: WorldPalette.cyan,
                   onTap: () => context.push(Routes.worldRival),
@@ -184,7 +203,8 @@ class WorldHubScreen extends ConsumerWidget {
                 _FeatureTile(
                   number: '07',
                   title: 'Build to Unlock',
-                  subtitle: '${world.completedProjectSteps}/4 шагов проекта выполнено',
+                  subtitle:
+                      '${world.completedProjectSteps}/4 шагов проекта выполнено',
                   icon: Icons.construction_rounded,
                   color: WorldPalette.green,
                   onTap: () => context.push(Routes.worldBuild),
@@ -192,7 +212,8 @@ class WorldHubScreen extends ConsumerWidget {
                 _FeatureTile(
                   number: '08',
                   title: 'Season 1 · Hacker Academy',
-                  subtitle: 'Уровень ${world.seasonLevel} · ${world.seasonXp}/1000 XP',
+                  subtitle:
+                      'Уровень ${world.seasonLevel} · ${world.seasonXp}/1000 XP',
                   icon: Icons.workspace_premium_rounded,
                   color: WorldPalette.gold,
                   onTap: () => context.push(Routes.worldSeason),
@@ -200,7 +221,8 @@ class WorldHubScreen extends ConsumerWidget {
                 _FeatureTile(
                   number: '09',
                   title: 'Infinite Coding Run',
-                  subtitle: 'Рекорд ${world.infiniteRecord} задач · серия ${world.infiniteCurrent}',
+                  subtitle:
+                      'Рекорд ${world.infiniteRecord} задач · серия ${world.infiniteCurrent}',
                   icon: Icons.all_inclusive_rounded,
                   color: WorldPalette.purple,
                   onTap: () => context.push(Routes.worldInfinite),
@@ -222,47 +244,47 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              gradient: const LinearGradient(
-                colors: [WorldPalette.purple, WorldPalette.blue],
+    children: [
+      Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: const LinearGradient(
+            colors: [WorldPalette.purple, WorldPalette.blue],
+          ),
+        ),
+        child: const Icon(Icons.code_rounded, color: Colors.white),
+      ),
+      const SizedBox(width: 10),
+      const Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Bytecraft World',
+              style: TextStyle(
+                color: WorldPalette.text,
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
               ),
             ),
-            child: const Icon(Icons.code_rounded, color: Colors.white),
-          ),
-          const SizedBox(width: 10),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Bytecraft World',
-                  style: TextStyle(
-                    color: WorldPalette.text,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                  ),
-                ),
-                Text(
-                  'твоя история в мире Python',
-                  style: TextStyle(color: WorldPalette.muted, fontSize: 11),
-                ),
-              ],
+            Text(
+              'твоя история в мире Python',
+              style: TextStyle(color: WorldPalette.muted, fontSize: 11),
             ),
-          ),
-          StatPill(icon: Icons.monetization_on_rounded, value: '${world.coins}'),
-          const SizedBox(width: 6),
-          StatPill(
-            icon: Icons.diamond_rounded,
-            value: '${world.gems}',
-            color: WorldPalette.cyan,
-          ),
-        ],
-      );
+          ],
+        ),
+      ),
+      StatPill(icon: Icons.monetization_on_rounded, value: '${world.coins}'),
+      const SizedBox(width: 6),
+      StatPill(
+        icon: Icons.diamond_rounded,
+        value: '${world.gems}',
+        color: WorldPalette.cyan,
+      ),
+    ],
+  );
 }
 
 class _OverlayLabel extends StatelessWidget {
@@ -273,27 +295,27 @@ class _OverlayLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: const Color(0xD908111F),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: WorldPalette.border),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+    decoration: BoxDecoration(
+      color: const Color(0xD908111F),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: WorldPalette.border),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: WorldPalette.cyan, size: 17),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: const TextStyle(
+            color: WorldPalette.text,
+            fontWeight: FontWeight.w900,
+            fontSize: 12,
+          ),
         ),
-        child: Row(
-          children: [
-            Icon(icon, color: WorldPalette.cyan, size: 17),
-            const SizedBox(width: 6),
-            Text(
-              text,
-              style: const TextStyle(
-                color: WorldPalette.text,
-                fontWeight: FontWeight.w900,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-      );
+      ],
+    ),
+  );
 }
 
 class _TodayGrid extends StatelessWidget {
@@ -303,35 +325,35 @@ class _TodayGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        children: [
-          Expanded(
-            child: _MiniGoal(
-              icon: Icons.local_fire_department_rounded,
-              value: '${world.streak}',
-              label: 'дней streak',
-              color: WorldPalette.orange,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _MiniGoal(
-              icon: Icons.workspace_premium_rounded,
-              value: '${world.seasonLevel}',
-              label: 'уровень сезона',
-              color: WorldPalette.gold,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: _MiniGoal(
-              icon: Icons.favorite_rounded,
-              value: '${world.hearts}',
-              label: 'жизни Run',
-              color: WorldPalette.red,
-            ),
-          ),
-        ],
-      );
+    children: [
+      Expanded(
+        child: _MiniGoal(
+          icon: Icons.local_fire_department_rounded,
+          value: '${world.streak}',
+          label: 'дней с решениями',
+          color: WorldPalette.orange,
+        ),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: _MiniGoal(
+          icon: Icons.workspace_premium_rounded,
+          value: '${world.seasonLevel}',
+          label: 'уровень сезона',
+          color: WorldPalette.gold,
+        ),
+      ),
+      const SizedBox(width: 10),
+      Expanded(
+        child: _MiniGoal(
+          icon: Icons.favorite_rounded,
+          value: '${world.hearts}',
+          label: 'жизни Run',
+          color: WorldPalette.red,
+        ),
+      ),
+    ],
+  );
 }
 
 class _MiniGoal extends StatelessWidget {
@@ -349,31 +371,31 @@ class _MiniGoal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => WorldPanel(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: 5),
-            Text(
-              value,
-              style: const TextStyle(
-                color: WorldPalette.text,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: WorldPalette.muted,
-                fontSize: 9,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
+    padding: const EdgeInsets.all(12),
+    child: Column(
+      children: [
+        Icon(icon, color: color, size: 22),
+        const SizedBox(height: 5),
+        Text(
+          value,
+          style: const TextStyle(
+            color: WorldPalette.text,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+          ),
         ),
-      );
+        Text(
+          label,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: WorldPalette.muted,
+            fontSize: 9,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _FeatureTile extends StatelessWidget {
@@ -395,49 +417,49 @@ class _FeatureTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 10),
-        child: WorldPanel(
-          onTap: onTap,
-          padding: const EdgeInsets.all(13),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: .14),
-                  borderRadius: BorderRadius.circular(13),
-                  border: Border.all(color: color.withValues(alpha: .35)),
-                ),
-                child: Icon(icon, color: color),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$number · $title',
-                      style: const TextStyle(
-                        color: WorldPalette.text,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        color: WorldPalette.muted,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded, color: WorldPalette.muted),
-            ],
+    padding: const EdgeInsets.only(bottom: 10),
+    child: WorldPanel(
+      onTap: onTap,
+      padding: const EdgeInsets.all(13),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: .14),
+              borderRadius: BorderRadius.circular(13),
+              border: Border.all(color: color.withValues(alpha: .35)),
+            ),
+            child: Icon(icon, color: color),
           ),
-        ),
-      );
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$number · $title',
+                  style: const TextStyle(
+                    color: WorldPalette.text,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    color: WorldPalette.muted,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const Icon(Icons.chevron_right_rounded, color: WorldPalette.muted),
+        ],
+      ),
+    ),
+  );
 }

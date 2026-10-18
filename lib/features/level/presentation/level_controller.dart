@@ -43,23 +43,23 @@ class LevelController extends Notifier<LevelUiState> {
       ref.read(progressRevisionProvider.notifier).bump();
       state = switch (result) {
         LevelStarted(:final session, :final lives) => LevelUiState(
-            phase: LevelPhase.playing,
-            session: session,
-            lives: lives,
-            answer: const InitialAnswerFactory().initialFor(
-              session.level,
-              seed: session.startedAt.millisecondsSinceEpoch,
-            ),
+          phase: LevelPhase.playing,
+          session: session,
+          lives: lives,
+          answer: const InitialAnswerFactory().initialFor(
+            session.level,
+            seed: session.startedAt.millisecondsSinceEpoch,
           ),
+        ),
         LevelStartDenied(:final reason, :final lives) => LevelUiState(
-            phase: switch (reason) {
-              LevelStartDenial.noLives => LevelPhase.outOfLives,
-              LevelStartDenial.noActiveRun => LevelPhase.timeUp,
-              _ => LevelPhase.denied,
-            },
-            denial: reason,
-            lives: lives,
-          ),
+          phase: switch (reason) {
+            LevelStartDenial.noLives => LevelPhase.outOfLives,
+            LevelStartDenial.noActiveRun => LevelPhase.timeUp,
+            _ => LevelPhase.denied,
+          },
+          denial: reason,
+          lives: lives,
+        ),
       };
     } catch (error) {
       if (!ref.mounted) return;
@@ -101,8 +101,11 @@ class LevelController extends Notifier<LevelUiState> {
         result: result.completion,
         isSubmitting: false,
         mistakeNote: wrong
-            ? const MistakeAnalyzer()
-                .analyze(session.level, answer, result.outcome)
+            ? const MistakeAnalyzer().analyze(
+                session.level,
+                answer,
+                result.outcome,
+              )
             : null,
         clearMistakeNote: !wrong,
       );
@@ -127,8 +130,11 @@ class LevelController extends Notifier<LevelUiState> {
 
   Future<void> _rewardWorldForLesson(LevelSession session) async {
     try {
-      await ref.read(worldControllerProvider.notifier).recordLessonCompleted(
+      await ref
+          .read(worldControllerProvider.notifier)
+          .recordLessonCompleted(
             moduleId: session.level.moduleId,
+            levelId: '${session.level.courseId}:${session.level.id}',
             mistakes: session.mistakes,
           );
     } catch (_) {
@@ -268,13 +274,10 @@ class LevelController extends Notifier<LevelUiState> {
         final kept = options.difference(outcome.wrongParts);
         return kept.isEmpty ? null : OptionSetAnswer(kept);
       case MatchAnswer(:final links, :final pairCount):
-        return MatchAnswer(
-          {
-            for (final entry in links.entries)
-              if (!outcome.wrongParts.contains(entry.key)) entry.key: entry.value,
-          },
-          pairCount: pairCount,
-        );
+        return MatchAnswer({
+          for (final entry in links.entries)
+            if (!outcome.wrongParts.contains(entry.key)) entry.key: entry.value,
+        }, pairCount: pairCount);
       case TextAnswer():
       case OrderingAnswer():
       case null:

@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/di/providers.dart';
+import '../domain/world_challenge.dart';
+import '../domain/world_rules.dart';
 import '../domain/world_state.dart';
 
 final worldControllerProvider =
@@ -8,244 +12,147 @@ final worldControllerProvider =
 
 class WorldController extends AsyncNotifier<WorldState> {
   static const _key = 'bytecraft_world_state';
-  static const _schema = 1;
+  static const _schema = 2;
+  Future<void> _pending = Future.value();
 
   @override
   Future<WorldState> build() async {
-    final stored = await ref.watch(documentStoreProvider).read(_key);
+    final store = ref.watch(documentStoreProvider);
+    final stored = await store.read(_key);
     if (stored == null) return WorldState.initial();
-    return WorldState.fromJson(stored);
+    if (stored['schemaVersion'] == _schema) return WorldState.fromJson(stored);
+    // v1 contained demo progress and unvalidated click rewards. Keep currency
+    // and purchased buildings, but require evidence for quests and records.
+    final old = WorldState.fromJson(stored);
+    final migrated = WorldState.initial().copyWith(
+      showMigrationNotice: true,
+      coins: old.coins,
+      gems: old.gems,
+      cityLevels: {
+        for (final id in WorldState.initial().cityLevels.keys)
+          id: (old.cityLevels[id] ?? 1).clamp(1, 5),
+      },
+      hearts: 2 + (old.cityLevels['servers'] ?? 1).clamp(1, 5),
+    );
+    await store.write(_key, migrated.toJson(), schemaVersion: _schema);
+    return migrated;
+  }
+
+  /// Serialize read/modify/persist, including rapid taps and different screens.
+  Future<T> _serial<T>(Future<T> Function(WorldState) action) {
+    final result = Completer<T>();
+    _pending = _pending.then((_) async {
+      try {
+        final current = state.value ?? await future;
+        result.complete(await action(current));
+      } catch (error, stack) {
+        result.completeError(error, stack);
+      }
+    });
+    return result.future;
   }
 
   Future<void> _set(WorldState next) async {
+    // A failed disk write must not leave an earned reward visible in memory.
+    await ref
+        .read(documentStoreProvider)
+        .write(_key, next.toJson(), schemaVersion: _schema);
     state = AsyncData(next);
-    await ref.read(documentStoreProvider).write(
-          _key,
-          next.toJson(),
-          schemaVersion: _schema,
-        );
   }
 
-  Future<WorldState> _current() async => state.value ?? await future;
+  Future<WorldSubmission> submitChallenge(
+    WorldMode mode,
+    String id,
+    String answer, {
+    String category = 'Условия',
+    int? elapsedSeconds,
+  }) => _serial((current) async {
+    final result = WorldRules.submit(
+      current,
+      mode,
+      id,
+      answer,
+      ref.read(clockProvider).now(),
+      category: category,
+      elapsedSeconds: elapsedSeconds,
+    );
+    if (!identical(result.state, current)) await _set(result.state);
+    return result;
+  });
 
-  /// The ordinary learning loop feeds the game economy. This is the bridge
-  /// between the existing Python course and Bytecraft World.
   Future<void> recordLessonCompleted({
     required String moduleId,
+    required String levelId,
     required int mistakes,
-  }) async {
-    final current = await _current();
-    final cleanBonus = mistakes == 0 ? 12 : 0;
-    final xp = 24 + cleanBonus;
-    await _set(
-      current.copyWith(
-        coins: current.coins + 8 + (mistakes == 0 ? 4 : 0),
-        worldXp: current.worldXp + xp,
-        seasonXp: current.seasonXp + xp,
-        streak: current.streak < 1 ? 1 : current.streak,
+  }) => _serial((current) async {
+    final key = 'lesson:$levelId';
+    if (current.solved.containsKey(key)) return;
+    final next = WorldRules.active(
+      WorldRules.reward(
+        current,
+        mistakes == 0 ? 36 : 24,
+        mistakes == 0 ? 12 : 8,
+        clean: mistakes == 0,
       ),
+      ref.read(clockProvider).now(),
     );
-  }
+    await _set(next.copyWith(solved: {...next.solved, key: 1}));
+  });
 
-  /// Real mistakes change Mistake DNA instead of being only a journal entry.
-  Future<void> recordLearningMistake(String moduleId) async {
-    final current = await _current();
-    final category = _mistakeCategory(moduleId);
-    final old = current.mistakes[category] ?? 5;
-    final next = <String, int>{
-      ...current.mistakes,
-      category: (old + 2).clamp(0, 60).toInt(),
-    };
-    await _set(current.copyWith(mistakes: next));
-  }
+  Future<void> recordLearningMistake(String moduleId) =>
+      _serial((current) async {
+        final category = _mistakeCategory(moduleId);
+        await _set(
+          current.copyWith(
+            mistakes: {
+              ...current.mistakes,
+              category: (current.mistakes[category] ?? 0) + 1,
+            },
+          ),
+        );
+      });
 
   String _mistakeCategory(String moduleId) {
-    if ({'conditions'}.contains(moduleId)) return 'Условия';
-    if ({'loops', 'loops_control', 'generators'}.contains(moduleId)) {
+    if (moduleId == 'conditions') return 'Условия';
+    if ({'loops', 'loops_control', 'generators'}.contains(moduleId))
       return 'Циклы';
-    }
-    if ({'lists', 'tuples_sets', 'dicts', 'strings'}.contains(moduleId)) {
+    if ({'lists', 'tuples_sets', 'dicts', 'strings'}.contains(moduleId))
       return 'Индексы';
-    }
-    if ({'types', 'operators', 'dataclasses', 'typing'}.contains(moduleId)) {
+    if ({'types', 'operators', 'dataclasses', 'typing'}.contains(moduleId))
       return 'Типы данных';
-    }
     return 'Функции';
   }
 
-  Future<void> upgradeBuilding(String id) async {
-    final current = await _current();
-    final level = current.cityLevels[id] ?? 1;
-    final cost = 80 + level * 40;
-    if (current.coins < cost) return;
-    await _set(
-      current.copyWith(
-        coins: current.coins - cost,
-        worldXp: current.worldXp + 20,
-        cityLevels: {...current.cityLevels, id: level + 1},
-      ),
-    );
-  }
+  Future<void> upgradeBuilding(String id) => _serial((s) async {
+    final next = WorldRules.upgrade(s, id);
+    if (!identical(s, next)) await _set(next);
+  });
 
-  Future<void> advanceExpedition() async {
-    final current = await _current();
-    if (current.expeditionStep >= 5) return;
-    final nextStep = current.expeditionStep + 1;
+  Future<void> claimExpeditionChest() => _serial((s) async {
+    if (s.expeditionStep < 5 || s.expeditionChestClaimed) return;
     await _set(
-      current.copyWith(
-        expeditionStep: nextStep,
-        coins: current.coins + 20,
-        worldXp: current.worldXp + 35,
-        seasonXp: current.seasonXp + 35,
-      ),
-    );
-  }
-
-  Future<void> claimExpeditionChest() async {
-    final current = await _current();
-    if (current.expeditionStep < 5 || current.expeditionChestClaimed) return;
-    await _set(
-      current.copyWith(
+      s.copyWith(
         expeditionChestClaimed: true,
-        coins: current.coins + 80,
-        gems: current.gems + 2,
-        worldXp: current.worldXp + 100,
-        seasonXp: current.seasonXp + 100,
+        coins: s.coins + 80,
+        gems: s.gems + 2,
+        worldXp: s.worldXp + 100,
+        seasonXp: s.seasonXp + 100,
       ),
     );
-  }
+  });
 
-  Future<void> attackBoss() async {
-    final current = await _current();
-    if (current.bossCleared) return;
-    final hp = (current.bossHp - 25).clamp(0, 100).toInt();
-    final cleared = hp == 0;
-    await _set(
-      current.copyWith(
-        bossHp: hp,
-        bossTask: (current.bossTask + 1).clamp(0, 5).toInt(),
-        bossCleared: cleared,
-        coins: current.coins + (cleared ? 120 : 20),
-        worldXp: current.worldXp + (cleared ? 180 : 45),
-        seasonXp: current.seasonXp + (cleared ? 180 : 45),
-      ),
-    );
-  }
+  Future<void> claimSeasonReward() => _serial((s) async {
+    final next = WorldRules.claimSeason(s);
+    if (!identical(s, next)) await _set(next);
+  });
 
-  Future<void> resetBoss() async {
-    final current = await _current();
-    await _set(current.copyWith(bossHp: 100, bossTask: 0, bossCleared: false));
-  }
+  Future<void> reviveInfinite() => _serial((s) async {
+    if (s.gems < 1 || s.hearts > 0) return;
+    await _set(s.copyWith(gems: s.gems - 1, hearts: s.maxHearts));
+  });
 
-  Future<void> submitGhostRun() async {
-    final current = await _current();
-    final improved = (current.ghostBestSeconds - 17).clamp(125, 999).toInt();
-    await _set(
-      current.copyWith(
-        ghostBestSeconds: improved,
-        coins: current.coins + 15,
-        worldXp: current.worldXp + 30,
-      ),
-    );
-  }
+  Future<void> dismissMigrationNotice() =>
+      _serial((s) async => _set(s.copyWith(showMigrationNotice: false)));
 
-  Future<void> contributeGuild() async {
-    final current = await _current();
-    await _set(
-      current.copyWith(
-        guildContribution: current.guildContribution + 8,
-        guildTotal: current.guildTotal + 8,
-        worldXp: current.worldXp + 25,
-      ),
-    );
-  }
-
-  Future<void> beatRival() async {
-    final current = await _current();
-    await _set(
-      current.copyWith(
-        rivalWins: current.rivalWins + 1,
-        coins: current.coins + 25,
-        worldXp: current.worldXp + 55,
-        seasonXp: current.seasonXp + 55,
-      ),
-    );
-  }
-
-  Future<void> trainMistake(String category) async {
-    final current = await _current();
-    final old = current.mistakes[category] ?? 0;
-    if (old <= 0) return;
-    final next = <String, int>{
-      ...current.mistakes,
-      category: (old - 4).clamp(0, 100).toInt(),
-    };
-    await _set(
-      current.copyWith(
-        mistakes: next,
-        worldXp: current.worldXp + 30,
-        seasonXp: current.seasonXp + 30,
-      ),
-    );
-  }
-
-  Future<void> toggleProjectStep(String id) async {
-    final current = await _current();
-    final next = <String, bool>{
-      ...current.projectSteps,
-      id: !(current.projectSteps[id] ?? false),
-    };
-    await _set(current.copyWith(projectSteps: next));
-  }
-
-  Future<void> claimSeasonReward() async {
-    final current = await _current();
-    final nextLevel = current.seasonLevel + 1;
-    await _set(
-      current.copyWith(
-        seasonLevel: nextLevel,
-        seasonXp: 0,
-        coins: current.coins + 60,
-        gems: current.gems + (nextLevel % 3 == 0 ? 1 : 0),
-      ),
-    );
-  }
-
-  Future<void> solveInfinite() async {
-    final current = await _current();
-    final nextRun = current.infiniteCurrent + 1;
-    await _set(
-      current.copyWith(
-        infiniteCurrent: nextRun,
-        infiniteRecord: nextRun > current.infiniteRecord
-            ? nextRun
-            : current.infiniteRecord,
-        worldXp: current.worldXp + 20 + nextRun,
-        seasonXp: current.seasonXp + 20 + nextRun,
-        coins: current.coins + 5,
-      ),
-    );
-  }
-
-  Future<void> failInfinite() async {
-    final current = await _current();
-    if (current.hearts <= 0) return;
-    await _set(
-      current.copyWith(
-        hearts: current.hearts - 1,
-        infiniteCurrent: 0,
-      ),
-    );
-  }
-
-  Future<void> reviveInfinite() async {
-    final current = await _current();
-    if (current.gems < 1) return;
-    await _set(current.copyWith(gems: current.gems - 1, hearts: 3));
-  }
-
-  Future<void> resetWorld() async {
-    await ref.read(documentStoreProvider).delete(_key);
-    state = AsyncData(WorldState.initial());
-  }
+  Future<void> resetWorld() => _serial((s) async => _set(WorldState.initial()));
 }
