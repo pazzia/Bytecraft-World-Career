@@ -19,6 +19,7 @@
 ## Документы и макеты
 
 - [План самостоятельного проекта](docs/product/ROADMAP.md).
+- [Все идеи и договорённости — Markdown](docs/product/Obuchalka-project-ideas.md) и [Word](docs/product/Obuchalka-project-ideas.docx).
 - [Состав и происхождение переноса](docs/product/MIGRATION.md).
 - [Правила применения дизайна](docs/product/DESIGN-WORLD-CAREER.md).
 - [Спецификация UX v2](design/SPEC.md) и [39 заданий на макеты](design/README.md).
