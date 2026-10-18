@@ -381,8 +381,171 @@ jobs:
           } > smoke-report.md
           gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file smoke-report.md
 
+  # iOS: the same Flutter app in an iOS shell. Built on macOS; the app and
+  # the in-app Python are checked in the iOS Simulator (integration test +
+  # screenshot), then an unsigned .ipa is built for sideloading
+  # (see docs/IOS.md).
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate iOS shell
+        run: |
+          set -euo pipefail
+          flutter create --platforms=ios --org com.pazzia --project-name bytecraft .
+          rm -f test/widget_test.dart
+          P=ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleDisplayName Bytecraft' "$P"
+          /usr/libexec/PlistBuddy -c 'Set :CFBundleName Bytecraft' "$P"
+          # The Python sandbox loads from a loopback HTTP server
+          # (lib/features/playground/data/asset_http_server.dart).
+          /usr/libexec/PlistBuddy -c 'Add :NSAppTransportSecurity dict' "$P"
+          /usr/libexec/PlistBuddy -c 'Add :NSAppTransportSecurity:NSAllowsLocalNetworking bool true' "$P"
+          /usr/libexec/PlistBuddy -c 'Add :ITSAppUsesNonExemptEncryption bool false' "$P"
+          plutil -lint "$P"
+          # App icon: every size from one 1024px master.
+          ICONS=ios/Runner/Assets.xcassets/AppIcon.appiconset
+          python3 - "$ICONS" <<'PY'
+          import json, subprocess, sys
+          d = sys.argv[1]
+          for image in json.load(open(f"{d}/Contents.json"))["images"]:
+              name = image.get("filename")
+              if not name:
+                  continue
+              px = round(float(image["size"].split("x")[0]) * float(image["scale"].rstrip("x")))
+              subprocess.run(["sips", "-s", "format", "png", "-z", str(px), str(px),
+                              "tool/ios/AppIcon-1024.png", "--out", f"{d}/{name}"],
+                             check=True, capture_output=True)
+          print("icons ok")
+          PY
+
+      - name: Bundle Pyodide
+        run: |
+          set -euo pipefail
+          cd tool/pyodide
+          npm install --no-audit --no-fund
+          SRC=node_modules/pyodide
+          for f in pyodide.js pyodide.asm.js pyodide.asm.wasm python_stdlib.zip pyodide-lock.json; do
+            cp "$SRC/$f" ../../assets/pyodide/
+          done
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Boot iOS Simulator
+        id: sim
+        run: |
+          set -euo pipefail
+          UDID=$(xcrun simctl list devices available --json | python3 -c '
+          import json, sys
+          devices = json.load(sys.stdin)["devices"]
+          best = None
+          for runtime, items in devices.items():
+              if "iOS" not in runtime:
+                  continue
+              for d in items:
+                  if d["name"].startswith("iPhone") and (best is None or runtime > best[0]):
+                      best = (runtime, d["udid"], d["name"])
+          print(best[1]); print(best[0], best[2], file=sys.stderr)')
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+
+      - name: Integration test in the Simulator
+        id: itest
+        timeout-minutes: 15
+        run: |
+          set -o pipefail
+          flutter test integration_test/device_smoke_test.dart -d ${{ steps.sim.outputs.udid }} --reporter expanded 2>&1 | tee itest.txt
+
+      - name: Screenshots from the Simulator
+        id: shots
+        if: always() && steps.sim.outcome == 'success'
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          UDID=${{ steps.sim.outputs.udid }}
+          VERSION="$(grep -m1 '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')"
+          flutter build ios --simulator --debug \
+            --dart-define=APP_VERSION="$VERSION" --dart-define=BUILD_NUMBER=${{ github.run_number }} > simbuild.txt 2>&1
+          xcrun simctl uninstall "$UDID" com.pazzia.bytecraft || true
+          xcrun simctl install "$UDID" build/ios/iphonesimulator/Runner.app
+          mkdir -p shots
+          xcrun simctl launch "$UDID" com.pazzia.bytecraft
+          sleep 2; xcrun simctl io "$UDID" screenshot shots/1_splash.png
+          sleep 20; xcrun simctl io "$UDID" screenshot shots/2_after_splash.png
+          xcrun simctl spawn "$UDID" log show --last 2m --predicate 'process == "Runner"' --style compact 2>/dev/null | tail -n 60 > sim-log.txt || true
+
+      - name: Build iOS app (unsigned)
+        id: ipa
+        run: |
+          set -o pipefail
+          VERSION="$(grep -m1 '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')"
+          flutter build ios --release --no-codesign \
+            --build-name="$VERSION" --build-number=${{ github.run_number }} \
+            --dart-define=APP_VERSION="$VERSION" \
+            --dart-define=BUILD_NUMBER=${{ github.run_number }} 2>&1 | tee ipa.txt
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -qry bytecraft.ipa Payload
+          ls -la bytecraft.ipa | tee -a ipa.txt
+
+      - name: Upload IPA artifact
+        if: steps.ipa.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: bytecraft-ipa
+          path: bytecraft.ipa
+          if-no-files-found: error
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-screens
+          path: shots/
+          if-no-files-found: ignore
+
+      - name: Report to pull request
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          section() {
+            echo "<details><summary>$1</summary>"; echo; echo '```'
+            if [ -f "$2" ]; then tail -n "$3" "$2"; else echo "(step did not run)"; fi
+            echo '```'; echo "</details>"
+          }
+          {
+            echo "### iOS: itest=${{ steps.itest.outcome }} · shots=${{ steps.shots.outcome }} · ipa=${{ steps.ipa.outcome }} · run=${{ github.run_id }}"
+            section "integration test" itest.txt 60
+            section "simulator log" sim-log.txt 40
+            section "simulator build" simbuild.txt 20
+            section "ipa build" ipa.txt 25
+            # Small JPEG copies of the screenshots, base64 (artifacts are not
+            # reachable from every reviewer's environment).
+            for f in shots/*.png; do
+              [ -f "$f" ] || continue
+              sips -s format jpeg -s formatOptions 55 --resampleWidth 300 "$f" --out "${f%.png}.jpg" > /dev/null
+              echo "<details><summary>shot $(basename "${f%.png}")</summary>"; echo; echo '```'
+              base64 -i "${f%.png}.jpg" | tr -d '\n'; echo
+              echo '```'; echo "</details>"
+            done
+          } > ios-report.md
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file ios-report.md
+
   release:
-    needs: [build, smoke]
+    needs: [build, smoke, ios]
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -390,6 +553,11 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: bytecraft-apk
+
+      - name: Download IPA
+        uses: actions/download-artifact@v4
+        with:
+          name: bytecraft-ipa
 
       - name: Publish GitHub Release
         # Push to main, or a manual "Run workflow" on main (e.g. after the
@@ -404,6 +572,8 @@ jobs:
           TAG="mvp-${GITHUB_RUN_NUMBER}"
           APK_NAME="bytecraft-${VERSION}-build${GITHUB_RUN_NUMBER}.apk"
           cp app-release.apk "$APK_NAME"
+          IPA_NAME="bytecraft-${VERSION}-build${GITHUB_RUN_NUMBER}.ipa"
+          cp bytecraft.ipa "$IPA_NAME"
           NOTES="Bytecraft ${VERSION}, build ${GITHUB_RUN_NUMBER}, from commit ${GITHUB_SHA}."
           if [ "$SIGNED" = "true" ]; then
             NOTES="$(printf '%s\n\n%s' "$NOTES" "Signing certificate SHA-256: ${FINGERPRINT}")"
@@ -413,8 +583,9 @@ jobs:
           if [ "$SOURCE" = "created" ]; then
             NOTES="$(printf '%s\n\n%s' "$NOTES" "First build with the permanent key: uninstall older builds once. From now on, updates install over this one.")"
           fi
+          NOTES="$(printf '%s\n\n%s' "$NOTES" "iOS: ${IPA_NAME} is unsigned; install it with Sideloadly or AltStore (see docs/IOS.md).")"
           gh release create "$TAG" \
-            "$APK_NAME" \
+            "$APK_NAME" "$IPA_NAME" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
             --title "Bytecraft ${VERSION} (build ${GITHUB_RUN_NUMBER})" \
