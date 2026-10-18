@@ -1,0 +1,272 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_cond_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Первое условие",
+   "prompt": "Что выведет код?",
+   "topic": "cond_if",
+   "difficulty": 1,
+   "hint": "7 больше 5?",
+   "explanation": "Условие x > 5 истинно, поэтому выполняется ветка if.",
+   "code": "x = 7\nif x > 5:\n    print(\"big\")\nelse:\n    print(\"small\")",
+   "payload": {
+    "options": [
+     "big",
+     "small",
+     "big small",
+     "Ничего"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "7 > 5 — истина, значит, выполняется ветка if.",
+     "Выполняется только одна ветка: if или else.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "x = 7\nif x > 5:\n    print(\"big\")\nelse:\n    print(\"small\")",
+    "output": "big\n"
+   }
+  },
+  {
+   "id": "py_cond_002",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Больше или равно",
+   "prompt": "Разрешите доступ всем, кому 18 лет и больше",
+   "topic": "cond_if",
+   "difficulty": 1,
+   "hint": "Нужен оператор «больше или равно».",
+   "explanation": "В Python «больше или равно» пишется как >=. Вариант => — синтаксическая ошибка.",
+   "payload": {
+    "template": "age = 20\nif age {{0}} 18:\n    print(\"Доступ разрешён\")",
+    "options": [
+     ">=",
+     "=",
+     "=>",
+     "=="
+    ],
+    "answers": [
+     ">="
+    ],
+    "variantResults": {
+     "=": "SyntaxError: invalid syntax. Maybe you meant '==' or ':=' instead of '='?",
+     "=>": "SyntaxError: invalid syntax",
+     "==": "(ничего не выводит)"
+    }
+   },
+   "solution": {
+    "code": "age = 20\nif age >= 18:\n    print(\"Доступ разрешён\")",
+    "output": "Доступ разрешён\n"
+   }
+  },
+  {
+   "id": "py_cond_003",
+   "type": "fill_code",
+   "role": "practice",
+   "title": "Цепочка условий",
+   "prompt": "Заполните пропуски, чтобы при t = 30 программа вывела только «жарко»",
+   "topic": "cond_if",
+   "difficulty": 2,
+   "hint": "Нужна одна цепочка: после первой сработавшей проверки остальные пропускаются.",
+   "explanation": "if начинает цепочку, elif проверяется, только если предыдущие условия ложны. Два отдельных if вывели бы и «жарко», и «тепло».",
+   "payload": {
+    "template": "t = 30\n{{0}} t > 25:\n    print(\"жарко\")\n{{1}} t > 10:\n    print(\"тепло\")\nelse:\n    print(\"холодно\")",
+    "options": [
+     "if",
+     "elif",
+     "else",
+     "when"
+    ],
+    "answers": [
+     "if",
+     "elif"
+    ],
+    "variantResults": {
+     "if\u0001if": "жарко\nтепло",
+     "if\u0001else": "SyntaxError: expected ':'",
+     "if\u0001when": "SyntaxError: invalid syntax",
+     "elif\u0001if": "SyntaxError: invalid syntax",
+     "elif\u0001elif": "SyntaxError: invalid syntax",
+     "elif\u0001else": "SyntaxError: invalid syntax",
+     "elif\u0001when": "SyntaxError: invalid syntax",
+     "else\u0001if": "SyntaxError: invalid syntax",
+     "else\u0001elif": "SyntaxError: invalid syntax",
+     "else\u0001else": "SyntaxError: invalid syntax",
+     "else\u0001when": "SyntaxError: invalid syntax",
+     "when\u0001if": "SyntaxError: invalid syntax",
+     "when\u0001elif": "SyntaxError: invalid syntax",
+     "when\u0001else": "SyntaxError: invalid syntax",
+     "when\u0001when": "SyntaxError: invalid syntax"
+    }
+   },
+   "solution": {
+    "code": "t = 30\nif t > 25:\n    print(\"жарко\")\nelif t > 10:\n    print(\"тепло\")\nelse:\n    print(\"холодно\")",
+    "output": "жарко\n"
+   }
+  },
+  {
+   "id": "py_cond_007",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Оценка",
+   "prompt": "Напишите, что выведет код",
+   "topic": "cond_if",
+   "difficulty": 2,
+   "hint": "Ветки проверяются сверху вниз до первой подходящей.",
+   "explanation": "73 < 90, но 73 >= 70 — срабатывает вторая ветка, остальные пропускаются.",
+   "code": "score = 73\nif score >= 90:\n    grade = \"A\"\nelif score >= 70:\n    grade = \"B\"\nelif score >= 50:\n    grade = \"C\"\nelse:\n    grade = \"D\"\nprint(grade)",
+   "payload": {
+    "expectedOutput": "B"
+   },
+   "solution": {
+    "code": "score = 73\nif score >= 90:\n    grade = \"A\"\nelif score >= 70:\n    grade = \"B\"\nelif score >= 50:\n    grade = \"C\"\nelse:\n    grade = \"D\"\nprint(grade)",
+    "output": "B\n"
+   }
+  },
+  {
+   "id": "py_cond_006",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Истинность в деле",
+   "prompt": "Что выведет код?",
+   "topic": "cond_logic",
+   "difficulty": 2,
+   "hint": "or возвращает первое истинное значение (или последнее, если истинных нет), and — первое ложное (или последнее).",
+   "explanation": "x равен 0 (ложь), поэтому x or \"нет\" даёт «нет». name пустая, and возвращает её, bool(\"\") — False.",
+   "code": "x = 0\nname = \"\"\nprint(x or \"нет\", bool(name and \"есть\"))",
+   "payload": {
+    "options": [
+     "0 False",
+     "нет False",
+     "нет True",
+     "True False"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "0 ложно, поэтому or вернул правую часть.",
+     "",
+     "Пустая строка ложна, and вернул её — False.",
+     "or возвращает само значение, а не True."
+    ]
+   },
+   "solution": {
+    "code": "x = 0\nname = \"\"\nprint(x or \"нет\", bool(name and \"есть\"))",
+    "output": "нет False\n"
+   }
+  },
+  {
+   "id": "py_cond_008",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Условное выражение",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "cond_ternary",
+   "difficulty": 2,
+   "hint": "n = 7: нечётное, больше 5, меньше 10.",
+   "explanation": "7 — нечётное; 7 между 5 и 10 — True; 7 не меньше 5, поэтому n * 2 = 14; not 7 — False.",
+   "code": "n = 7",
+   "payload": {
+    "pairs": [
+     {
+      "left": "\"чёт\" if n % 2 == 0 else \"нечет\"",
+      "right": "нечет"
+     },
+     {
+      "left": "n > 5 and n < 10",
+      "right": "True"
+     },
+     {
+      "left": "n if n < 5 else n * 2",
+      "right": "14"
+     },
+     {
+      "left": "not n",
+      "right": "False"
+     }
+    ]
+   },
+   "solution": {
+    "code": "n = 7\nprint(\"чёт\" if n % 2 == 0 else \"нечет\")\nprint(n > 5 and n < 10)\nprint(n if n < 5 else n * 2)\nprint(not n)",
+    "output": "нечет\nTrue\n14\nFalse\n"
+   }
+  },
+  {
+   "id": "py_cond_004",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Пропавшее двоеточие",
+   "prompt": "Найдите строку с ошибкой",
+   "topic": "cond_if",
+   "difficulty": 2,
+   "hint": "Посмотрите на конец строк с if и else.",
+   "explanation": "После условия if обязательно ставится двоеточие. Без него — SyntaxError.",
+   "code": "n = 4\nif n % 2 == 0\n    print(\"чётное\")\nelse:\n    print(\"нечётное\")",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "n = 4\nif n % 2 == 0:\n    print(\"чётное\")\nelse:\n    print(\"нечётное\")",
+    "output": "чётное\n"
+   }
+  },
+  {
+   "id": "py_cond_009",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Всегда правда",
+   "prompt": "Для x = 3 программа должна вывести «другое». Найдите ошибку",
+   "topic": "cond_logic",
+   "difficulty": 3,
+   "hint": "Как Python читает x == 1 or 2?",
+   "explanation": "Это (x == 1) or 2. Число 2 истинно, поэтому условие всегда выполняется. Нужно сравнить x с каждым значением или написать x in (1, 2).",
+   "code": "x = 3\nif x == 1 or 2:\n    print(\"один или два\")\nelse:\n    print(\"другое\")",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "x = 3\nif x == 1 or x == 2:\n    print(\"один или два\")\nelse:\n    print(\"другое\")",
+    "output": "другое\n"
+   }
+  },
+  {
+   "id": "py_cond_005",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: порядок проверок",
+   "prompt": "Что выведет код?",
+   "topic": "cond_if",
+   "difficulty": 3,
+   "hint": "В цепочке if/elif срабатывает первая подходящая ветка. Второй if — отдельная проверка.",
+   "explanation": "95 >= 50 — первая ветка срабатывает, и elif уже не проверяется, хотя 95 >= 90. Второй if независим: 95 в диапазоне, поэтому ok.",
+   "code": "score = 95\nif score >= 50:\n    print(\"зачёт\")\nelif score >= 90:\n    print(\"отлично\")\nif score > 100 or score < 0:\n    print(\"ошибка\")\nelse:\n    print(\"ok\")",
+   "payload": {
+    "options": [
+     "отлично\nok",
+     "зачёт\nok",
+     "зачёт\nотлично\nok",
+     "зачёт"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Ветки проверяются сверху вниз: 95 >= 50 срабатывает раньше, чем 95 >= 90.",
+     "",
+     "В цепочке if/elif выполняется только одна ветка.",
+     "Второй if — отдельная цепочка, она тоже выполняется."
+    ]
+   },
+   "solution": {
+    "code": "score = 95\nif score >= 50:\n    print(\"зачёт\")\nelif score >= 90:\n    print(\"отлично\")\nif score > 100 or score < 0:\n    print(\"ошибка\")\nelse:\n    print(\"ok\")",
+    "output": "зачёт\nok\n"
+   }
+  }
+ ]
+}

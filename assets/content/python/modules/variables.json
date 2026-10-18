@@ -1,0 +1,235 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_var_001",
+   "type": "multiple_choice",
+   "role": "lesson",
+   "title": "Первая переменная",
+   "prompt": "Какое значение будет у x?",
+   "topic": "var_assign",
+   "difficulty": 1,
+   "hint": "После оператора = переменная получает значение справа.",
+   "explanation": "Оператор = связывает имя x со значением 5.",
+   "code": "x = 5",
+   "payload": {
+    "options": [
+     "3",
+     "5",
+     "x",
+     "Ошибка"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "",
+     "",
+     "x — это имя переменной, а спрашивают про её значение.",
+     "Это корректная строка Python: присваивание."
+    ]
+   },
+   "solution": {
+    "code": "x = 5",
+    "output": ""
+   }
+  },
+  {
+   "id": "py_var_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Изменение значения",
+   "prompt": "Что выведет код?",
+   "topic": "var_assign",
+   "difficulty": 1,
+   "hint": "x *= 3 — это x = x * 3, x -= 2 — это x = x - 2.",
+   "explanation": "Сначала x = 4, затем 4 · 3 = 12, затем 12 − 2 = 10.",
+   "code": "x = 4\nx *= 3\nx -= 2\nprint(x)",
+   "payload": {
+    "options": [
+     "4",
+     "12",
+     "10",
+     "Ошибка"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "*= и -= изменяют переменную: значение уже не 4.",
+     "После умножения есть ещё x -= 2.",
+     "",
+     "*= и -= — обычные составные операторы присваивания."
+    ]
+   },
+   "solution": {
+    "code": "x = 4\nx *= 3\nx -= 2\nprint(x)",
+    "output": "10\n"
+   }
+  },
+  {
+   "id": "py_var_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Присваивание",
+   "prompt": "Создайте переменную name со значением \"Ada\"",
+   "topic": "var_assign",
+   "difficulty": 1,
+   "hint": "Для присваивания используется один знак равенства.",
+   "explanation": "Один знак = присваивает значение, а == сравнивает два значения.",
+   "payload": {
+    "template": "name {{0}} \"Ada\"\nprint(name)",
+    "options": [
+     "=",
+     "==",
+     "=>",
+     "->"
+    ],
+    "answers": [
+     "="
+    ],
+    "variantResults": {
+     "==": "NameError: name 'name' is not defined",
+     "=>": "SyntaxError: invalid syntax",
+     "->": "SyntaxError: invalid syntax"
+    }
+   },
+   "solution": {
+    "code": "name = \"Ada\"\nprint(name)",
+    "output": "Ada\n"
+   }
+  },
+  {
+   "id": "py_var_006",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Копия значения",
+   "prompt": "Напишите, что выведет код",
+   "topic": "var_assign",
+   "difficulty": 2,
+   "hint": "b получает значение a в момент присваивания.",
+   "explanation": "b = a связывает b с числом 7. Потом a связывают с новым числом 8, а b по-прежнему 7.",
+   "code": "a = 7\nb = a\na = a + 1\nprint(a, b)",
+   "payload": {
+    "expectedOutput": "8 7"
+   },
+   "solution": {
+    "code": "a = 7\nb = a\na = a + 1\nprint(a, b)",
+    "output": "8 7\n"
+   }
+  },
+  {
+   "id": "py_var_004",
+   "type": "code_ordering",
+   "role": "practice",
+   "title": "Собери программу",
+   "prompt": "Расставьте строки так, чтобы программа вывела 15",
+   "topic": "var_assign",
+   "difficulty": 2,
+   "hint": "Переменную нельзя использовать до того, как ей присвоено значение.",
+   "explanation": "Сначала создаём x и y, затем считаем result и только потом выводим его.",
+   "payload": {
+    "lines": [
+     "x = 10",
+     "y = 5",
+     "result = x + y",
+     "print(result)"
+    ],
+    "alternativeOrders": [
+     [
+      1,
+      0,
+      2,
+      3
+     ]
+    ]
+   },
+   "solution": {
+    "code": "x = 10\ny = 5\nresult = x + y\nprint(result)",
+    "output": "15\n"
+   }
+  },
+  {
+   "id": "py_var_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Допустимые имена",
+   "prompt": "Какие имена переменных допустимы в Python?",
+   "topic": "var_names",
+   "difficulty": 2,
+   "hint": "Имя не начинается с цифры, не содержит дефис и не совпадает с ключевым словом.",
+   "explanation": "user_name, _count и totalSum допустимы (хотя по соглашению PEP 8 лучше total_sum). 2nd_place начинается с цифры, class — ключевое слово, my-var содержит минус.",
+   "payload": {
+    "options": [
+     "user_name",
+     "2nd_place",
+     "_count",
+     "class",
+     "totalSum",
+     "my-var"
+    ],
+    "correctIndexes": [
+     0,
+     2,
+     4
+    ],
+    "optionFeedback": [
+     "",
+     "Имя не может начинаться с цифры.",
+     "",
+     "class — ключевое слово Python.",
+     "",
+     "Дефис — это оператор вычитания, в имени он недопустим."
+    ]
+   }
+  },
+  {
+   "id": "py_var_008",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Обмен значениями",
+   "prompt": "Что выведет код?",
+   "topic": "var_multi",
+   "difficulty": 2,
+   "hint": "Справа сначала вычисляется пара (c, a), потом она распаковывается в a и c.",
+   "explanation": "Правая часть c, a вычисляется целиком как (3, 1), затем a = 3, c = 1. b не меняется.",
+   "code": "a, b, c = 1, 2, 3\na, c = c, a\nprint(a, b, c)",
+   "payload": {
+    "options": [
+     "3 2 1",
+     "1 2 3",
+     "3 2 3",
+     "1 2 1"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Строка a, c = c, a меняет a и c местами.",
+     "Так было бы при двух отдельных присваиваниях a = c; c = a.",
+     "Значения не теряются: справа сначала запоминается пара (3, 1)."
+    ]
+   },
+   "solution": {
+    "code": "a, b, c = 1, 2, 3\na, c = c, a\nprint(a, b, c)",
+    "output": "3 2 1\n"
+   }
+  },
+  {
+   "id": "py_var_005",
+   "type": "bug_finder",
+   "role": "boss",
+   "title": "Босс: опечатка",
+   "prompt": "Найдите строку с ошибкой",
+   "topic": "var_names",
+   "difficulty": 3,
+   "hint": "Сравните имена переменных посимвольно.",
+   "explanation": "В строке 3 опечатка: bonsu вместо bonus. Python не знает такую переменную и выдаёт NameError.",
+   "code": "score = 10\nbonus = 5\ntotal = score + bonsu\nprint(total)",
+   "payload": {
+    "buggyLines": [
+     2
+    ]
+   },
+   "solution": {
+    "code": "score = 10\nbonus = 5\ntotal = score + bonus\nprint(total)",
+    "output": "15\n"
+   }
+  }
+ ]
+}

@@ -1,0 +1,254 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_io_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Разделитель",
+   "prompt": "Что выведет код?",
+   "topic": "io_print",
+   "difficulty": 1,
+   "hint": "sep — это то, что ставится между значениями.",
+   "explanation": "sep=\".\" ставит точку между значениями, но не после последнего.",
+   "code": "print(2024, 10, 17, sep=\".\")",
+   "payload": {
+    "options": [
+     "2024 10 17",
+     "2024.10.17",
+     "20241017",
+     "2024.10.17."
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Пробел — разделитель по умолчанию, а здесь задан sep=\".\".",
+     "",
+     "Между значениями ставится разделитель sep.",
+     "sep ставится только между значениями."
+    ]
+   },
+   "solution": {
+    "code": "print(2024, 10, 17, sep=\".\")",
+    "output": "2024.10.17\n"
+   }
+  },
+  {
+   "id": "py_io_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Без перевода строки",
+   "prompt": "Что выведет код?",
+   "topic": "io_print",
+   "difficulty": 1,
+   "hint": "end заменяет перевод строки в конце первого print.",
+   "explanation": "Первый print заканчивается не переводом строки, а «...», поэтому «готово» печатается в той же строке.",
+   "code": "print(\"Загрузка\", end=\"...\")\nprint(\"готово\")",
+   "payload": {
+    "options": [
+     "Загрузка...готово",
+     "Загрузка\nготово",
+     "Загрузка...\nготово",
+     "Загрузка ...готово"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "end=\"...\" заменяет перевод строки, а не добавляется к нему.",
+     "После «...» перевода строки нет: end заменил его.",
+     "end ставится сразу после значения, без пробела."
+    ]
+   },
+   "solution": {
+    "code": "print(\"Загрузка\", end=\"...\")\nprint(\"готово\")",
+    "output": "Загрузка...готово\n"
+   }
+  },
+  {
+   "id": "py_io_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Число из ввода",
+   "prompt": "Пользователь ввёл 21. Программа должна вывести 42",
+   "topic": "io_input",
+   "difficulty": 1,
+   "hint": "input() возвращает строку, а нужно целое число.",
+   "explanation": "int(input()) превращает «21» в число 21, а 21 * 2 = 42.",
+   "payload": {
+    "template": "n = {{0}}(input())\nprint(n * 2)",
+    "options": [
+     "int",
+     "str",
+     "float",
+     "len"
+    ],
+    "answers": [
+     "int"
+    ],
+    "variantResults": {
+     "str": "2121",
+     "float": "42.0",
+     "len": "4"
+    }
+   },
+   "solution": {
+    "code": "n = int(input())\nprint(n * 2)",
+    "output": "42\n",
+    "stdin": "21\n"
+   }
+  },
+  {
+   "id": "py_io_004",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Формат чисел",
+   "prompt": "Напишите, что выведет код",
+   "topic": "io_format",
+   "difficulty": 2,
+   "hint": ".2f — две цифры после точки, 03d — три знака с ведущими нулями.",
+   "explanation": "3.14159 округляется до 3.14, а 7 дополняется нулями до 007.",
+   "code": "price = 3.14159\nprint(f\"{price:.2f}\")\nprint(f\"{7:03d}\")",
+   "payload": {
+    "expectedOutput": "3.14\n007"
+   },
+   "solution": {
+    "code": "price = 3.14159\nprint(f\"{price:.2f}\")\nprint(f\"{7:03d}\")",
+    "output": "3.14\n007\n"
+   }
+  },
+  {
+   "id": "py_io_005",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Форматы",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "io_format",
+   "difficulty": 2,
+   "hint": "% умножает на 100, > выравнивает вправо, ^ — по центру.",
+   "explanation": ".1f — одна цифра после точки, запятая — разделитель тысяч, % — проценты, *^6 — по центру со звёздочками, >5 — вправо в поле из 5 символов.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "f\"{3.14159:.1f}\"",
+      "right": "3.1"
+     },
+     {
+      "left": "f\"{1234567:,}\"",
+      "right": "1,234,567"
+     },
+     {
+      "left": "f\"{0.25:.0%}\"",
+      "right": "25%"
+     },
+     {
+      "left": "f\"{'hi':*^6}\"",
+      "right": "**hi**"
+     },
+     {
+      "left": "f\"[{'hi':>5}]\"",
+      "right": "[   hi]"
+     }
+    ]
+   },
+   "solution": {
+    "code": "print(f\"{3.14159:.1f}\")\nprint(f\"{1234567:,}\")\nprint(f\"{0.25:.0%}\")\nprint(f\"{'hi':*^6}\")\nprint(f\"[{'hi':>5}]\")",
+    "output": "3.1\n1,234,567\n25%\n**hi**\n[   hi]\n"
+   }
+  },
+  {
+   "id": "py_io_006",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Итог",
+   "prompt": "Найдите строку с ошибкой",
+   "topic": "io_format",
+   "difficulty": 2,
+   "hint": "Можно ли сложить строку и число?",
+   "explanation": "Строку и число нельзя сложить. Нужно str(total) или f\"Итого: {total}\".",
+   "code": "total = 2 + 3\nprint(\"Итого: \" + total)",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "total = 2 + 3\nprint(\"Итого: \" + str(total))",
+    "output": "Итого: 5\n"
+   }
+  },
+  {
+   "id": "py_io_007",
+   "type": "code_ordering",
+   "role": "boss",
+   "title": "Босс: чек",
+   "prompt": "Соберите программу, которая выведет «Кофе: 3 x 2.5 = 7.50»",
+   "topic": "io_format",
+   "difficulty": 3,
+   "hint": "Итог считается после цены и количества, вывод — в конце.",
+   "explanation": "Три исходные переменные можно задать в любом порядке, total — после них, print — последним. :.2f даёт 7.50.",
+   "payload": {
+    "lines": [
+     "item = \"Кофе\"",
+     "price = 2.5",
+     "qty = 3",
+     "total = price * qty",
+     "print(f\"{item}: {qty} x {price} = {total:.2f}\")"
+    ],
+    "alternativeOrders": [
+     [
+      0,
+      2,
+      1,
+      3,
+      4
+     ],
+     [
+      1,
+      0,
+      2,
+      3,
+      4
+     ],
+     [
+      1,
+      2,
+      0,
+      3,
+      4
+     ],
+     [
+      1,
+      2,
+      3,
+      0,
+      4
+     ],
+     [
+      2,
+      0,
+      1,
+      3,
+      4
+     ],
+     [
+      2,
+      1,
+      0,
+      3,
+      4
+     ],
+     [
+      2,
+      1,
+      3,
+      0,
+      4
+     ]
+    ]
+   },
+   "solution": {
+    "code": "item = \"Кофе\"\nprice = 2.5\nqty = 3\ntotal = price * qty\nprint(f\"{item}: {qty} x {price} = {total:.2f}\")",
+    "output": "Кофе: 3 x 2.5 = 7.50\n"
+   }
+  }
+ ]
+}

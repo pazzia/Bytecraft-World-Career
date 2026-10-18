@@ -1,0 +1,332 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_algo_001",
+   "type": "multiple_choice",
+   "role": "lesson",
+   "title": "Сколько шагов",
+   "prompt": "Сколько раз в худшем случае бинарный поиск проверит середину в отсортированном списке из 1 000 000 элементов?",
+   "topic": "algo_search_sort",
+   "difficulty": 1,
+   "hint": "Каждая проверка отбрасывает половину оставшихся элементов.",
+   "explanation": "Делений пополам хватит log₂(1 000 000) ≈ 20: 2²⁰ = 1 048 576. Поэтому бинарный поиск — O(log n).",
+   "payload": {
+    "options": [
+     "около 20",
+     "около 1 000",
+     "около 500 000",
+     "1 000 000"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Это √n. Бинарный поиск делит пополам: нужно около log₂ n проверок.",
+     "Столько в среднем делает линейный поиск, а бинарный отбрасывает половину за шаг.",
+     "Это худший случай линейного поиска."
+    ]
+   }
+  },
+  {
+   "id": "py_algo_002",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Цена операций",
+   "prompt": "Сопоставьте операцию и её сложность",
+   "topic": "algo_complexity",
+   "difficulty": 2,
+   "hint": "Множество — хеш-таблица, бинарный поиск каждый раз делит пополам.",
+   "explanation": "Список просматривается целиком, множество находит элемент по хешу, сортировка — n log n, вложенные циклы — n · n, бинарный поиск — log n.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "x in список",
+      "right": "O(n)"
+     },
+     {
+      "left": "x in множество",
+      "right": "O(1) в среднем"
+     },
+     {
+      "left": "sorted(данные)",
+      "right": "O(n log n)"
+     },
+     {
+      "left": "два вложенных цикла по n",
+      "right": "O(n²)"
+     },
+     {
+      "left": "бинарный поиск",
+      "right": "O(log n)"
+     }
+    ]
+   }
+  },
+  {
+   "id": "py_algo_003",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "bisect",
+   "prompt": "Что выведет код?",
+   "topic": "algo_search_sort",
+   "difficulty": 1,
+   "hint": "bisect_left — левее равных, bisect_right — правее. insort сохраняет порядок.",
+   "explanation": "25 стоит на позициях 1 и 2: bisect_left даёт 1, bisect_right — 3. 30 встанет между 25 и 40 — позиция 3. insort вставляет 30 туда же.",
+   "code": "import bisect\n\nages = [18, 25, 25, 40]\nprint(bisect.bisect_left(ages, 25), bisect.bisect_right(ages, 25), bisect.bisect_left(ages, 30))\nbisect.insort(ages, 30)\nprint(ages)",
+   "payload": {
+    "options": [
+     "1 2 3\n[18, 25, 25, 40, 30]",
+     "2 3 3\n[18, 25, 25, 30, 40]",
+     "1 3 3\n[30, 18, 25, 25, 40]",
+     "1 3 3\n[18, 25, 25, 30, 40]"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "bisect_right — позиция после всех равных: 3. И insort не добавляет в конец.",
+     "bisect_left — позиция перед первым равным: 1.",
+     "insort вставляет на место по порядку, а не в начало.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "import bisect\n\nages = [18, 25, 25, 40]\nprint(bisect.bisect_left(ages, 25), bisect.bisect_right(ages, 25), bisect.bisect_left(ages, 30))\nbisect.insort(ages, 30)\nprint(ages)",
+    "output": "1 3 3\n[18, 25, 25, 30, 40]\n"
+   }
+  },
+  {
+   "id": "py_algo_004",
+   "type": "fill_code",
+   "role": "practice",
+   "title": "Бинарный поиск",
+   "prompt": "Допишите сужение границ поиска",
+   "topic": "algo_search_sort",
+   "difficulty": 3,
+   "hint": "Середина уже проверена — её можно исключить из диапазона.",
+   "explanation": "Если середина меньше искомого, ответ правее: lo = mid + 1. Если больше — левее: hi = mid - 1. Без ±1 диапазон может перестать сужаться, и цикл зациклится.",
+   "payload": {
+    "template": "def search(items, target):\n    lo, hi = 0, len(items) - 1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if items[mid] == target:\n            return mid\n        if items[mid] < target:\n            lo = {{0}}\n        else:\n            hi = {{1}}\n    return -1\n\nnums = [1, 3, 5, 7, 9, 11]\nprint(search(nums, 9), search(nums, 4))",
+    "options": [
+     "mid + 1",
+     "mid - 1",
+     "mid",
+     "hi + 1"
+    ],
+    "answers": [
+     "mid + 1",
+     "mid - 1"
+    ],
+    "variantResults": {
+     "mid + 1\u0001mid + 1": "Программа зациклилась или работает слишком долго — её пришлось остановить",
+     "mid + 1\u0001mid": "Программа зациклилась или работает слишком долго — её пришлось остановить",
+     "mid + 1\u0001hi + 1": "IndexError: list index out of range",
+     "mid - 1\u0001mid + 1": "Программа зациклилась или работает слишком долго — её пришлось остановить",
+     "mid - 1\u0001mid - 1": "Программа зациклилась или работает слишком долго — её пришлось остановить",
+     "mid - 1\u0001mid": "Программа зациклилась или работает слишком долго — её пришлось остановить",
+     "mid - 1\u0001hi + 1": "Программа зациклилась или работает слишком долго — её пришлось остановить",
+     "mid\u0001mid + 1": "Программа зациклилась или работает слишком долго — её пришлось остановить",
+     "mid\u0001mid - 1": "Программа зациклилась или работает слишком долго — её пришлось остановить",
+     "mid\u0001mid": "Программа зациклилась или работает слишком долго — её пришлось остановить",
+     "mid\u0001hi + 1": "IndexError: list index out of range",
+     "hi + 1\u0001mid + 1": "-1 -1",
+     "hi + 1\u0001mid - 1": "-1 -1",
+     "hi + 1\u0001mid": "-1 -1",
+     "hi + 1\u0001hi + 1": "IndexError: list index out of range"
+    }
+   },
+   "solution": {
+    "code": "def search(items, target):\n    lo, hi = 0, len(items) - 1\n    while lo <= hi:\n        mid = (lo + hi) // 2\n        if items[mid] == target:\n            return mid\n        if items[mid] < target:\n            lo = mid + 1\n        else:\n            hi = mid - 1\n    return -1\n\nnums = [1, 3, 5, 7, 9, 11]\nprint(search(nums, 9), search(nums, 4))",
+    "output": "4 -1\n"
+   }
+  },
+  {
+   "id": "py_algo_005",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Куча",
+   "prompt": "Напишите, что выведет код",
+   "topic": "algo_patterns",
+   "difficulty": 2,
+   "hint": "heappop всегда достаёт наименьший элемент.",
+   "explanation": "nlargest(2) — два наибольших: [9, 7]. Куча выдаёт элементы от меньшего к большему: сначала 1, потом 2.",
+   "code": "import heapq\n\nnums = [7, 2, 9, 4, 1]\nprint(heapq.nlargest(2, nums))\nheap = []\nfor n in nums:\n    heapq.heappush(heap, n)\nprint(heapq.heappop(heap), heapq.heappop(heap))",
+   "payload": {
+    "expectedOutput": "[9, 7]\n1 2"
+   },
+   "solution": {
+    "code": "import heapq\n\nnums = [7, 2, 9, 4, 1]\nprint(heapq.nlargest(2, nums))\nheap = []\nfor n in nums:\n    heapq.heappush(heap, n)\nprint(heapq.heappop(heap), heapq.heappop(heap))",
+    "output": "[9, 7]\n1 2\n"
+   }
+  },
+  {
+   "id": "py_algo_006",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Пара с суммой",
+   "prompt": "Что выведет код?",
+   "topic": "algo_complexity",
+   "difficulty": 3,
+   "hint": "Пара находится в момент, когда встречается второе число пары. Какое первое?",
+   "explanation": "Проход за O(n): для 3 и 8 пары ещё нет, на 1 оказывается, что 9 - 1 = 8 уже встречалось. Возвращается (8, 1). Для [1, 2] пары с суммой 7 нет.",
+   "code": "def has_pair(nums, target):\n    seen = set()\n    for x in nums:\n        if target - x in seen:\n            return (target - x, x)\n        seen.add(x)\n    return None\n\nprint(has_pair([3, 8, 1, 5], 9), has_pair([1, 2], 7))",
+   "payload": {
+    "options": [
+     "(8, 1) None",
+     "(3, 5) None",
+     "(1, 8) None",
+     "True False"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "3 + 5 = 8, а нужна сумма 9.",
+     "Первым в кортеже стоит target - x — число, найденное раньше: 8.",
+     "Функция возвращает саму пару, а не True."
+    ]
+   },
+   "solution": {
+    "code": "def has_pair(nums, target):\n    seen = set()\n    for x in nums:\n        if target - x in seen:\n            return (target - x, x)\n        seen.add(x)\n    return None\n\nprint(has_pair([3, 8, 1, 5], 9), has_pair([1, 2], 7))",
+    "output": "(8, 1) None\n"
+   }
+  },
+  {
+   "id": "py_algo_007",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Потерянное окно",
+   "prompt": "Нужна наибольшая сумма k подряд идущих чисел: 9 и 8. Найдите строку с ошибкой",
+   "topic": "algo_patterns",
+   "difficulty": 3,
+   "hint": "Сколько окон длины k в списке из n элементов?",
+   "explanation": "Окон длины k ровно n - k + 1. range(n - k) пропускает последнее окно [5, 1, 3] с суммой 9 — классическая ошибка на единицу.",
+   "code": "def best_window(nums, k):\n    best = 0\n    for i in range(len(nums) - k):\n        best = max(best, sum(nums[i:i + k]))\n    return best\n\nprint(best_window([2, 1, 5, 1, 3], 3), best_window([4, 4, 1, 1], 2))",
+   "payload": {
+    "buggyLines": [
+     2
+    ]
+   },
+   "solution": {
+    "code": "def best_window(nums, k):\n    best = 0\n    for i in range(len(nums) - k + 1):\n        best = max(best, sum(nums[i:i + k]))\n    return best\n\nprint(best_window([2, 1, 5, 1, 3], 3), best_window([4, 4, 1, 1], 2))",
+    "output": "9 8\n"
+   }
+  },
+  {
+   "id": "py_algo_008",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "O(1) в среднем",
+   "prompt": "Какие операции выполняются за O(1) (в среднем или амортизированно), независимо от размера коллекции?",
+   "topic": "algo_complexity",
+   "difficulty": 2,
+   "hint": "Хеш-таблицы и добавление в конец — быстро. Сдвиг всех элементов и просмотр всех — медленно.",
+   "explanation": "Множество и словарь ищут по хешу, append пишет в конец, deque снимает элемент с начала без сдвигов. insert(0, x) сдвигает все элементы списка, x in список просматривает их по очереди — O(n).",
+   "payload": {
+    "options": [
+     "x in множество",
+     "список.append(x)",
+     "список.insert(0, x)",
+     "словарь[ключ]",
+     "x in список",
+     "deque.popleft()"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     3,
+     5
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "Вставка в начало сдвигает все элементы — O(n). Для очереди — deque.",
+     "",
+     "Список просматривается по очереди — O(n).",
+     ""
+    ]
+   }
+  },
+  {
+   "id": "py_algo_010",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Ничья в куче",
+   "prompt": "Программа падает при равных приоритетах. Отметьте все строки с ошибкой",
+   "topic": "algo_patterns",
+   "difficulty": 3,
+   "hint": "Как сравниваются два кортежа с одинаковым первым элементом? А можно ли сравнить два словаря через <?",
+   "explanation": "При равных приоритетах куча сравнивает вторые элементы кортежей — словари, а для них < не определён: TypeError. Номер из count() между приоритетом и данными делает каждый кортеж уникальным, и до словарей сравнение не доходит. Обе вставки должны иметь одинаковый вид.",
+   "code": "import heapq\nfrom itertools import count\n\norder = count()\nheap = []\nheapq.heappush(heap, (1, {\"name\": \"отчёт\"}))\nheapq.heappush(heap, (1, {\"name\": \"ревью\"}))\nprint(heapq.heappop(heap)[-1][\"name\"])",
+   "payload": {
+    "buggyLines": [
+     5,
+     6
+    ]
+   },
+   "solution": {
+    "code": "import heapq\nfrom itertools import count\n\norder = count()\nheap = []\nheapq.heappush(heap, (1, next(order), {\"name\": \"отчёт\"}))\nheapq.heappush(heap, (1, next(order), {\"name\": \"ревью\"}))\nprint(heapq.heappop(heap)[-1][\"name\"])",
+    "output": "отчёт\n"
+   }
+  },
+  {
+   "id": "py_algo_011",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Два указателя",
+   "prompt": "Что выведет код?",
+   "topic": "algo_patterns",
+   "difficulty": 3,
+   "hint": "Пройдите вручную: 1 + 11, затем сдвиг правого указателя, и так далее. Считайте каждую проверку суммы.",
+   "explanation": "1 + 11 = 12 — много, hi влево; 1 + 8 = 9 — мало, lo вправо; 3 + 8 = 11 — много; 3 + 6 = 9 — мало; 4 + 6 = 10 — нашли на пятом шаге. Каждый шаг сдвигает один указатель, поэтому проход — O(n).",
+   "code": "def pair_sum(nums, target):\n    lo, hi = 0, len(nums) - 1\n    steps = 0\n    while lo < hi:\n        steps += 1\n        s = nums[lo] + nums[hi]\n        if s == target:\n            return nums[lo], nums[hi], steps\n        if s < target:\n            lo += 1\n        else:\n            hi -= 1\n    return None\n\nprint(pair_sum([1, 3, 4, 6, 8, 11], 10))",
+   "payload": {
+    "options": [
+     "(4, 6, 3)",
+     "(1, 8, 2)",
+     "None",
+     "(4, 6, 5)"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Посчитайте шаги заново: пара находится на пятой проверке.",
+     "1 + 8 = 9, а нужно 10.",
+     "Пара 4 + 6 = 10 в списке есть.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "def pair_sum(nums, target):\n    lo, hi = 0, len(nums) - 1\n    steps = 0\n    while lo < hi:\n        steps += 1\n        s = nums[lo] + nums[hi]\n        if s == target:\n            return nums[lo], nums[hi], steps\n        if s < target:\n            lo += 1\n        else:\n            hi -= 1\n    return None\n\nprint(pair_sum([1, 3, 4, 6, 8, 11], 10))",
+    "output": "(4, 6, 5)\n"
+   }
+  },
+  {
+   "id": "py_algo_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: обход в ширину",
+   "prompt": "Что выведет код?",
+   "topic": "algo_patterns",
+   "difficulty": 4,
+   "hint": "BFS обрабатывает вершины слоями: сначала все на расстоянии 1, потом 2…",
+   "explanation": "Из A за шаг достижимы B и C, за два — D и E, за три — F. Очередь гарантирует, что первая найденная дорога — кратчайшая по числу рёбер (в графе без весов); словарь хранит вершины в порядке открытия.",
+   "code": "from collections import deque\n\ngraph = {\"A\": [\"B\", \"C\"], \"B\": [\"D\"], \"C\": [\"D\", \"E\"], \"D\": [\"F\"], \"E\": [\"F\"], \"F\": []}\n\ndef bfs(start):\n    dist = {start: 0}\n    queue = deque([start])\n    while queue:\n        node = queue.popleft()\n        for nxt in graph[node]:\n            if nxt not in dist:\n                dist[nxt] = dist[node] + 1\n                queue.append(nxt)\n    return dist\n\nprint(bfs(\"A\"))",
+   "payload": {
+    "options": [
+     "{'A': 0, 'B': 1, 'C': 1, 'D': 2, 'E': 2, 'F': 3}",
+     "{'A': 0, 'B': 1, 'C': 1, 'D': 2, 'E': 3, 'F': 4}",
+     "{'A': 0, 'B': 1, 'D': 2, 'F': 3, 'C': 1, 'E': 2}",
+     "{'A': 0, 'B': 1, 'C': 1, 'D': 2, 'E': 2, 'F': 4}"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "E достижима из C за один шаг: расстояние 2.",
+     "Так обходил бы поиск в глубину. Очередь сначала обрабатывает весь слой: B и C раньше D.",
+     "F открывается из D на расстоянии 2 — значит, 3."
+    ]
+   },
+   "solution": {
+    "code": "from collections import deque\n\ngraph = {\"A\": [\"B\", \"C\"], \"B\": [\"D\"], \"C\": [\"D\", \"E\"], \"D\": [\"F\"], \"E\": [\"F\"], \"F\": []}\n\ndef bfs(start):\n    dist = {start: 0}\n    queue = deque([start])\n    while queue:\n        node = queue.popleft()\n        for nxt in graph[node]:\n            if nxt not in dist:\n                dist[nxt] = dist[node] + 1\n                queue.append(nxt)\n    return dist\n\nprint(bfs(\"A\"))",
+    "output": "{'A': 0, 'B': 1, 'C': 1, 'D': 2, 'E': 2, 'F': 3}\n"
+   }
+  }
+ ]
+}

@@ -1,0 +1,280 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_std_001",
+   "type": "multiple_choice",
+   "role": "lesson",
+   "title": "Без префикса",
+   "prompt": "Какой импорт позволит писать sqrt(16) без math. впереди?",
+   "topic": "std_import",
+   "difficulty": 1,
+   "hint": "Нужно импортировать само имя из модуля.",
+   "explanation": "from math import sqrt добавляет имя sqrt в программу. После import math нужно писать math.sqrt.",
+   "payload": {
+    "options": [
+     "import math",
+     "from math import sqrt",
+     "import sqrt from math",
+     "include math"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "После import math функция доступна как math.sqrt(16).",
+     "",
+     "Такой синтаксис есть в JavaScript, в Python — from math import sqrt.",
+     "В Python нет include, есть import."
+    ]
+   }
+  },
+  {
+   "id": "py_std_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Самые частые",
+   "prompt": "Что выведет код?",
+   "topic": "std_collections",
+   "difficulty": 1,
+   "hint": "i и s встречаются по 4 раза. Кто встретился раньше?",
+   "explanation": "i и s — по 4 раза, p — 2, m — 1. При равенстве most_common сохраняет порядок первого появления: i раньше s.",
+   "code": "from collections import Counter\nc = Counter(\"mississippi\")\nprint(c.most_common(2))",
+   "payload": {
+    "options": [
+     "[('s', 4), ('i', 4)]",
+     "[('i', 4), ('s', 4)]",
+     "{'i': 4, 's': 4}",
+     "['i', 's']"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "При равных счётчиках порядок — по первому появлению: i появляется раньше s.",
+     "",
+     "most_common возвращает список пар (элемент, количество).",
+     "Вместе с элементами возвращаются и количества."
+    ]
+   },
+   "solution": {
+    "code": "from collections import Counter\nc = Counter(\"mississippi\")\nprint(c.most_common(2))",
+    "output": "[('i', 4), ('s', 4)]\n"
+   }
+  },
+  {
+   "id": "py_std_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Группы по букве",
+   "prompt": "Сгруппируйте слова по первой букве",
+   "topic": "std_collections",
+   "difficulty": 1,
+   "hint": "У значения по умолчанию должен быть метод append.",
+   "explanation": "defaultdict(list) создаёт пустой список для нового ключа, и append сразу работает.",
+   "payload": {
+    "template": "from collections import defaultdict\ngroups = defaultdict({{0}})\nfor word in [\"kiwi\", \"kale\", \"plum\"]:\n    groups[word[0]].append(word)\nprint(dict(groups))",
+    "options": [
+     "list",
+     "dict",
+     "set",
+     "int"
+    ],
+    "answers": [
+     "list"
+    ],
+    "variantResults": {
+     "dict": "AttributeError: 'dict' object has no attribute 'append'",
+     "set": "AttributeError: 'set' object has no attribute 'append'",
+     "int": "AttributeError: 'int' object has no attribute 'append'"
+    }
+   },
+   "solution": {
+    "code": "from collections import defaultdict\ngroups = defaultdict(list)\nfor word in [\"kiwi\", \"kale\", \"plum\"]:\n    groups[word[0]].append(word)\nprint(dict(groups))",
+    "output": "{'k': ['kiwi', 'kale'], 'p': ['plum']}\n"
+   }
+  },
+  {
+   "id": "py_std_004",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "itertools",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "std_itertools",
+   "difficulty": 2,
+   "hint": "В перестановках порядок важен, в сочетаниях — нет.",
+   "explanation": "chain склеивает, product даёт 2·2 = 4 пары, перестановок по 2 из 3 — 6, сочетаний — 3, accumulate — накопленные суммы.",
+   "code": "from itertools import chain, product, permutations, combinations, accumulate",
+   "payload": {
+    "pairs": [
+     {
+      "left": "list(chain([1, 2], [3]))",
+      "right": "[1, 2, 3]"
+     },
+     {
+      "left": "len(list(product('ab', repeat=2)))",
+      "right": "4"
+     },
+     {
+      "left": "len(list(permutations('abc', 2)))",
+      "right": "6"
+     },
+     {
+      "left": "len(list(combinations('abc', 2)))",
+      "right": "3"
+     },
+     {
+      "left": "list(accumulate([1, 2, 3, 4]))",
+      "right": "[1, 3, 6, 10]"
+     }
+    ]
+   },
+   "solution": {
+    "code": "from itertools import chain, product, permutations, combinations, accumulate\nprint(list(chain([1, 2], [3])))\nprint(len(list(product('ab', repeat=2))))\nprint(len(list(permutations('abc', 2))))\nprint(len(list(combinations('abc', 2))))\nprint(list(accumulate([1, 2, 3, 4])))",
+    "output": "[1, 2, 3]\n4\n6\n3\n[1, 3, 6, 10]\n"
+   }
+  },
+  {
+   "id": "py_std_005",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Очередь с лимитом",
+   "prompt": "Напишите, что выведет код",
+   "topic": "std_collections",
+   "difficulty": 2,
+   "hint": "При переполнении deque выталкивает элемент с противоположного конца.",
+   "explanation": "append(4) выталкивает 1 слева: [2, 3, 4]. appendleft(0) выталкивает 4 справа: [0, 2, 3].",
+   "code": "from collections import deque\nq = deque([1, 2, 3], maxlen=3)\nq.append(4)\nq.appendleft(0)\nprint(list(q))",
+   "payload": {
+    "expectedOutput": "[0, 2, 3]"
+   },
+   "solution": {
+    "code": "from collections import deque\nq = deque([1, 2, 3], maxlen=3)\nq.append(4)\nq.appendleft(0)\nprint(list(q))",
+    "output": "[0, 2, 3]\n"
+   }
+  },
+  {
+   "id": "py_std_006",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Именованный кортеж",
+   "prompt": "Что выведет код?",
+   "topic": "std_collections",
+   "difficulty": 2,
+   "hint": "namedtuple создаёт тип с полями x и y и понятным выводом.",
+   "explanation": "p.x + p.y = 7, а print показывает Point(x=3, y=4).",
+   "code": "from collections import namedtuple\nPoint = namedtuple(\"Point\", \"x y\")\np = Point(3, 4)\nprint(p.x + p.y, p)",
+   "payload": {
+    "options": [
+     "7 (3, 4)",
+     "7 Point(x=3, y=4)",
+     "34 Point(x=3, y=4)",
+     "AttributeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "namedtuple печатается с именами типа и полей.",
+     "",
+     "x и y — числа, + складывает их.",
+     "Поля x и y объявлены строкой \"x y\"."
+    ]
+   },
+   "solution": {
+    "code": "from collections import namedtuple\nPoint = namedtuple(\"Point\", \"x y\")\np = Point(3, 4)\nprint(p.x + p.y, p)",
+    "output": "7 Point(x=3, y=4)\n"
+   }
+  },
+  {
+   "id": "py_std_007",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Разорванные группы",
+   "prompt": "Что выведет код?",
+   "topic": "std_itertools",
+   "difficulty": 3,
+   "hint": "groupby объединяет только соседние элементы с одинаковым ключом.",
+   "explanation": "groupby начинает новую группу при каждой смене ключа: a, b, a, b — четыре группы по одному слову. Чтобы получить a 2; b 2, список сначала сортируют по тому же ключу.",
+   "code": "from itertools import groupby\nwords = [\"apple\", \"bob\", \"avocado\", \"banana\"]\nfor letter, group in groupby(words, key=lambda w: w[0]):\n    print(letter, len(list(group)), end=\"; \")",
+   "payload": {
+    "options": [
+     "a 2; b 2; ",
+     "a 1; b 1; ",
+     "a 3; b 1; ",
+     "a 1; b 1; a 1; b 1; "
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Так было бы после сортировки. groupby объединяет только соседей.",
+     "Групп четыре: после b снова идёт a.",
+     "Слова на a не стоят рядом — они попадают в разные группы.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "from itertools import groupby\nwords = [\"apple\", \"bob\", \"avocado\", \"banana\"]\nfor letter, group in groupby(words, key=lambda w: w[0]):\n    print(letter, len(list(group)), end=\"; \")",
+    "output": "a 1; b 1; a 1; b 1; "
+   }
+  },
+  {
+   "id": "py_std_008",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Похожи на словарь",
+   "prompt": "Какие типы из collections — подклассы dict?",
+   "topic": "std_collections",
+   "difficulty": 2,
+   "hint": "Какие из них хранят пары ключ → значение?",
+   "explanation": "Counter, defaultdict и OrderedDict наследуют dict. deque — очередь, namedtuple — фабрика кортежей.",
+   "payload": {
+    "options": [
+     "Counter",
+     "defaultdict",
+     "OrderedDict",
+     "deque",
+     "namedtuple"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     2
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "",
+     "deque — двусторонняя очередь, похожа на список.",
+     "namedtuple — функция, создающая подкласс кортежа."
+    ]
+   }
+  },
+  {
+   "id": "py_std_009",
+   "type": "code_ordering",
+   "role": "boss",
+   "title": "Босс: частые слова",
+   "prompt": "Соберите программу, которая выведет to=2, be=2",
+   "topic": "std_collections",
+   "difficulty": 3,
+   "hint": "Импорт → данные → подсчёт → топ → вывод.",
+   "explanation": "split разбивает текст на слова, Counter считает их, most_common(2) берёт два самых частых (to встречается раньше be).",
+   "payload": {
+    "lines": [
+     "from collections import Counter",
+     "text = \"to be or not to be\"",
+     "counts = Counter(text.split())",
+     "top = counts.most_common(2)",
+     "print(\", \".join(f\"{w}={n}\" for w, n in top))"
+    ],
+    "alternativeOrders": [
+     [
+      1,
+      0,
+      2,
+      3,
+      4
+     ]
+    ]
+   },
+   "solution": {
+    "code": "from collections import Counter\ntext = \"to be or not to be\"\ncounts = Counter(text.split())\ntop = counts.most_common(2)\nprint(\", \".join(f\"{w}={n}\" for w, n in top))",
+    "output": "to=2, be=2\n"
+   }
+  }
+ ]
+}

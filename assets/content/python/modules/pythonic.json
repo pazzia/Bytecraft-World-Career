@@ -1,0 +1,364 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_idiom_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Шаблоны с условием",
+   "prompt": "Что выведет код?",
+   "topic": "idiom_match",
+   "difficulty": 1,
+   "hint": "Срабатывает первый подходящий case. \"5\" — строка, а не int.",
+   "explanation": "-5 — целое и меньше нуля. 0 совпадает с первым case. Строка «5» не подходит ни под 0, ни под int(), поэтому попадает в case _.",
+   "code": "def describe(x):\n    match x:\n        case 0:\n            return \"ноль\"\n        case int() if x < 0:\n            return \"отрицательное\"\n        case int():\n            return \"положительное\"\n        case _:\n            return \"не число\"\n\nprint(describe(-5), describe(0), describe(\"5\"))",
+   "payload": {
+    "options": [
+     "отрицательное ноль положительное",
+     "отрицательное положительное не число",
+     "ноль ноль не число",
+     "отрицательное ноль не число"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "\"5\" — строка: шаблон int() её не принимает.",
+     "Для 0 первым подходит case 0.",
+     "Для -5 первый case не подходит, а второй — да.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "def describe(x):\n    match x:\n        case 0:\n            return \"ноль\"\n        case int() if x < 0:\n            return \"отрицательное\"\n        case int():\n            return \"положительное\"\n        case _:\n            return \"не число\"\n\nprint(describe(-5), describe(0), describe(\"5\"))",
+    "output": "отрицательное ноль не число\n"
+   }
+  },
+  {
+   "id": "py_idiom_002",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Шаблоны последовательностей",
+   "prompt": "Что выведет код?",
+   "topic": "idiom_match",
+   "difficulty": 2,
+   "hint": "Сколько элементов может собрать *items? А сколько слов нужно первому шаблону?",
+   "explanation": "«go west» — два слова, direction = «west». «take x y z» — items из трёх. «take» — items пустой, это тоже подходит. «go» — одно слово, шаблон из двух не подходит.",
+   "code": "def parse(cmd):\n    match cmd.split():\n        case [\"go\", direction]:\n            return f\"идём {direction}\"\n        case [\"take\", *items]:\n            return f\"берём {len(items)}\"\n        case []:\n            return \"пусто\"\n        case _:\n            return \"непонятно\"\n\nprint(parse(\"go west\"), parse(\"take x y z\"), parse(\"take\"), parse(\"go\"))",
+   "payload": {
+    "options": [
+     "идём west берём 3 непонятно непонятно",
+     "идём west берём 3 берём 0 непонятно",
+     "идём west берём 3 берём 0 идём",
+     "идём west берём 4 берём 1 непонятно"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "*items собирает и ноль элементов: «take» подходит под второй case.",
+     "",
+     "Шаблон [\"go\", direction] требует ровно два элемента, а в «go» один.",
+     "Слово take не входит в items: в «take x y z» items — это x, y, z."
+    ]
+   },
+   "solution": {
+    "code": "def parse(cmd):\n    match cmd.split():\n        case [\"go\", direction]:\n            return f\"идём {direction}\"\n        case [\"take\", *items]:\n            return f\"берём {len(items)}\"\n        case []:\n            return \"пусто\"\n        case _:\n            return \"непонятно\"\n\nprint(parse(\"go west\"), parse(\"take x y z\"), parse(\"take\"), parse(\"go\"))",
+    "output": "идём west берём 3 берём 0 непонятно\n"
+   }
+  },
+  {
+   "id": "py_idiom_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Вычислить и сравнить",
+   "prompt": "Посчитайте слова и сразу используйте число в условии",
+   "topic": "idiom_walrus",
+   "difficulty": 1,
+   "hint": "Нужен оператор, который присваивает внутри выражения.",
+   "explanation": ":= присваивает k и возвращает значение, которое тут же сравнивается с 3. Обычное = внутри выражения — SyntaxError, а == сравнило бы с несуществующим k.",
+   "payload": {
+    "template": "text = \"раз два три\"\nif (k {{0}} len(text.split())) >= 3:\n    print(f\"слов: {k}\")",
+    "options": [
+     ":=",
+     "=",
+     "==",
+     "->"
+    ],
+    "answers": [
+     ":="
+    ],
+    "variantResults": {
+     "=": "SyntaxError: invalid syntax. Maybe you meant '==' or ':=' instead of '='?",
+     "==": "NameError: name 'k' is not defined",
+     "->": "SyntaxError: invalid syntax"
+    }
+   },
+   "solution": {
+    "code": "text = \"раз два три\"\nif (k := len(text.split())) >= 3:\n    print(f\"слов: {k}\")",
+    "output": "слов: 3\n"
+   }
+  },
+  {
+   "id": "py_idiom_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Скобки у моржа",
+   "prompt": "Что выведет код?",
+   "topic": "idiom_walrus",
+   "difficulty": 3,
+   "hint": ":= связывает слабее, чем сравнение >. Что вычислится первым?",
+   "explanation": "Без скобок выражение читается как n := (len(data) > 3): n получает результат сравнения — True. Чтобы сохранить длину, пишут (n := len(data)) > 3.",
+   "code": "data = [3, 8, 1, 9]\nif n := len(data) > 3:\n    print(n)",
+   "payload": {
+    "options": [
+     "True",
+     "4",
+     "3",
+     "SyntaxError"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Без скобок в n попадает результат сравнения len(data) > 3.",
+     "n получает не число, а результат сравнения.",
+     "Это корректный код: := внутри if допустим и без скобок."
+    ]
+   },
+   "solution": {
+    "code": "data = [3, 8, 1, 9]\nif n := len(data) > 3:\n    print(n)",
+    "output": "True\n"
+   }
+  },
+  {
+   "id": "py_idiom_011",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Строка — не пара",
+   "prompt": "Что выведет код?",
+   "topic": "idiom_match",
+   "difficulty": 3,
+   "hint": "Шаблон последовательности принимает списки и кортежи. А строки и множества?",
+   "explanation": "Строки, bytes и bytearray намеренно не подходят под шаблон последовательности, хотя их можно перебирать. Список и кортеж подходят. Множество не последовательность — case _.",
+   "code": "def kind(x):\n    match x:\n        case [a, b]:\n            return f\"пара {a}{b}\"\n        case str():\n            return \"строка\"\n        case _:\n            return \"другое\"\n\nprint(kind(\"ab\"), kind([\"a\", \"b\"]), kind((1, 2)), kind({1, 2}))",
+   "payload": {
+    "options": [
+     "пара ab пара ab пара 12 другое",
+     "строка пара ab пара 12 другое",
+     "строка пара ab другое другое",
+     "строка пара ab пара 12 пара 12"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Строка не подходит под [a, b] — она попадает в case str().",
+     "",
+     "Кортеж — тоже последовательность: (1, 2) подходит под [a, b].",
+     "Множество не упорядочено и не последовательность: case _."
+    ]
+   },
+   "solution": {
+    "code": "def kind(x):\n    match x:\n        case [a, b]:\n            return f\"пара {a}{b}\"\n        case str():\n            return \"строка\"\n        case _:\n            return \"другое\"\n\nprint(kind(\"ab\"), kind([\"a\", \"b\"]), kind((1, 2)), kind({1, 2}))",
+    "output": "строка пара ab пара 12 другое\n"
+   }
+  },
+  {
+   "id": "py_idiom_004",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Звёздочка при распаковке",
+   "prompt": "Напишите, что выведет код",
+   "topic": "idiom_walrus",
+   "difficulty": 2,
+   "hint": "*имя собирает все «лишние» элементы в список — даже если их нет.",
+   "explanation": "Звёздочка всегда даёт список: из кортежа — [10, 20], из строки — ['y']. Если «лишних» элементов нет, получается пустой список.",
+   "code": "*init, tail = (10, 20, 30)\nprint(init, tail)\na, *b = \"xy\"\nprint(a, b)\nx, *y, z = [1, 2]\nprint(x, y, z)",
+   "payload": {
+    "expectedOutput": "[10, 20] 30\nx ['y']\n1 [] 2"
+   },
+   "solution": {
+    "code": "*init, tail = (10, 20, 30)\nprint(init, tail)\na, *b = \"xy\"\nprint(a, b)\nx, *y, z = [1, 2]\nprint(x, y, z)",
+    "output": "[10, 20] 30\nx ['y']\n1 [] 2\n"
+   }
+  },
+  {
+   "id": "py_idiom_005",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Шаблоны словарей",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "idiom_match",
+   "difficulty": 2,
+   "hint": "Шаблон словаря проверяет только перечисленные ключи, лишние не мешают.",
+   "explanation": "Клик с лишним ключом y подходит под первый case. «key» — под второй. «scroll» — под общий {\"type\": t}. Список не словарь — case _.",
+   "code": "def kind(event):\n    match event:\n        case {\"type\": \"click\", \"x\": x}:\n            return f\"клик {x}\"\n        case {\"type\": \"key\", \"key\": k}:\n            return f\"клавиша {k}\"\n        case {\"type\": t}:\n            return f\"другое {t}\"\n        case _:\n            return \"?\"",
+   "payload": {
+    "pairs": [
+     {
+      "left": "kind({'type': 'click', 'x': 5, 'y': 1})",
+      "right": "клик 5"
+     },
+     {
+      "left": "kind({'type': 'key', 'key': 'q'})",
+      "right": "клавиша q"
+     },
+     {
+      "left": "kind({'type': 'scroll'})",
+      "right": "другое scroll"
+     },
+     {
+      "left": "kind([1, 2])",
+      "right": "?"
+     }
+    ]
+   },
+   "solution": {
+    "code": "def kind(event):\n    match event:\n        case {\"type\": \"click\", \"x\": x}:\n            return f\"клик {x}\"\n        case {\"type\": \"key\", \"key\": k}:\n            return f\"клавиша {k}\"\n        case {\"type\": t}:\n            return f\"другое {t}\"\n        case _:\n            return \"?\"\nprint(kind({'type': 'click', 'x': 5, 'y': 1}))\nprint(kind({'type': 'key', 'key': 'q'}))\nprint(kind({'type': 'scroll'}))\nprint(kind([1, 2]))",
+    "output": "клик 5\nклавиша q\nдругое scroll\n?\n"
+   }
+  },
+  {
+   "id": "py_idiom_006",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Имя вместо константы",
+   "prompt": "Для зелёного должно выводиться «можно». Найдите строку с ошибкой",
+   "topic": "idiom_match",
+   "difficulty": 3,
+   "hint": "Голое имя в case — это сравнение или захват?",
+   "explanation": "case RED: не сравнивает с переменной RED, а захватывает любое значение в имя RED. Такой шаблон ловит всё, и Python запрещает ставить после него другие case: SyntaxError. Нужен литерал \"red\" или имя с точкой (Color.RED).",
+   "code": "RED = \"red\"\n\ndef check(color):\n    match color:\n        case RED:\n            return \"стоп\"\n        case _:\n            return \"можно\"\n\nprint(check(\"green\"))",
+   "payload": {
+    "buggyLines": [
+     4
+    ]
+   },
+   "solution": {
+    "code": "RED = \"red\"\n\ndef check(color):\n    match color:\n        case \"red\":\n            return \"стоп\"\n        case _:\n            return \"можно\"\n\nprint(check(\"green\"))",
+    "output": "можно\n"
+   }
+  },
+  {
+   "id": "py_idiom_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Безопасное чтение",
+   "prompt": "Какие выражения вернут d['age'], а если ключа нет — 0, не вызывая ошибки (изменять словарь допустимо)?",
+   "topic": "idiom_eafp",
+   "difficulty": 2,
+   "hint": "Проверьте каждое выражение для пустого словаря.",
+   "explanation": "get с default, условное выражение и setdefault возвращают значение или 0 (setdefault заодно записывает 0 в словарь). d['age'] or 0 падает с KeyError, d.age — AttributeError, а d.get(age, 0) обращается к несуществующей переменной age.",
+   "payload": {
+    "options": [
+     "d.get('age', 0)",
+     "d['age'] if 'age' in d else 0",
+     "d['age'] or 0",
+     "d.setdefault('age', 0)",
+     "d.age",
+     "d.get(age, 0)"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     3
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "d['age'] вычисляется первым и падает с KeyError, до or дело не доходит.",
+     "",
+     "К ключам словаря не обращаются через точку: AttributeError.",
+     "Без кавычек age — имя переменной, а её нет: NameError."
+    ]
+   }
+  },
+  {
+   "id": "py_idiom_012",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Попросить прощения",
+   "prompt": "Что выведет код?",
+   "topic": "idiom_eafp",
+   "difficulty": 2,
+   "hint": "Какое исключение возникает, если ключа нет, а какое — если строку нельзя превратить в число?",
+   "explanation": "EAFP: сразу пробуем прочитать и преобразовать, а неудачи разбираем по типу. Нет ключа — KeyError и порт по умолчанию 8000; «80a» не число — ValueError и -1.",
+   "code": "def read_port(cfg):\n    try:\n        return int(cfg[\"port\"])\n    except KeyError:\n        return 8000\n    except ValueError:\n        return -1\n\nprint(read_port({}), read_port({\"port\": \"80a\"}), read_port({\"port\": \"443\"}))",
+   "payload": {
+    "options": [
+     "8000 8000 443",
+     "8000 -1 443",
+     "-1 -1 443",
+     "KeyError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "«80a» есть в словаре: ошибка возникает в int() — это ValueError.",
+     "",
+     "Для пустого словаря возникает KeyError — его ветка возвращает 8000.",
+     "KeyError перехвачен в except и превращён в 8000."
+    ]
+   },
+   "solution": {
+    "code": "def read_port(cfg):\n    try:\n        return int(cfg[\"port\"])\n    except KeyError:\n        return 8000\n    except ValueError:\n        return -1\n\nprint(read_port({}), read_port({\"port\": \"80a\"}), read_port({\"port\": \"443\"}))",
+    "output": "8000 -1 443\n"
+   }
+  },
+  {
+   "id": "py_idiom_008",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Отладочная f-строка",
+   "prompt": "Что выведет код?",
+   "topic": "idiom_walrus",
+   "difficulty": 2,
+   "hint": "= в конце выражения f-строки печатает само выражение и его значение. Пробелы вокруг = сохраняются как написаны.",
+   "explanation": "f\"{x + y = }\" печатает текст выражения с пробелами, как в коде, и значение: «x + y = 7». В {x=} пробелов нет — получится «x=3».",
+   "code": "x, y = 3, 4\nprint(f\"{x + y = }\")\nprint(f\"{x=}, {y=}\")",
+   "payload": {
+    "options": [
+     "7\n3, 4",
+     "x + y = 7\nx=3, y=4",
+     "x + y = 7\nx = 3, y = 4",
+     "{x + y = }\n{x=}, {y=}"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Знак = в f-строке выводит и само выражение.",
+     "",
+     "Пробелы вокруг = берутся из кода: в {x=} их нет.",
+     "Это f-строка: выражения в скобках вычисляются."
+    ]
+   },
+   "solution": {
+    "code": "x, y = 3, 4\nprint(f\"{x + y = }\")\nprint(f\"{x=}, {y=}\")",
+    "output": "x + y = 7\nx=3, y=4\n"
+   }
+  },
+  {
+   "id": "py_idiom_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: шаблоны классов",
+   "prompt": "Что выведет код?",
+   "topic": "idiom_match",
+   "difficulty": 4,
+   "hint": "Шаблоны проверяются сверху вниз; у четвёртого есть условие x == y.",
+   "explanation": "(0, 0) — центр, (0, 5) — ось Y, (3, 3) проходит условие диагонали, (2, 7) не подходит ни под что, кроме case _.",
+   "code": "from dataclasses import dataclass\n\n@dataclass\nclass Point:\n    x: int\n    y: int\n\ndef where(p):\n    match p:\n        case Point(x=0, y=0):\n            return \"центр\"\n        case Point(x=0, y=y):\n            return f\"ось Y: {y}\"\n        case Point(x=x, y=0):\n            return f\"ось X: {x}\"\n        case Point(x=x, y=y) if x == y:\n            return \"диагональ\"\n        case _:\n            return \"где-то\"\n\nprint(\", \".join(where(p) for p in [Point(0, 0), Point(0, 5), Point(3, 3), Point(2, 7)]))",
+   "payload": {
+    "options": [
+     "центр, ось Y: 5, где-то, где-то",
+     "центр, ось Y: 5, диагональ, ось X: 2",
+     "ось Y: 0, ось Y: 5, диагональ, где-то",
+     "центр, ось Y: 5, диагональ, где-то"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Для (3, 3) срабатывает case с условием x == y.",
+     "Для (2, 7) шаблон Point(x=x, y=0) не подходит: y не 0.",
+     "(0, 0) первым ловит case Point(x=0, y=0).",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "from dataclasses import dataclass\n\n@dataclass\nclass Point:\n    x: int\n    y: int\n\ndef where(p):\n    match p:\n        case Point(x=0, y=0):\n            return \"центр\"\n        case Point(x=0, y=y):\n            return f\"ось Y: {y}\"\n        case Point(x=x, y=0):\n            return f\"ось X: {x}\"\n        case Point(x=x, y=y) if x == y:\n            return \"диагональ\"\n        case _:\n            return \"где-то\"\n\nprint(\", \".join(where(p) for p in [Point(0, 0), Point(0, 5), Point(3, 3), Point(2, 7)]))",
+    "output": "центр, ось Y: 5, диагональ, где-то\n"
+   }
+  }
+ ]
+}

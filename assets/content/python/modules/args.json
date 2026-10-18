@@ -1,0 +1,287 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_args_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Сколько угодно чисел",
+   "prompt": "Что выведет код?",
+   "topic": "args_star",
+   "difficulty": 1,
+   "hint": "Без аргументов items — пустой кортеж. Какая у него длина?",
+   "explanation": "*items собирает аргументы в кортеж: ('a', 'b') и (). Длина пустого кортежа — 0.",
+   "code": "def count(*items):\n    return len(items)\n\nprint(count(\"a\", \"b\"), count())",
+   "payload": {
+    "options": [
+     "2 0",
+     "2",
+     "2 None",
+     "TypeError"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "print выводит два значения: второе — count() = 0.",
+     "len пустого кортежа — 0, а не None.",
+     "*items принимает и ноль аргументов."
+    ]
+   },
+   "solution": {
+    "code": "def count(*items):\n    return len(items)\n\nprint(count(\"a\", \"b\"), count())",
+    "output": "2 0\n"
+   }
+  },
+  {
+   "id": "py_args_002",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Собрать остальное",
+   "prompt": "Сделайте так, чтобы функция принимала любое число аргументов после a",
+   "topic": "args_star",
+   "difficulty": 1,
+   "hint": "Одна звёздочка собирает позиционные аргументы в кортеж.",
+   "explanation": "*rest собирает 2 и 3 в кортеж (2, 3). Две звёздочки собирают только именованные аргументы.",
+   "payload": {
+    "template": "def f(a, {{0}}rest):\n    print(a, rest)\n\nf(1, 2, 3)",
+    "options": [
+     "*",
+     "**",
+     "&",
+     "@"
+    ],
+    "answers": [
+     "*"
+    ],
+    "variantResults": {
+     "**": "TypeError: f() takes 1 positional argument but 3 were given",
+     "&": "SyntaxError: invalid syntax",
+     "@": "SyntaxError: invalid syntax"
+    }
+   },
+   "solution": {
+    "code": "def f(a, *rest):\n    print(a, rest)\n\nf(1, 2, 3)",
+    "output": "1 (2, 3)\n"
+   }
+  },
+  {
+   "id": "py_args_003",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Словарь параметров",
+   "prompt": "Что выведет код?",
+   "topic": "args_star",
+   "difficulty": 1,
+   "hint": "Две звёздочки собирают именованные аргументы в словарь.",
+   "explanation": "**options — словарь {'color': 'red', 'size': 3}; print показывает строки в кавычках.",
+   "code": "def info(**options):\n    print(options)\n\ninfo(color=\"red\", size=3)",
+   "payload": {
+    "options": [
+     "{color: red, size: 3}",
+     "('red', 3)",
+     "{'color': 'red', 'size': 3}",
+     "['color', 'size']"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Ключи словаря — строки, print показывает их в кавычках.",
+     "Кортеж собирает *args. ** собирает словарь.",
+     "",
+     "Сохраняются и имена, и значения: это словарь."
+    ]
+   },
+   "solution": {
+    "code": "def info(**options):\n    print(options)\n\ninfo(color=\"red\", size=3)",
+    "output": "{'color': 'red', 'size': 3}\n"
+   }
+  },
+  {
+   "id": "py_args_004",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Что попало в args и kwargs",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "args_unpack",
+   "difficulty": 2,
+   "hint": "Позиционные — в кортеж args, именованные — в словарь kwargs. Звёздочки при вызове распаковывают.",
+   "explanation": "Кортеж из одного элемента пишется с запятой: (1,). Распаковка *[1, 2] даёт позиционные 1 и 2, **{'z': 3} — именованный z=3.",
+   "code": "def show(*args, **kwargs):\n    return f\"{args} {kwargs}\"",
+   "payload": {
+    "pairs": [
+     {
+      "left": "show(1, 2)",
+      "right": "(1, 2) {}"
+     },
+     {
+      "left": "show(x=1)",
+      "right": "() {'x': 1}"
+     },
+     {
+      "left": "show(1, y=2)",
+      "right": "(1,) {'y': 2}"
+     },
+     {
+      "left": "show(*[1, 2], **{'z': 3})",
+      "right": "(1, 2) {'z': 3}"
+     }
+    ]
+   },
+   "solution": {
+    "code": "def show(*args, **kwargs):\n    return f\"{args} {kwargs}\"\nprint(show(1, 2))\nprint(show(x=1))\nprint(show(1, y=2))\nprint(show(*[1, 2], **{'z': 3}))",
+    "output": "(1, 2) {}\n() {'x': 1}\n(1,) {'y': 2}\n(1, 2) {'z': 3}\n"
+   }
+  },
+  {
+   "id": "py_args_005",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Распаковка",
+   "prompt": "Напишите, что выведет код",
+   "topic": "args_unpack",
+   "difficulty": 2,
+   "hint": "*coords даёт x=1, y=2. Ключи словаря становятся именами параметров.",
+   "explanation": "point(1, 2) → z по умолчанию 0; затем z=5; в третьем вызове x=3, y=7 по именам.",
+   "code": "def point(x, y, z=0):\n    return f\"({x}, {y}, {z})\"\n\ncoords = [1, 2]\nopts = {\"z\": 5}\nprint(point(*coords))\nprint(point(*coords, **opts))\nprint(point(**{\"y\": 7, \"x\": 3}))",
+   "payload": {
+    "expectedOutput": "(1, 2, 0)\n(1, 2, 5)\n(3, 7, 0)"
+   },
+   "solution": {
+    "code": "def point(x, y, z=0):\n    return f\"({x}, {y}, {z})\"\n\ncoords = [1, 2]\nopts = {\"z\": 5}\nprint(point(*coords))\nprint(point(*coords, **opts))\nprint(point(**{\"y\": 7, \"x\": 3}))",
+    "output": "(1, 2, 0)\n(1, 2, 5)\n(3, 7, 0)\n"
+   }
+  },
+  {
+   "id": "py_args_006",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Общий список",
+   "prompt": "Что выведет код?",
+   "topic": "args_mutable_default",
+   "difficulty": 3,
+   "hint": "Когда создаётся значение по умолчанию — при def или при каждом вызове?",
+   "explanation": "Список [] по умолчанию создаётся один раз при def и общий для всех вызовов. Первый вызов печатает ['a'], второй добавляет «b» в тот же список.",
+   "code": "def add_item(item, items=[]):\n    items.append(item)\n    return items\n\nprint(add_item(\"a\"))\nprint(add_item(\"b\"))",
+   "payload": {
+    "options": [
+     "['a']\n['b']",
+     "['a']\n['a', 'b']",
+     "['a', 'b']\n['a', 'b']",
+     "TypeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Значение по умолчанию создаётся один раз, и второй вызов получает тот же список.",
+     "",
+     "Первый print срабатывает сразу после первого вызова — тогда в списке только «a».",
+     "Список по умолчанию — допустимый, хоть и опасный код."
+    ]
+   },
+   "solution": {
+    "code": "def add_item(item, items=[]):\n    items.append(item)\n    return items\n\nprint(add_item(\"a\"))\nprint(add_item(\"b\"))",
+    "output": "['a']\n['a', 'b']\n"
+   }
+  },
+  {
+   "id": "py_args_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Только по имени",
+   "prompt": "В каких объявлениях параметр c можно передать только по имени?",
+   "topic": "args_kwonly",
+   "difficulty": 2,
+   "hint": "Параметры после * или после *args нельзя заполнить позиционно.",
+   "explanation": "После * и после *args идут только именованные параметры. / делает параметры до него только позиционными, но c стоит после /, так что его можно передать как угодно.",
+   "payload": {
+    "options": [
+     "def f(a, b, *, c=0)",
+     "def f(a, *args, c=0)",
+     "def f(a, b, c=0)",
+     "def f(*, a=0, b=0, c=0)",
+     "def f(a, b, /, c=0)"
+    ],
+    "correctIndexes": [
+     0,
+     1,
+     3
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "Обычный параметр можно передать и позиционно: f(1, 2, 3).",
+     "",
+     "/ ограничивает только a и b. c можно передать позиционно."
+    ]
+   }
+  },
+  {
+   "id": "py_args_008",
+   "type": "multiple_choice",
+   "role": "practice",
+   "title": "Только позиционные",
+   "prompt": "Что произойдёт при вызове div(a=7, b=2)?",
+   "topic": "args_kwonly",
+   "difficulty": 2,
+   "hint": "Что означает / в списке параметров?",
+   "explanation": "Параметры до / передаются только по позиции. Вызов с a= и b= — TypeError: positional-only arguments passed as keyword.",
+   "code": "def div(a, b, /):\n    return a // b\n\nprint(div(a=7, b=2))",
+   "payload": {
+    "options": [
+     "3",
+     "3.5",
+     "TypeError",
+     "SyntaxError"
+    ],
+    "correctIndex": 2,
+    "optionFeedback": [
+     "Так было бы при div(7, 2). Здесь аргументы переданы по именам.",
+     "// — целочисленное деление, и до вычисления дело не дойдёт.",
+     "",
+     "Синтаксис корректен, ошибка возникает при вызове: TypeError."
+    ]
+   }
+  },
+  {
+   "id": "py_args_010",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Звёздочка в print",
+   "prompt": "Напишите, что выведет код",
+   "topic": "args_unpack",
+   "difficulty": 2,
+   "hint": "*nums превращает список в три отдельных аргумента.",
+   "explanation": "print(*nums) получает три аргумента и ставит между ними sep. Без звёздочки аргумент один — сам список, разделителю ставить нечего.",
+   "code": "nums = [1, 2, 3]\nprint(*nums, sep=\"-\")\nprint(nums, sep=\"-\")",
+   "payload": {
+    "expectedOutput": "1-2-3\n[1, 2, 3]"
+   },
+   "solution": {
+    "code": "nums = [1, 2, 3]\nprint(*nums, sep=\"-\")\nprint(nums, sep=\"-\")",
+    "output": "1-2-3\n[1, 2, 3]\n"
+   }
+  },
+  {
+   "id": "py_args_009",
+   "type": "code_ordering",
+   "role": "boss",
+   "title": "Босс: журнал вызовов",
+   "prompt": "Соберите функцию-обёртку, которая выведет max(3, 9, 4) -> 9",
+   "topic": "args_unpack",
+   "difficulty": 3,
+   "hint": "Сначала функция вызывается с распакованными аргументами, потом печатается результат.",
+   "explanation": "*args собирает (3, 9, 4), а func(*args, **kwargs) передаёт их дальше без изменений. Это основа декораторов.",
+   "payload": {
+    "lines": [
+     "def log_call(func, *args, **kwargs):",
+     "    result = func(*args, **kwargs)",
+     "    print(f\"{func.__name__}{args} -> {result}\")",
+     "    return result",
+     "log_call(max, 3, 9, 4)"
+    ]
+   },
+   "solution": {
+    "code": "def log_call(func, *args, **kwargs):\n    result = func(*args, **kwargs)\n    print(f\"{func.__name__}{args} -> {result}\")\n    return result\nlog_call(max, 3, 9, 4)",
+    "output": "max(3, 9, 4) -> 9\n"
+   }
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "courses": [
+    { "id": "python", "title": "Python", "language": "python", "icon": "🐍", "status": "available", "description": "Основы Python за короткие игровые сессии" },
+    { "id": "javascript", "title": "JavaScript", "language": "javascript", "icon": "🟨", "status": "coming_soon" },
+    { "id": "sql", "title": "SQL", "language": "sql", "icon": "🗄️", "status": "coming_soon" },
+    { "id": "java", "title": "Java", "language": "java", "icon": "☕", "status": "coming_soon" },
+    { "id": "csharp", "title": "C#", "language": "csharp", "icon": "🟪", "status": "coming_soon" },
+    { "id": "cpp", "title": "C++", "language": "cpp", "icon": "⚙️", "status": "coming_soon" },
+    { "id": "go", "title": "Go", "language": "go", "icon": "🐹", "status": "coming_soon" },
+    { "id": "rust", "title": "Rust", "language": "rust", "icon": "🦀", "status": "coming_soon" }
+  ]
+}

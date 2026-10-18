@@ -1,0 +1,294 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_list_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Индекс и длина",
+   "prompt": "Что выведет код?",
+   "topic": "list_basics",
+   "difficulty": 1,
+   "hint": "Индексы начинаются с 0.",
+   "explanation": "nums[1] — второй элемент, 20; в списке 3 элемента.",
+   "code": "nums = [10, 20, 30]\nprint(nums[1], len(nums))",
+   "payload": {
+    "options": [
+     "10 3",
+     "20 3",
+     "20 2",
+     "30 3"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "10 — это nums[0].",
+     "",
+     "len считает все элементы: их три.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "nums = [10, 20, 30]\nprint(nums[1], len(nums))",
+    "output": "20 3\n"
+   }
+  },
+  {
+   "id": "py_list_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Добавление",
+   "prompt": "Что выведет код?",
+   "topic": "list_methods",
+   "difficulty": 1,
+   "hint": "append добавляет ровно один элемент — каким бы он ни был.",
+   "explanation": "После append(3) и append([4]) список [1, 2, 3, [4]] — четыре элемента, последний сам является списком.",
+   "code": "nums = [1, 2]\nnums.append(3)\nnums.append([4])\nprint(len(nums))",
+   "payload": {
+    "options": [
+     "4",
+     "5",
+     "3",
+     "Ошибка"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "append([4]) добавляет список целиком как один элемент.",
+     "",
+     "В список можно добавить любой объект, даже другой список."
+    ]
+   },
+   "solution": {
+    "code": "nums = [1, 2]\nnums.append(3)\nnums.append([4])\nprint(len(nums))",
+    "output": "4\n"
+   }
+  },
+  {
+   "id": "py_list_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "В конец списка",
+   "prompt": "Добавьте \"слива\" в конец списка",
+   "topic": "list_methods",
+   "difficulty": 1,
+   "hint": "Метод, который добавляет элемент в конец.",
+   "explanation": "append добавляет элемент в конец списка. add — метод множеств, push в Python нет, insert требует позицию.",
+   "payload": {
+    "template": "fruits = [\"яблоко\", \"груша\"]\nfruits.{{0}}(\"слива\")\nprint(fruits)",
+    "options": [
+     "append",
+     "add",
+     "insert",
+     "push"
+    ],
+    "answers": [
+     "append"
+    ],
+    "variantResults": {
+     "add": "AttributeError: 'list' object has no attribute 'add'",
+     "insert": "TypeError: insert expected 2 arguments, got 1",
+     "push": "AttributeError: 'list' object has no attribute 'push'"
+    }
+   },
+   "solution": {
+    "code": "fruits = [\"яблоко\", \"груша\"]\nfruits.append(\"слива\")\nprint(fruits)",
+    "output": "['яблоко', 'груша', 'слива']\n"
+   }
+  },
+  {
+   "id": "py_list_004",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Срезы списка",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "list_basics",
+   "difficulty": 2,
+   "hint": "Срезы списков работают как у строк.",
+   "explanation": "[1:3] — элементы 1 и 2; [-2:] — два последних; [::2] — через один; [::-1] — в обратном порядке; [:0] — пустой.",
+   "code": "a = [1, 2, 3, 4, 5]",
+   "payload": {
+    "pairs": [
+     {
+      "left": "a[1:3]",
+      "right": "[2, 3]"
+     },
+     {
+      "left": "a[-2:]",
+      "right": "[4, 5]"
+     },
+     {
+      "left": "a[::2]",
+      "right": "[1, 3, 5]"
+     },
+     {
+      "left": "a[::-1]",
+      "right": "[5, 4, 3, 2, 1]"
+     },
+     {
+      "left": "a[:0]",
+      "right": "[]"
+     }
+    ]
+   },
+   "solution": {
+    "code": "a = [1, 2, 3, 4, 5]\nprint(a[1:3])\nprint(a[-2:])\nprint(a[::2])\nprint(a[::-1])\nprint(a[:0])",
+    "output": "[2, 3]\n[4, 5]\n[1, 3, 5]\n[5, 4, 3, 2, 1]\n[]\n"
+   }
+  },
+  {
+   "id": "py_list_005",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Одно имя, один список",
+   "prompt": "Напишите, что выведет код",
+   "topic": "list_mutable",
+   "difficulty": 2,
+   "hint": "b = a не копирует список.",
+   "explanation": "a и b ссылаются на один список, поэтому append через b виден через a.",
+   "code": "a = [1, 2]\nb = a\nb.append(3)\nprint(a)",
+   "payload": {
+    "expectedOutput": "[1, 2, 3]"
+   },
+   "solution": {
+    "code": "a = [1, 2]\nb = a\nb.append(3)\nprint(a)",
+    "output": "[1, 2, 3]\n"
+   }
+  },
+  {
+   "id": "py_list_006",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Копия",
+   "prompt": "Что выведет код?",
+   "topic": "list_mutable",
+   "difficulty": 2,
+   "hint": "copy() создаёт новый список.",
+   "explanation": "b — независимая копия, поэтому изменился только b.",
+   "code": "a = [1, 2]\nb = a.copy()\nb.append(3)\nprint(a, b)",
+   "payload": {
+    "options": [
+     "[1, 2, 3] [1, 2, 3]",
+     "[1, 2] [1, 2, 3]",
+     "[1, 2] [1, 2]",
+     "[1, 2, 3] [1, 2]"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Так было бы при b = a. copy() создал отдельный список.",
+     "",
+     "append изменил копию b.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "a = [1, 2]\nb = a.copy()\nb.append(3)\nprint(a, b)",
+    "output": "[1, 2] [1, 2, 3]\n"
+   }
+  },
+  {
+   "id": "py_list_007",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Меняют на месте",
+   "prompt": "Какие вызовы меняют список nums и возвращают None?",
+   "topic": "list_methods",
+   "difficulty": 2,
+   "hint": "Какие вызовы возвращают новый список, а какие меняют сам nums?",
+   "explanation": "sort, append и reverse изменяют сам список и возвращают None. sorted, copy и + возвращают новые списки.",
+   "payload": {
+    "options": [
+     "nums.sort()",
+     "sorted(nums)",
+     "nums.append(4)",
+     "nums.reverse()",
+     "nums.copy()",
+     "nums + [4]"
+    ],
+    "correctIndexes": [
+     0,
+     2,
+     3
+    ],
+    "optionFeedback": [
+     "",
+     "sorted возвращает новый список, исходный не меняется.",
+     "",
+     "",
+     "copy создаёт новый список.",
+     "+ создаёт новый список, nums остаётся прежним."
+    ]
+   }
+  },
+  {
+   "id": "py_list_008",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Пропавший список",
+   "prompt": "Найдите строку с ошибкой",
+   "topic": "list_methods",
+   "difficulty": 2,
+   "hint": "Что возвращает метод sort?",
+   "explanation": "sort() сортирует список на месте и возвращает None. После nums = nums.sort() в nums лежит None, и nums[0] вызывает TypeError.",
+   "code": "nums = [3, 1, 2]\nnums = nums.sort()\nprint(nums[0])",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "nums = [3, 1, 2]\nnums.sort()\nprint(nums[0])",
+    "output": "1\n"
+   }
+  },
+  {
+   "id": "py_list_010",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Размноженный список",
+   "prompt": "Что выведет код?",
+   "topic": "list_mutable",
+   "difficulty": 3,
+   "hint": "* 2 повторяет ссылку на один и тот же внутренний список.",
+   "explanation": "Внешний список содержит две ссылки на один и тот же список [0, 0]. Изменение через m[0] видно и через m[1]: [[1, 0], [1, 0]].",
+   "code": "m = [[0] * 2] * 2\nm[0][0] = 1\nprint(m)",
+   "payload": {
+    "options": [
+     "[[1, 0], [0, 0]]",
+     "[[1, 0], [1, 0]]",
+     "[[1, 1], [0, 0]]",
+     "TypeError"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Внутренний список один на двоих: изменение видно в обеих строках.",
+     "",
+     "Меняется только элемент с индексом 0 внутреннего списка.",
+     "Список можно умножать на число, а элементы — менять."
+    ]
+   },
+   "solution": {
+    "code": "m = [[0] * 2] * 2\nm[0][0] = 1\nprint(m)",
+    "output": "[[1, 0], [1, 0]]\n"
+   }
+  },
+  {
+   "id": "py_list_009",
+   "type": "type_output",
+   "role": "boss",
+   "title": "Босс: операции со списком",
+   "prompt": "Напишите, что выведет код",
+   "topic": "list_methods",
+   "difficulty": 3,
+   "hint": "Выполните операции по очереди на бумаге.",
+   "explanation": "После sort — [1, 3, 5, 8], insert(0, 0) — [0, 1, 3, 5, 8], pop() убирает и возвращает 8. Число 5 имеет индекс 3.",
+   "code": "nums = [5, 3, 8, 1]\nnums.sort()\nnums.insert(0, 0)\nlast = nums.pop()\nprint(nums, last, nums.index(5))",
+   "payload": {
+    "expectedOutput": "[0, 1, 3, 5] 8 3"
+   },
+   "solution": {
+    "code": "nums = [5, 3, 8, 1]\nnums.sort()\nnums.insert(0, 0)\nlast = nums.pop()\nprint(nums, last, nums.index(5))",
+    "output": "[0, 1, 3, 5] 8 3\n"
+   }
+  }
+ ]
+}

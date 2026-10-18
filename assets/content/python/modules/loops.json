@@ -1,0 +1,233 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_loop_001",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Цикл for",
+   "prompt": "Допишите цикл, который выведет числа от 0 до 4",
+   "topic": "loop_for",
+   "difficulty": 1,
+   "hint": "for <переменная> ___ <последовательность>",
+   "explanation": "Цикл for перебирает элементы последовательности с помощью ключевого слова in.",
+   "payload": {
+    "template": "for i {{0}} range(5):\n    print(i)",
+    "options": [
+     "in",
+     "of",
+     "from",
+     "inside"
+    ],
+    "answers": [
+     "in"
+    ],
+    "variantResults": {
+     "of": "SyntaxError: invalid syntax",
+     "from": "SyntaxError: invalid syntax",
+     "inside": "SyntaxError: invalid syntax"
+    }
+   },
+   "solution": {
+    "code": "for i in range(5):\n    print(i)",
+    "output": "0\n1\n2\n3\n4\n"
+   }
+  },
+  {
+   "id": "py_loop_002",
+   "type": "multiple_choice",
+   "role": "lesson",
+   "title": "range",
+   "prompt": "Какое последнее число выведет программа?",
+   "topic": "loop_range",
+   "difficulty": 1,
+   "hint": "range(3) начинается с 0 и не включает 3.",
+   "explanation": "range(3) даёт 0, 1, 2 — последнее число 2.",
+   "code": "for i in range(3):\n    print(i)",
+   "payload": {
+    "options": [
+     "2",
+     "3",
+     "4",
+     "Ничего"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Граница stop в range не входит.",
+     "range(3) — всего три числа: 0, 1, 2.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "for i in range(3):\n    print(i)",
+    "output": "0\n1\n2\n"
+   }
+  },
+  {
+   "id": "py_loop_003",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Сумма в цикле",
+   "prompt": "Что выведет код?",
+   "topic": "loop_for",
+   "difficulty": 2,
+   "hint": "range(1, 4) — это 1, 2, 3.",
+   "explanation": "1 + 2 + 3 = 6.",
+   "code": "total = 0\nfor n in range(1, 4):\n    total += n\nprint(total)",
+   "payload": {
+    "options": [
+     "6",
+     "10",
+     "3",
+     "4"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Так было бы для range(1, 5): 4 в range(1, 4) не входит.",
+     "3 — последнее число, а мы считаем сумму.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "total = 0\nfor n in range(1, 4):\n    total += n\nprint(total)",
+    "output": "6\n"
+   }
+  },
+  {
+   "id": "py_loop_006",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Шаг range",
+   "prompt": "Напишите, что выведет код",
+   "topic": "loop_range",
+   "difficulty": 2,
+   "hint": "Начинаем с 2 и прибавляем 3, пока меньше 11.",
+   "explanation": "2, 5, 8 — следующее было бы 11, но stop не входит.",
+   "code": "for i in range(2, 11, 3):\n    print(i)",
+   "payload": {
+    "expectedOutput": "2\n5\n8"
+   },
+   "solution": {
+    "code": "for i in range(2, 11, 3):\n    print(i)",
+    "output": "2\n5\n8\n"
+   }
+  },
+  {
+   "id": "py_loop_007",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Какой range?",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "loop_range",
+   "difficulty": 2,
+   "hint": "stop не входит, отрицательный шаг идёт вниз.",
+   "explanation": "range(4): 0..3; range(2, 5): 2..4; шаг 4 от 0: 0, 4, 8; шаг -2 от 5: 5, 3, 1; range(3, 3) пустой.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "list(range(4))",
+      "right": "[0, 1, 2, 3]"
+     },
+     {
+      "left": "list(range(2, 5))",
+      "right": "[2, 3, 4]"
+     },
+     {
+      "left": "list(range(0, 10, 4))",
+      "right": "[0, 4, 8]"
+     },
+     {
+      "left": "list(range(5, 0, -2))",
+      "right": "[5, 3, 1]"
+     },
+     {
+      "left": "list(range(3, 3))",
+      "right": "[]"
+     }
+    ]
+   },
+   "solution": {
+    "code": "print(list(range(4)))\nprint(list(range(2, 5)))\nprint(list(range(0, 10, 4)))\nprint(list(range(5, 0, -2)))\nprint(list(range(3, 3)))",
+    "output": "[0, 1, 2, 3]\n[2, 3, 4]\n[0, 4, 8]\n[5, 3, 1]\n[]\n"
+   }
+  },
+  {
+   "id": "py_loop_008",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Пока больше одного",
+   "prompt": "Что выведет код?",
+   "topic": "loop_while",
+   "difficulty": 2,
+   "hint": "Распишите значения n после каждого шага.",
+   "explanation": "Четыре деления: 20 → 10 → 5 → 2 → 1, затем условие n > 1 ложно.",
+   "code": "n = 20\nsteps = 0\nwhile n > 1:\n    n //= 2\n    steps += 1\nprint(steps)",
+   "payload": {
+    "options": [
+     "5",
+     "4",
+     "3",
+     "20"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Когда n стало 1, условие n > 1 ложно — пятого шага нет.",
+     "",
+     "Посчитайте шаги: 20 → 10 → 5 → 2 → 1.",
+     "steps считает шаги, а не хранит n."
+    ]
+   },
+   "solution": {
+    "code": "n = 20\nsteps = 0\nwhile n > 1:\n    n //= 2\n    steps += 1\nprint(steps)",
+    "output": "4\n"
+   }
+  },
+  {
+   "id": "py_loop_004",
+   "type": "code_ordering",
+   "role": "challenge",
+   "title": "Обратный отсчёт",
+   "prompt": "Соберите программу: 3, 2, 1, затем «Старт!»",
+   "topic": "loop_while",
+   "difficulty": 3,
+   "hint": "Тело цикла — строки с отступом. Что должно выполниться один раз, уже после цикла?",
+   "explanation": "while повторяет тело, пока count > 0. «Старт!» стоит без отступа — после цикла.",
+   "payload": {
+    "lines": [
+     "count = 3",
+     "while count > 0:",
+     "    print(count)",
+     "    count -= 1",
+     "print(\"Старт!\")"
+    ]
+   },
+   "solution": {
+    "code": "count = 3\nwhile count > 0:\n    print(count)\n    count -= 1\nprint(\"Старт!\")",
+    "output": "3\n2\n1\nСтарт!\n"
+   }
+  },
+  {
+   "id": "py_loop_005",
+   "type": "bug_finder",
+   "role": "boss",
+   "title": "Босс: сумма не считается",
+   "prompt": "Программа должна вывести 15, но выводит 0. Найдите ошибку",
+   "topic": "loop_for",
+   "difficulty": 3,
+   "hint": "Чем отличаются = и ==?",
+   "explanation": "== только сравнивает и ничего не меняет. Нужно присваивание: total = total + i.",
+   "code": "total = 0\nfor i in range(1, 6):\n    total == total + i\nprint(total)",
+   "payload": {
+    "buggyLines": [
+     2
+    ]
+   },
+   "solution": {
+    "code": "total = 0\nfor i in range(1, 6):\n    total = total + i\nprint(total)",
+    "output": "15\n"
+   }
+  }
+ ]
+}

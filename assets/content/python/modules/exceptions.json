@@ -1,0 +1,328 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_exc_001",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Перехват ошибки",
+   "prompt": "Что выведет код?",
+   "topic": "exc_try",
+   "difficulty": 1,
+   "hint": "Ошибка внутри try передаёт управление в подходящий except.",
+   "explanation": "10 / 0 вызывает ZeroDivisionError, print внутри try не успевает выполниться, и срабатывает except.",
+   "code": "try:\n    print(10 / 0)\nexcept ZeroDivisionError:\n    print(\"деление на ноль\")",
+   "payload": {
+    "options": [
+     "деление на ноль",
+     "ZeroDivisionError",
+     "0",
+     "inf"
+    ],
+    "correctIndex": 0,
+    "optionFeedback": [
+     "",
+     "Исключение перехвачено, программа не падает и выполняет except.",
+     "Деление на ноль в Python — ошибка, а не 0.",
+     "Для чисел Python не возвращает бесконечность при делении на 0, он вызывает ошибку."
+    ]
+   },
+   "solution": {
+    "code": "try:\n    print(10 / 0)\nexcept ZeroDivisionError:\n    print(\"деление на ноль\")",
+    "output": "деление на ноль\n"
+   }
+  },
+  {
+   "id": "py_exc_002",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Какая ошибка",
+   "prompt": "Сопоставьте код и исключение, которое он вызовет",
+   "topic": "exc_types",
+   "difficulty": 2,
+   "hint": "Неверное значение — ValueError, неверный тип — TypeError.",
+   "explanation": "int('abc') — ValueError, индекс за пределами — IndexError, нет ключа — KeyError, деление на 0 — ZeroDivisionError, строка + число — TypeError, неизвестное имя — NameError.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "int('abc')",
+      "right": "ValueError"
+     },
+     {
+      "left": "[1, 2][5]",
+      "right": "IndexError"
+     },
+     {
+      "left": "{'a': 1}['b']",
+      "right": "KeyError"
+     },
+     {
+      "left": "1 / 0",
+      "right": "ZeroDivisionError"
+     },
+     {
+      "left": "'5' + 5",
+      "right": "TypeError"
+     },
+     {
+      "left": "undefined_name",
+      "right": "NameError"
+     }
+    ]
+   }
+  },
+  {
+   "id": "py_exc_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Нужный except",
+   "prompt": "Перехватите ошибку преобразования",
+   "topic": "exc_types",
+   "difficulty": 1,
+   "hint": "int() получил строку подходящего типа, но неподходящего содержания.",
+   "explanation": "int(\"x\") вызывает ValueError: тип (строка) подходит, а значение — нет.",
+   "payload": {
+    "template": "try:\n    n = int(\"x\")\nexcept {{0}}:\n    print(\"не число\")",
+    "options": [
+     "ValueError",
+     "TypeError",
+     "KeyError",
+     "IndexError"
+    ],
+    "answers": [
+     "ValueError"
+    ],
+    "variantResults": {
+     "TypeError": "ValueError: invalid literal for int() with base 10: 'x'",
+     "KeyError": "ValueError: invalid literal for int() with base 10: 'x'",
+     "IndexError": "ValueError: invalid literal for int() with base 10: 'x'"
+    }
+   },
+   "solution": {
+    "code": "try:\n    n = int(\"x\")\nexcept ValueError:\n    print(\"не число\")",
+    "output": "не число\n"
+   }
+  },
+  {
+   "id": "py_exc_004",
+   "type": "type_output",
+   "role": "practice",
+   "title": "else и finally",
+   "prompt": "Напишите, что выведет код",
+   "topic": "exc_try",
+   "difficulty": 2,
+   "hint": "else — только без ошибки, finally — всегда.",
+   "explanation": "share(4): ошибки нет — else печатает «частное 3.0», потом finally. share(0): except печатает «ноль», потом finally.",
+   "code": "def share(x):\n    try:\n        part = 12 / x\n    except ZeroDivisionError:\n        print(\"ноль\")\n    else:\n        print(\"частное\", part)\n    finally:\n        print(\"готово\")\n\nshare(4)\nshare(0)",
+   "payload": {
+    "expectedOutput": "частное 3.0\nготово\nноль\nготово"
+   },
+   "solution": {
+    "code": "def share(x):\n    try:\n        part = 12 / x\n    except ZeroDivisionError:\n        print(\"ноль\")\n    else:\n        print(\"частное\", part)\n    finally:\n        print(\"готово\")\n\nshare(4)\nshare(0)",
+    "output": "частное 3.0\nготово\nноль\nготово\n"
+   }
+  },
+  {
+   "id": "py_exc_005",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Не тот except",
+   "prompt": "Несуществующая позиция меню должна давать сообщение, а не падение. Найдите строку с ошибкой",
+   "topic": "exc_types",
+   "difficulty": 2,
+   "hint": "Какое исключение вызывает индекс за пределами списка?",
+   "explanation": "Индекс за пределами списка — IndexError, а не KeyError (тот — для словарей). except KeyError его не ловит, и программа падает.",
+   "code": "menu = [\"чай\", \"кофе\"]\ntry:\n    print(menu[5])\nexcept KeyError:\n    print(\"нет такой позиции\")",
+   "payload": {
+    "buggyLines": [
+     3
+    ]
+   },
+   "solution": {
+    "code": "menu = [\"чай\", \"кофе\"]\ntry:\n    print(menu[5])\nexcept IndexError:\n    print(\"нет такой позиции\")",
+    "output": "нет такой позиции\n"
+   }
+  },
+  {
+   "id": "py_exc_010",
+   "type": "predict_output",
+   "role": "practice",
+   "title": "Два типа в одном except",
+   "prompt": "Что выведет код?",
+   "topic": "exc_types",
+   "difficulty": 2,
+   "hint": "int(None) — это не ValueError. Ловит ли его кортеж исключений?",
+   "explanation": "int(\"x\") — ValueError, int(None) — TypeError. Кортеж в except ловит оба типа, а as e даёт сам объект ошибки.",
+   "code": "for raw in [\"5\", \"x\", None]:\n    try:\n        print(int(raw) * 2)\n    except (ValueError, TypeError) as e:\n        print(\"плохо:\", type(e).__name__)",
+   "payload": {
+    "options": [
+     "10\nплохо: ValueError\nплохо: ValueError",
+     "10\nплохо: ValueError",
+     "TypeError",
+     "10\nплохо: ValueError\nплохо: TypeError"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "int(None) — TypeError: None вообще не строка и не число.",
+     "Цикл продолжается: третий элемент None тоже обрабатывается.",
+     "TypeError перехвачен: он есть в кортеже исключений.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "for raw in [\"5\", \"x\", None]:\n    try:\n        print(int(raw) * 2)\n    except (ValueError, TypeError) as e:\n        print(\"плохо:\", type(e).__name__)",
+    "output": "10\nплохо: ValueError\nплохо: TypeError\n"
+   }
+  },
+  {
+   "id": "py_exc_006",
+   "type": "multi_select",
+   "role": "practice",
+   "title": "Семейство LookupError",
+   "prompt": "Какие исключения перехватит except LookupError?",
+   "topic": "exc_types",
+   "difficulty": 2,
+   "hint": "LookupError — ошибки поиска по ключу или индексу.",
+   "explanation": "KeyError и IndexError — подклассы LookupError, поэтому except LookupError ловит обе. Остальные к этому семейству не относятся.",
+   "payload": {
+    "options": [
+     "KeyError",
+     "IndexError",
+     "ValueError",
+     "ZeroDivisionError",
+     "TypeError"
+    ],
+    "correctIndexes": [
+     0,
+     1
+    ],
+    "optionFeedback": [
+     "",
+     "",
+     "ValueError — ошибка значения, не поиска.",
+     "Это арифметическая ошибка (ArithmeticError).",
+     "TypeError — ошибка типа, не поиска."
+    ]
+   }
+  },
+  {
+   "id": "py_exc_007",
+   "type": "code_ordering",
+   "role": "practice",
+   "title": "Своя проверка",
+   "prompt": "Соберите программу, которая выведет «Ошибка: мало средств»",
+   "topic": "exc_raise",
+   "difficulty": 2,
+   "hint": "raise внутри функции, try/except — в вызывающем коде.",
+   "explanation": "Функция сообщает о проблеме через raise, а код, который её вызвал, решает, что делать: перехватывает ValueError и печатает сообщение.",
+   "payload": {
+    "lines": [
+     "def withdraw(balance, amount):",
+     "    if amount > balance:",
+     "        raise ValueError(\"мало средств\")",
+     "try:",
+     "    withdraw(50, 80)",
+     "except ValueError as e:",
+     "    print(\"Ошибка:\", e)"
+    ]
+   },
+   "solution": {
+    "code": "def withdraw(balance, amount):\n    if amount > balance:\n        raise ValueError(\"мало средств\")\ntry:\n    withdraw(50, 80)\nexcept ValueError as e:\n    print(\"Ошибка:\", e)",
+    "output": "Ошибка: мало средств\n"
+   }
+  },
+  {
+   "id": "py_exc_008",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Цепочка причин",
+   "prompt": "Что выведет код?",
+   "topic": "exc_raise",
+   "difficulty": 3,
+   "hint": "from e записывает исходную ошибку в __cause__ новой.",
+   "explanation": "Внешний except ловит RuntimeError с сообщением «плохой ввод», а его __cause__ — исходная ValueError.",
+   "code": "try:\n    try:\n        int(\"x\")\n    except ValueError as e:\n        raise RuntimeError(\"плохой ввод\") from e\nexcept RuntimeError as e:\n    print(type(e).__name__, e, type(e.__cause__).__name__)",
+   "payload": {
+    "options": [
+     "ValueError плохой ввод RuntimeError",
+     "RuntimeError плохой ввод NoneType",
+     "RuntimeError invalid literal ValueError",
+     "RuntimeError плохой ввод ValueError"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "Перехвачена новая ошибка RuntimeError, а ValueError — её причина.",
+     "from e заполняет __cause__: там ValueError.",
+     "Сообщение новой ошибки — то, что передано в RuntimeError(...).",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "try:\n    try:\n        int(\"x\")\n    except ValueError as e:\n        raise RuntimeError(\"плохой ввод\") from e\nexcept RuntimeError as e:\n    print(type(e).__name__, e, type(e.__cause__).__name__)",
+    "output": "RuntimeError плохой ввод ValueError\n"
+   }
+  },
+  {
+   "id": "py_exc_011",
+   "type": "predict_output",
+   "role": "challenge",
+   "title": "Группы исключений",
+   "prompt": "Что выведет код?",
+   "topic": "exc_types",
+   "difficulty": 4,
+   "hint": "except* обрабатывает свою часть группы, а остальное передаёт следующим блокам except*.",
+   "explanation": "ExceptionGroup несёт три ошибки. except* ValueError получает подгруппу из двух ValueError, except* KeyError — из одной KeyError. Сработали оба блока.",
+   "code": "try:\n    raise ExceptionGroup(\"пакет\", [ValueError(\"a\"), KeyError(\"b\"), ValueError(\"c\")])\nexcept* ValueError as group:\n    print(\"value:\", len(group.exceptions))\nexcept* KeyError as group:\n    print(\"key:\", len(group.exceptions))",
+   "payload": {
+    "options": [
+     "value: 1",
+     "value: 2",
+     "value: 2\nkey: 0",
+     "value: 2\nkey: 1"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "except* получает все ValueError группы сразу — их две.",
+     "В отличие от обычного except, блоки except* срабатывают все, у кого есть свои ошибки в группе.",
+     "except* KeyError получает одну ошибку KeyError из группы.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "try:\n    raise ExceptionGroup(\"пакет\", [ValueError(\"a\"), KeyError(\"b\"), ValueError(\"c\")])\nexcept* ValueError as group:\n    print(\"value:\", len(group.exceptions))\nexcept* KeyError as group:\n    print(\"key:\", len(group.exceptions))",
+    "output": "value: 2\nkey: 1\n"
+   }
+  },
+  {
+   "id": "py_exc_009",
+   "type": "predict_output",
+   "role": "boss",
+   "title": "Босс: return и finally",
+   "prompt": "Что выведет код?",
+   "topic": "exc_try",
+   "difficulty": 3,
+   "hint": "finally выполняется даже тогда, когда try завершается через return.",
+   "explanation": "return \"try\" запоминает значение, затем выполняется finally (печатает «finally»), и только потом функция возвращает «try», которое печатает внешний print.",
+   "code": "def f():\n    try:\n        return \"try\"\n    finally:\n        print(\"finally\")\n\nprint(f())",
+   "payload": {
+    "options": [
+     "try",
+     "finally",
+     "try\nfinally",
+     "finally\ntry"
+    ],
+    "correctIndex": 3,
+    "optionFeedback": [
+     "finally выполняется всегда, даже после return.",
+     "Значение из return не теряется: оно возвращается после finally.",
+     "finally выполняется до того, как вызывающий код получит результат.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "def f():\n    try:\n        return \"try\"\n    finally:\n        print(\"finally\")\n\nprint(f())",
+    "output": "finally\ntry\n"
+   }
+  }
+ ]
+}

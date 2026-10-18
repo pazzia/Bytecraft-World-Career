@@ -1,0 +1,232 @@
+{
+ "schemaVersion": 1,
+ "levels": [
+  {
+   "id": "py_types_001",
+   "type": "multiple_choice",
+   "role": "lesson",
+   "title": "Дробные числа",
+   "prompt": "Какой тип у значения x?",
+   "topic": "types_basic",
+   "difficulty": 1,
+   "hint": "Числа с точкой называются числами с плавающей точкой.",
+   "explanation": "3.14 — дробное число, его тип float.",
+   "code": "x = 3.14",
+   "payload": {
+    "options": [
+     "int",
+     "float",
+     "str",
+     "bool"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "int — только целые числа, без дробной части.",
+     "",
+     "Строка была бы в кавычках.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "x = 3.14",
+    "output": ""
+   }
+  },
+  {
+   "id": "py_types_002",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Строка или число?",
+   "prompt": "Что выведет код?",
+   "topic": "types_basic",
+   "difficulty": 1,
+   "hint": "Обратите внимание на кавычки.",
+   "explanation": "Всё, что в кавычках, — строка (str), даже если внутри цифры.",
+   "code": "print(type(\"42\"))",
+   "payload": {
+    "options": [
+     "<class 'int'>",
+     "<class 'str'>",
+     "<class 'float'>",
+     "42"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "Кавычки делают значение строкой, даже если внутри цифры.",
+     "",
+     "",
+     "type() печатает тип значения, а не само значение."
+    ]
+   },
+   "solution": {
+    "code": "print(type(\"42\"))",
+    "output": "<class 'str'>\n"
+   }
+  },
+  {
+   "id": "py_types_003",
+   "type": "fill_code",
+   "role": "lesson",
+   "title": "Преобразование типов",
+   "prompt": "Превратите строку \"25\" в целое число, чтобы программа вывела 26",
+   "topic": "types_convert",
+   "difficulty": 1,
+   "hint": "Функция с именем целочисленного типа превращает строку в число.",
+   "explanation": "int(\"25\") возвращает число 25, поэтому age + 1 равно 26.",
+   "payload": {
+    "template": "age = {{0}}(\"25\")\nprint(age + 1)",
+    "options": [
+     "int",
+     "str",
+     "len",
+     "bool"
+    ],
+    "answers": [
+     "int"
+    ],
+    "variantResults": {
+     "str": "TypeError: can only concatenate str (not \"int\") to str",
+     "len": "3",
+     "bool": "2"
+    }
+   },
+   "solution": {
+    "code": "age = int(\"25\")\nprint(age + 1)",
+    "output": "26\n"
+   }
+  },
+  {
+   "id": "py_types_004",
+   "type": "predict_output",
+   "role": "lesson",
+   "title": "Правда или ложь",
+   "prompt": "Что выведет код?",
+   "topic": "types_bool",
+   "difficulty": 2,
+   "hint": "Пустые значения и ноль — ложь. А непустая строка?",
+   "explanation": "bool(0) — False, а \"0\" — непустая строка, поэтому True.",
+   "code": "print(bool(0), bool(\"0\"))",
+   "payload": {
+    "options": [
+     "False False",
+     "False True",
+     "True True",
+     "True False"
+    ],
+    "correctIndex": 1,
+    "optionFeedback": [
+     "\"0\" — непустая строка, а любая непустая строка истинна.",
+     "",
+     "Ноль — ложное значение.",
+     ""
+    ]
+   },
+   "solution": {
+    "code": "print(bool(0), bool(\"0\"))",
+    "output": "False True\n"
+   }
+  },
+  {
+   "id": "py_types_006",
+   "type": "match_pairs",
+   "role": "practice",
+   "title": "Преобразования",
+   "prompt": "Сопоставьте выражения и результаты",
+   "topic": "types_convert",
+   "difficulty": 2,
+   "hint": "int() отбрасывает дробную часть, str() превращает в строку, а + склеивает строки; пустая строка ложна.",
+   "explanation": "int(\"7\") + 1 = 8; str(7) + \"1\" склеивает строки в 71; float(\"2.5\") читает дробное число; int(3.99) отбрасывает дробь; пустая строка — False.",
+   "payload": {
+    "pairs": [
+     {
+      "left": "int(\"7\") + 1",
+      "right": "8"
+     },
+     {
+      "left": "str(7) + \"1\"",
+      "right": "71"
+     },
+     {
+      "left": "float(\"2.5\")",
+      "right": "2.5"
+     },
+     {
+      "left": "int(3.99)",
+      "right": "3"
+     },
+     {
+      "left": "bool(\"\")",
+      "right": "False"
+     }
+    ]
+   },
+   "solution": {
+    "code": "print(int(\"7\") + 1)\nprint(str(7) + \"1\")\nprint(float(\"2.5\"))\nprint(int(3.99))\nprint(bool(\"\"))",
+    "output": "8\n71\n2.5\n3\nFalse\n"
+   }
+  },
+  {
+   "id": "py_types_008",
+   "type": "type_output",
+   "role": "practice",
+   "title": "Деление",
+   "prompt": "Напишите, что выведет код",
+   "topic": "types_basic",
+   "difficulty": 2,
+   "hint": "Какой тип у результата обычного деления?",
+   "explanation": "10 / 2 даёт 5.0 — тип float. 10 // 2 — целочисленное деление, результат 5.",
+   "code": "print(type(10 / 2).__name__, 10 // 2)",
+   "payload": {
+    "expectedOutput": "float 5"
+   },
+   "solution": {
+    "code": "print(type(10 / 2).__name__, 10 // 2)",
+    "output": "float 5\n"
+   }
+  },
+  {
+   "id": "py_types_007",
+   "type": "bug_finder",
+   "role": "challenge",
+   "title": "Строка вместо числа",
+   "prompt": "Программа должна вывести 6, а выводит 33. Найдите ошибку",
+   "topic": "types_convert",
+   "difficulty": 2,
+   "hint": "Что получится, если строку умножить на 2?",
+   "explanation": "str(count) превращает 3 в строку \"3\", а строка, умноженная на 2, повторяется: \"33\". Число нужно умножать без str().",
+   "code": "count = 3\ntotal = str(count) * 2\nprint(total)",
+   "payload": {
+    "buggyLines": [
+     1
+    ]
+   },
+   "solution": {
+    "code": "count = 3\ntotal = count * 2\nprint(total)",
+    "output": "6\n"
+   }
+  },
+  {
+   "id": "py_types_005",
+   "type": "code_ordering",
+   "role": "boss",
+   "title": "Босс: возраст",
+   "prompt": "Соберите программу, которая выведет «Возраст: 26»",
+   "topic": "types_convert",
+   "difficulty": 3,
+   "hint": "Строки и числа нельзя складывать напрямую — нужен str().",
+   "explanation": "Сначала читаем строку, превращаем её в число, прибавляем 1 и собираем сообщение через str().",
+   "payload": {
+    "lines": [
+     "age_text = \"25\"",
+     "age = int(age_text) + 1",
+     "message = \"Возраст: \" + str(age)",
+     "print(message)"
+    ]
+   },
+   "solution": {
+    "code": "age_text = \"25\"\nage = int(age_text) + 1\nmessage = \"Возраст: \" + str(age)\nprint(message)",
+    "output": "Возраст: 26\n"
+   }
+  }
+ ]
+}

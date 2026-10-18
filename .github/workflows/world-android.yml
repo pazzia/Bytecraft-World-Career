@@ -1,0 +1,223 @@
+name: World Career Android
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: world-career-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate isolated Android shell
+        run: |
+          flutter --version
+          flutter create --platforms=android --org com.pazzia --project-name bytecraftworld .
+          rm -f test/widget_test.dart
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's/android:label="bytecraftworld"/android:label="Bytecraft World"/' "$M"
+          grep -q 'android:label="Bytecraft World"' "$M"
+          cp -r tool/android/res/. android/app/src/main/res/
+          cp tool/android/proguard-rules.pro android/app/proguard-rules.pro
+          G=android/app/build.gradle.kts
+          [ -f "$G" ] || G=android/app/build.gradle
+          if [[ "$G" == *.kts ]]; then
+            sed -i '0,/release {/s//release {\n            proguardFiles("proguard-rules.pro")/' "$G"
+          else
+            sed -i "0,/release {/s//release {\n            proguardFiles 'proguard-rules.pro'/" "$G"
+          fi
+          sed -i '0,/<application/s//<uses-permission android:name="android.permission.INTERNET"\/>\n    <application android:networkSecurityConfig="@xml\/network_security_config"/' "$M"
+          grep -q 'android.permission.INTERNET' "$M"
+
+      - name: Brand World launcher icon
+        run: |
+          python -m pip install pillow --quiet
+          python - <<'PY'
+          from pathlib import Path
+          from PIL import Image, ImageDraw, ImageFont
+          for path in Path('android/app/src/main/res').glob('mipmap-*/ic_launcher.png'):
+              im = Image.open(path).convert('RGBA')
+              draw = ImageDraw.Draw(im)
+              w, h = im.size
+              r = max(8, int(w * .23))
+              cx, cy = w-r-3, h-r-3
+              draw.ellipse((cx-r, cy-r, cx+r, cy+r), fill=(139,92,246,255), outline=(255,255,255,235), width=max(1,w//32))
+              try:
+                  font = ImageFont.truetype('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', max(10,int(r*1.05)))
+              except OSError:
+                  font = ImageFont.load_default()
+              box = draw.textbbox((0,0),'W',font=font)
+              tw, th = box[2]-box[0], box[3]-box[1]
+              draw.text((cx-tw/2, cy-th/2-box[1]), 'W', fill='white', font=font)
+              im.save(path)
+          PY
+
+      - name: Independently check World answers in CPython
+        run: |
+          python tool/world/generate_dna.py --check
+          dart run tool/world/export_questions.dart | python tool/world/check_questions.py
+
+      - name: Check course content
+        run: |
+          python tool/content/generate_python_course.py "$RUNNER_TEMP/content"
+          diff -r "$RUNNER_TEMP/content" assets/content/python
+
+      - name: Bundle Pyodide
+        run: |
+          set -euo pipefail
+          cd tool/pyodide
+          npm install --no-audit --no-fund
+          SRC=node_modules/pyodide
+          for f in pyodide.js pyodide.asm.js pyodide.asm.wasm python_stdlib.zip pyodide-lock.json; do
+            cp "$SRC/$f" ../../assets/pyodide/
+          done
+
+      - name: Check content in Pyodide
+        run: node tool/pyodide/check_content.mjs assets/content/python
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      - name: Tests
+        run: flutter test --reporter expanded
+
+      - name: Upload expedition visual checks
+        uses: actions/upload-artifact@v4
+        with:
+          name: expedition-previews
+          path: build/expedition-preview-*.png
+          if-no-files-found: error
+
+      - name: Build World release APK
+        run: |
+          VERSION="$(grep -m1 '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')"
+          flutter build apk --release \
+            --build-name="$VERSION" \
+            --build-number=${{ github.run_number }} \
+            --dart-define=APP_VERSION="$VERSION" \
+            --dart-define=BUILD_NUMBER=${{ github.run_number }}
+
+      - name: Restore World signing key
+        id: world-key
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.bytecraft-world-signing
+          key: bytecraft-world-signing-v1
+
+      - name: Sign World APK
+        id: sign
+        run: |
+          set -euo pipefail
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          KEY_DIR="$HOME/.bytecraft-world-signing"
+          mkdir -p "$KEY_DIR"
+          if [ ! -f "$KEY_DIR/release.jks" ]; then
+            openssl rand -hex 24 > "$KEY_DIR/password"
+            PASS="$(cat "$KEY_DIR/password")"
+            keytool -genkeypair -keystore "$KEY_DIR/release.jks" -storetype PKCS12 \
+              -alias bytecraftworld -keyalg RSA -keysize 4096 -validity 10000 \
+              -storepass "$PASS" -keypass "$PASS" \
+              -dname "CN=Bytecraft World, O=pazzia" >/dev/null 2>&1
+            echo "created=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "created=false" >> "$GITHUB_OUTPUT"
+          fi
+          PASS="$(cat "$KEY_DIR/password")"
+          export PASS
+          BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks "$KEY_DIR/release.jks" \
+            --ks-key-alias bytecraftworld \
+            --ks-pass env:PASS --key-pass env:PASS \
+            --out "$RUNNER_TEMP/world-signed.apk" "$APK"
+          mv "$RUNNER_TEMP/world-signed.apk" "$APK"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK"
+
+      - name: Save World signing key
+        if: steps.sign.outputs.created == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.bytecraft-world-signing
+          key: bytecraft-world-signing-v1
+
+      - name: Verify package identity
+        run: |
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | tee badging.txt
+          grep -q "package: name='com.pazzia.bytecraftworld'" badging.txt
+          grep -q "application-label:'Bytecraft World'" badging.txt
+
+      - name: Upload World APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: bytecraft-world-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download World APK
+        uses: actions/download-artifact@v4
+        with:
+          name: bytecraft-world-apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install and launch World edition
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash tool/android/smoke_world.sh app-release.apk
+
+      - name: Upload World smoke results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bytecraft-world-smoke
+          path: |
+            smoke-world.txt
+            world-ui.xml
+            world-screen.png
+            world-logcat.txt
+            world-app-log.txt

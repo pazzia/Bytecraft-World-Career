@@ -1,0 +1,421 @@
+name: Bytecraft CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: bytecraft-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      version: ${{ steps.apk.outputs.version }}
+      signed: ${{ steps.sign.outputs.signed }}
+      source: ${{ steps.sign.outputs.source }}
+      fingerprint: ${{ steps.sign.outputs.fingerprint }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Generate Android shell
+        run: |
+          flutter --version | tee flutter-version.txt
+          flutter create --platforms=android --org com.pazzia --project-name bytecraft .
+          # flutter create adds a counter-app test that doesn't apply here.
+          rm -f test/widget_test.dart
+          # App name and launcher icon (the generated shell has Flutter's).
+          sed -i 's/android:label="bytecraft"/android:label="Bytecraft"/' android/app/src/main/AndroidManifest.xml
+          grep -q 'android:label="Bytecraft"' android/app/src/main/AndroidManifest.xml
+          cp -r tool/android/res/. android/app/src/main/res/
+          # R8 keep rules: plugins called from native code (see the file).
+          cp tool/android/proguard-rules.pro android/app/proguard-rules.pro
+          G=android/app/build.gradle.kts
+          [ -f "$G" ] || G=android/app/build.gradle
+          if grep -q 'build.gradle.kts' <<< "$G"; then
+            sed -i '0,/release {/s//release {\n            proguardFiles("proguard-rules.pro")/' "$G"
+          else
+            sed -i "0,/release {/s//release {\n            proguardFiles 'proguard-rules.pro'/" "$G"
+          fi
+          grep -n 'proguardFiles' "$G"
+          # The Python sandbox talks to a loopback HTTP server (see
+          # lib/features/playground/data/asset_http_server.dart): it needs
+          # INTERNET and plain HTTP to 127.0.0.1 only.
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i '0,/<application/s//<uses-permission android:name="android.permission.INTERNET"\/>\n    <application android:networkSecurityConfig="@xml\/network_security_config"/' "$M"
+          grep -q 'android.permission.INTERNET' "$M"
+          grep -q 'networkSecurityConfig' "$M"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # The course is generated from tool/content/course/*.py; every level,
+      # example and exercise is executed while generating. The committed
+      # assets must match the sources, and the result must not depend on
+      # hash randomization (set order).
+      - name: Check course content
+        id: content
+        run: |
+          set -o pipefail
+          {
+            python tool/content/generate_python_course.py "$RUNNER_TEMP/content-a"
+            PYTHONHASHSEED=1 python tool/content/generate_python_course.py "$RUNNER_TEMP/content-b" >/dev/null
+            PYTHONHASHSEED=2 python tool/content/generate_python_course.py "$RUNNER_TEMP/content-c" >/dev/null
+            diff -r "$RUNNER_TEMP/content-b" "$RUNNER_TEMP/content-c" && echo "deterministic: yes"
+            diff -r "$RUNNER_TEMP/content-a" assets/content/python && echo "assets up to date: yes"
+          } 2>&1 | tee content.txt
+
+      # Pyodide (CPython for WebAssembly) powers the in-app sandbox. It is
+      # downloaded at build time (version pinned in tool/pyodide/package.json)
+      # and every program of the course is run in it too.
+      - name: Bundle Pyodide
+        run: |
+          set -euo pipefail
+          cd tool/pyodide
+          npm install --no-audit --no-fund
+          SRC=node_modules/pyodide
+          for f in pyodide.js pyodide.asm.js pyodide.asm.wasm python_stdlib.zip pyodide-lock.json; do
+            cp "$SRC/$f" ../../assets/pyodide/
+          done
+          ls -la ../../assets/pyodide
+
+      - name: Check content in Pyodide
+        id: pyodide
+        run: |
+          set -o pipefail
+          node tool/pyodide/check_content.mjs assets/content/python 2>&1 | tee pyodide.txt
+
+      # The sandbox page itself (index.html + runner.js + worker.js +
+      # runner.py) in a real browser engine, as in the phone's WebView.
+      - name: Sandbox in a browser
+        id: sandbox
+        run: |
+          set -o pipefail
+          (cd tool/pyodide && npx playwright install --with-deps chromium > /dev/null 2>&1)
+          node tool/pyodide/browser_check.mjs assets 2>&1 | tee sandbox.txt
+
+      - name: Install dependencies
+        run: |
+          flutter pub get 2>&1 | tee pub.txt
+          # Exact plugin versions of this build (there is no committed lock file).
+          grep -A3 -E '^  (shared_preferences[a-z_]*|webview_flutter[a-z_]*|jni|path_provider[a-z_]*):' pubspec.lock | grep -E '^  [a-z]|version:' | paste - - | sed 's/ \+/ /g' >> pub.txt || true
+
+      - name: Analyze
+        id: analyze
+        run: |
+          set -o pipefail
+          flutter analyze --no-fatal-infos 2>&1 | tee analyze.txt
+
+      - name: Unit tests
+        id: tests
+        if: always() && steps.analyze.conclusion != 'skipped'
+        run: |
+          set -o pipefail
+          flutter test --reporter expanded 2>&1 | tee test.txt
+
+      # Every build gets a higher versionCode, otherwise Android refuses
+      # to update the installed app.
+      - name: Build release APK
+        id: apk
+        run: |
+          set -o pipefail
+          VERSION="$(grep -m1 '^version:' pubspec.yaml | sed 's/version: *//; s/+.*//')"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          flutter build apk --release \
+            --build-name="$VERSION" --build-number=${{ github.run_number }} \
+            --dart-define=APP_VERSION="$VERSION" \
+            --dart-define=BUILD_NUMBER=${{ github.run_number }} 2>&1 | tee apk.txt
+
+      # The permanent signing key lives in the GitHub Actions cache (see
+      # docs/RELEASE.md). The cache key never changes, so the key is
+      # created once and every later build is signed with the same key.
+      - name: Restore signing key
+        id: key-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.bytecraft-signing
+          key: bytecraft-signing-v1
+
+      - name: Sign APK
+        id: sign
+        env:
+          # Optional override: repository secrets take priority over the cache.
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # Only main may create the permanent key: caches saved by PR runs
+          # are invisible to main and would give a different key.
+          CAN_CREATE_KEY: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+        run: |
+          set -euo pipefail
+          APK=build/app/outputs/flutter-apk/app-release.apk
+          KEY_DIR="$HOME/.bytecraft-signing"
+          TEMP_KS="$RUNNER_TEMP/temp.jks"
+          if [ -n "${KEYSTORE_BASE64}" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > "$TEMP_KS"
+            KS="$TEMP_KS"
+            SOURCE=secrets
+          elif [ -f "$KEY_DIR/release.jks" ]; then
+            KS="$KEY_DIR/release.jks"
+            KEYSTORE_PASSWORD="$(cat "$KEY_DIR/password")"
+            KEY_PASSWORD="$KEYSTORE_PASSWORD"
+            KEY_ALIAS=bytecraft
+            SOURCE=cache
+          elif [ "$CAN_CREATE_KEY" = true ]; then
+            mkdir -p "$KEY_DIR"
+            openssl rand -hex 24 > "$KEY_DIR/password"
+            KEYSTORE_PASSWORD="$(cat "$KEY_DIR/password")"
+            KEY_PASSWORD="$KEYSTORE_PASSWORD"
+            KEY_ALIAS=bytecraft
+            keytool -genkeypair -keystore "$KEY_DIR/release.jks" -storetype PKCS12 \
+              -alias "$KEY_ALIAS" -keyalg RSA -keysize 4096 -validity 10000 \
+              -storepass "$KEYSTORE_PASSWORD" -dname "CN=Bytecraft, O=pazzia" >/dev/null 2>&1
+            KS="$KEY_DIR/release.jks"
+            SOURCE=created
+          else
+            # A PR before the key exists: a throwaway key keeps the signing
+            # path exercised, but the APK can't update an installed app.
+            KEYSTORE_PASSWORD="$(openssl rand -hex 16)"
+            KEY_PASSWORD="$KEYSTORE_PASSWORD"
+            KEY_ALIAS=throwaway
+            keytool -genkeypair -keystore "$TEMP_KS" -storetype PKCS12 \
+              -alias "$KEY_ALIAS" -keyalg RSA -keysize 2048 -validity 1 \
+              -storepass "$KEYSTORE_PASSWORD" -dname "CN=Throwaway" >/dev/null 2>&1
+            KS="$TEMP_KS"
+            SOURCE=throwaway
+          fi
+          export KEYSTORE_PASSWORD KEY_PASSWORD
+          BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          "$BUILD_TOOLS/apksigner" sign \
+            --ks "$KS" \
+            --ks-key-alias "$KEY_ALIAS" \
+            --ks-pass env:KEYSTORE_PASSWORD \
+            --key-pass env:KEY_PASSWORD \
+            --out "$RUNNER_TEMP/signed.apk" \
+            "$APK"
+          mv "$RUNNER_TEMP/signed.apk" "$APK"
+          rm -f "$TEMP_KS"
+          {
+            case "$SOURCE" in
+              cache) echo "Signed with the permanent key (from the Actions cache)." ;;
+              created) echo "Created the permanent key and signed with it." ;;
+              secrets) echo "Signed with the key from repository secrets." ;;
+              *) echo "⚠️ No permanent key yet (it is created by the first build on main): signed with a throwaway key." ;;
+            esac
+            echo "apksigner: $BUILD_TOOLS"
+            # verify fails the step on a bad signature; the summary lines
+            # differ between build-tools versions, so fall back to all output.
+            "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" > verify.txt
+            grep -iE "certificate (DN|SHA-256)|Verified using" verify.txt || cat verify.txt
+          } 2>&1 | tee sign.txt
+          FINGERPRINT="$(grep -iE 'certificate SHA-256' verify.txt | head -n 1 | sed 's/.*: *//' || true)"
+          if [ "$SOURCE" = throwaway ]; then SIGNED=false; else SIGNED=true; fi
+          {
+            echo "signed=$SIGNED"
+            echo "source=$SOURCE"
+            echo "fingerprint=$FINGERPRINT"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Save new signing key
+        if: steps.sign.outputs.source == 'created'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.bytecraft-signing
+          key: bytecraft-signing-v1
+
+      # Logs are posted to the PR so results are readable without Actions log access.
+      - name: Report to pull request
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          section() {
+            local title="$1" file="$2" lines="$3"
+            echo "<details><summary>$title</summary>"
+            echo
+            echo '```'
+            if [ -f "$file" ]; then tail -n "$lines" "$file"; else echo "(step did not run)"; fi
+            echo '```'
+            echo "</details>"
+          }
+          {
+            echo "### CI: version=${{ steps.apk.outputs.version }}+${{ github.run_number }} · content=${{ steps.content.outcome }} · pyodide=${{ steps.pyodide.outcome }} · sandbox=${{ steps.sandbox.outcome }} · analyze=${{ steps.analyze.outcome }} · tests=${{ steps.tests.outcome }} · apk=${{ steps.apk.outcome }} · release-signed=${{ steps.sign.outputs.signed || 'n/a' }} · key=${{ steps.sign.outputs.source || 'n/a' }}"
+            echo
+            section "Flutter version" flutter-version.txt 6
+            section "pub get" pub.txt 40
+            section "content" content.txt 40
+            section "pyodide" pyodide.txt 80
+            section "sandbox in a browser" sandbox.txt 60
+            section "flutter analyze" analyze.txt 150
+            if grep -q "EXCEPTION CAUGHT BY" test.txt 2>/dev/null; then
+              awk '/EXCEPTION CAUGHT BY/{found=1} found{print; n++} n>=70{exit}' test.txt > first-failure.txt
+              section "first test exception" first-failure.txt 70
+            fi
+            section "flutter test" test.txt 150
+            section "build apk" apk.txt 40
+            section "signing" sign.txt 10
+          } > report.md
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file report.md
+
+      - name: Upload APK artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bytecraft-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+
+  # The APK must actually start: it is installed in an Android emulator,
+  # launched, and the visible texts and the log are checked. A release is
+  # published only after this passes.
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: bytecraft-apk
+
+      - name: Download control release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download mvp-23 --repo "$GITHUB_REPOSITORY" --pattern '*.apk' --output control.apk || true
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Launch in emulator
+        id: launch
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: CONTROL_APK=control.apk bash tool/android/smoke.sh app-release.apk
+
+      - name: Check the first screen
+        id: check
+        run: |
+          {
+            echo "--- visible texts:"
+            grep -o 'text="[^"]*"' ui.xml | sed 's/text="//; s/"$//' | grep -v '^$' | head -40 || true
+            echo "--- content-desc:"
+            grep -o 'content-desc="[^"]*"' ui.xml | sed 's/content-desc="//; s/"$//' | grep -v '^$' | head -40 || true
+          } >> smoke.txt
+          grep -E "flutter|AndroidRuntime|FATAL|Exception|Error|bytecraft|chromium|Impeller|DartVM|libc" logcat.txt | grep -v "^--------- beginning" | tail -150 > logcat-filtered.txt || true
+          # The Flutter splash (or any app screen) shows the app's own texts.
+          if grep -qE 'Bytecraft|Главная|Начать|Код за пару минут' ui.xml; then
+            echo "started=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "started=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+
+      - name: Upload smoke results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke
+          path: |
+            smoke.txt
+            logcat.txt
+            app-log.txt
+            stacks.txt
+            java-stacks.txt
+            screen.png
+            ui.xml
+
+      - name: Report to the pull request
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          {
+            echo "### Smoke: started=${{ steps.check.outputs.started || 'n/a' }}"
+            echo
+            echo '<details><summary>control (mvp-23)</summary>'
+            echo; echo '```'; tail -n 40 control.txt 2>/dev/null; echo '```'; echo '</details>'
+            echo '<details><summary>smoke</summary>'
+            echo; echo '```'; tail -n 80 smoke.txt 2>/dev/null; echo '```'; echo '</details>'
+            echo '<details><summary>app log (by pid)</summary>'
+            echo; echo '```'; tail -n 200 app-log.txt 2>/dev/null; echo '```'; echo '</details>'
+            echo '<details><summary>app-related log lines</summary>'
+            echo; echo '```'; tail -n 120 app-related.txt 2>/dev/null; echo '```'; echo '</details>'
+            echo '<details><summary>native stacks (main, ui, raster, io, platform threads)</summary>'
+            echo; echo '```'
+            awk '/^"/{keep = ($0 ~ /"(bytecraft|ytecraft|1\.ui|1\.raster|1\.io|main|DartWorker|flutter|Chrome|CrRendererMain|Thread-)/)} keep' stacks.txt 2>/dev/null | head -n 250
+            echo '```'; echo '</details>'
+            echo '<details><summary>java main thread</summary>'
+            echo; echo '```'; awk '/^"main"/{f=1} f{print; n++} n>=60{exit}' java-stacks.txt 2>/dev/null; echo '```'; echo '</details>'
+          } > smoke-report.md
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file smoke-report.md
+
+  release:
+    needs: [build, smoke]
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download APK
+        uses: actions/download-artifact@v4
+        with:
+          name: bytecraft-apk
+
+      - name: Publish GitHub Release
+        # Push to main, or a manual "Run workflow" on main (e.g. after the
+        # signing secrets changed).
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNED: ${{ needs.build.outputs.signed }}
+          SOURCE: ${{ needs.build.outputs.source }}
+          FINGERPRINT: ${{ needs.build.outputs.fingerprint }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          TAG="mvp-${GITHUB_RUN_NUMBER}"
+          APK_NAME="bytecraft-${VERSION}-build${GITHUB_RUN_NUMBER}.apk"
+          cp app-release.apk "$APK_NAME"
+          NOTES="Bytecraft ${VERSION}, build ${GITHUB_RUN_NUMBER}, from commit ${GITHUB_SHA}."
+          if [ "$SIGNED" = "true" ]; then
+            NOTES="$(printf '%s\n\n%s' "$NOTES" "Signing certificate SHA-256: ${FINGERPRINT}")"
+          else
+            NOTES="$(printf '%s\n\n%s' "$NOTES" "⚠️ Signed with a temporary key: uninstall the previous build before installing this one. See docs/RELEASE.md.")"
+          fi
+          if [ "$SOURCE" = "created" ]; then
+            NOTES="$(printf '%s\n\n%s' "$NOTES" "First build with the permanent key: uninstall older builds once. From now on, updates install over this one.")"
+          fi
+          gh release create "$TAG" \
+            "$APK_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Bytecraft ${VERSION} (build ${GITHUB_RUN_NUMBER})" \
+            --notes "$NOTES"
