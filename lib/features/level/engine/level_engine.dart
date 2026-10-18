@@ -286,11 +286,12 @@ class LevelEngine {
 
     final previous = progress.levelOf(level.id);
     final isFirst = !previous.completed;
-    final stars = _stars.starsFor(session.mistakes);
+    final stars = _stars.starsFor(session.mistakes, hintsUsed: session.hintsUsed);
     var reward = _rewards.completionReward(
       level: level,
       mistakes: session.mistakes,
       isFirstCompletion: isFirst,
+      hintsUsed: session.hintsUsed,
     );
 
     final isDaily = session.mode == LevelMode.dailyChallenge &&
@@ -389,18 +390,20 @@ class LevelEngine {
     // Boosted XP only for the first-ever timed completion of a level: an
     // expired run never makes a level "new" again (CodeQuest XP-farm fix).
     final isFirstEver = !timed.everCompletedLevelIds.contains(level.id);
-    final stars = _stars.starsFor(session.mistakes);
+    final stars = _stars.starsFor(session.mistakes, hintsUsed: session.hintsUsed);
     final levelXp = isFirstEver
         ? _rewards.xpFor(
               level: level,
               mistakes: session.mistakes,
               isFirstCompletion: true,
+              hintsUsed: session.hintsUsed,
             ) *
             _rules.timedXpMultiplier
         : _rewards.xpFor(
             level: level,
             mistakes: session.mistakes,
             isFirstCompletion: false,
+            hintsUsed: session.hintsUsed,
           );
 
     final cleared = _timedPolicy.isCleared(course, run);

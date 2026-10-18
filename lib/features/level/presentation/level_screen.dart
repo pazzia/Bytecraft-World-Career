@@ -318,6 +318,7 @@ class _BottomBar extends StatelessWidget {
   static const int _typeOutputHintAfter = 2;
 
   String? _hint() {
+    if (args.mode == LevelMode.timed) return null;
     final level = state.session!.level;
     final payload = level.payload;
     final answer = state.answer;
@@ -373,7 +374,7 @@ class _BottomBar extends StatelessWidget {
             ),
             child: Row(
               children: [
-                if (level.hint != null && !state.isHintVisible) ...[
+                if (args.mode != LevelMode.timed && level.hint != null && !state.isHintVisible) ...[
                   Keycap(
                     onTap: controller.showHint,
                     face: game.keyFace,
@@ -381,11 +382,11 @@ class _BottomBar extends StatelessWidget {
                     border: game.keyBorder,
                     width: Spacing.keyHeight,
                     height: Spacing.keyHeight,
-                    semanticLabel: 'Подсказка',
-                    child: Icon(
-                      Icons.lightbulb_outline_rounded,
-                      color: game.rewardIcon,
-                    ),
+                    semanticLabel: 'Подсказка: минус одна звезда, без бонуса 5 XP',
+                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(Icons.lightbulb_outline_rounded, color: game.rewardIcon, size: 20),
+                      const Text('−1 ★', style: TextStyle(fontSize: 10)),
+                    ]),
                   ),
                   const SizedBox(width: Spacing.md),
                 ],

@@ -28,16 +28,19 @@ class WorldPage extends StatelessWidget {
     super.key,
     this.subtitle,
     this.actions,
+    this.bottomBar,
   });
 
   final String title;
   final String? subtitle;
   final Widget child;
   final List<Widget>? actions;
+  final Widget? bottomBar;
 
   @override
   Widget build(BuildContext context) => Scaffold(
         backgroundColor: WorldPalette.bg,
+        bottomNavigationBar: bottomBar,
         appBar: AppBar(
           backgroundColor: WorldPalette.bg,
           foregroundColor: WorldPalette.text,

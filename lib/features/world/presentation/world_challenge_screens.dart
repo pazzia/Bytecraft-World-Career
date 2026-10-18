@@ -87,9 +87,37 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
     WorldMode.training => 'Верное решение закрепляет одну ошибку выбранной темы: 30 XP и 12 монет до бонусов. Неверное добавляет ошибку. Числа обозначают ошибки, а не проценты.',
     WorldMode.infinite => 'За верный ответ: 20 + длина серии XP и 5 монет до бонусов. Ошибка отнимает жизнь и обнуляет серию; рекорд сохраняется. При нуле жизней продолжить нельзя.',
   };
+  Widget? _expeditionAction(BuildContext context) {
+    final s = ref.watch(worldControllerProvider).value;
+    if (widget.mode != WorldMode.expedition || s == null || (!_next && s.expeditionProgress < 5)) return null;
+    return SafeArea(top: false, child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: WorldButton(
+        label: s.expeditionProgress < 5 ? 'Следующее задание'
+            : !s.expeditionChestClaimed ? 'Открыть сундук' : 'К проекту',
+        icon: s.expeditionProgress == 5 && !s.expeditionChestClaimed
+            ? Icons.card_giftcard : Icons.arrow_forward_rounded,
+        onPressed: () async {
+          if (s.expeditionProgress < 5) {
+            setState(() { _next = false; _feedback = null; });
+          } else if (!s.expeditionChestClaimed) {
+            try {
+              await ref.read(worldControllerProvider.notifier).claimExpeditionChest();
+            } catch (_) {
+              if (mounted) setState(() { _feedback = 'Не удалось сохранить награду. Попробуй ещё раз.'; _correct = false; });
+            }
+          } else {
+            context.push(Routes.worldBuild);
+          }
+        },
+      ),
+    ));
+  }
+
   @override
   Widget build(BuildContext context) => WorldPage(
     title: _title,
+    bottomBar: _expeditionAction(context),
     subtitle: 'После ошибки базовый XP вдвое меньше',
     child: ref
         .watch(worldControllerProvider)
@@ -239,7 +267,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                     style: TextStyle(color: WorldPalette.muted),
                   ),
                 ] else if (_next)
-                  WorldButton(
+                  mode == WorldMode.expedition ? const SizedBox.shrink() : WorldButton(
                     label: 'Следующее задание',
                     icon: Icons.arrow_forward,
                     onPressed: () => setState(() {

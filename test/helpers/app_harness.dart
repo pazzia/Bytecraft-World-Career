@@ -78,6 +78,14 @@ void dumpTexts(WidgetTester tester, String screen) {
 
 /// Taps a bottom tab by its label (the label may also be a screen title).
 Future<void> openTab(WidgetTester tester, String label) async {
-  await tester.tap(find.text(label).last);
+  if (label == 'DNA' || label == 'Код') {
+    await tester.tap(find.text('Практика').last);
+    await tester.pumpAndSettle();
+    final button = label == 'DNA' ? 'Разобрать ошибки' : 'Открыть редактор';
+    await tester.scrollUntilVisible(find.text(button), 150, scrollable: find.byType(Scrollable).last);
+    await tester.tap(find.text(button));
+  } else {
+    await tester.tap(find.text(label).last);
+  }
   await tester.pumpAndSettle();
 }

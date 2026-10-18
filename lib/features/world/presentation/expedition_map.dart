@@ -99,7 +99,8 @@ class _ExpeditionMapState extends State<ExpeditionMap>
                   ),
                 AnimatedPositioned(
                   key: const ValueKey('expedition-explorer-position'),
-                  duration: const Duration(milliseconds: 850),
+                  duration: MediaQuery.maybeDisableAnimationsOf(context) ?? false
+                      ? Duration.zero : const Duration(milliseconds: 850),
                   curve: Curves.easeInOutCubic,
                   left: (point.dx * side - width / 2).clamp(0.0, side - width),
                   top: (point.dy * side - height + 10).clamp(3.0, side - height),

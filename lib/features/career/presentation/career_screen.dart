@@ -11,11 +11,18 @@ import '../../world/presentation/world_ui.dart';
 import '../domain/career_dashboard.dart';
 import 'career_providers.dart';
 
-class CareerScreen extends ConsumerWidget {
+class CareerScreen extends ConsumerStatefulWidget {
   const CareerScreen({super.key});
+  @override
+  ConsumerState<CareerScreen> createState() => _CareerScreenState();
+}
+
+class _CareerScreenState extends ConsumerState<CareerScreen> {
+  final _goalKey = GlobalKey<FormFieldState<CareerTargetId>>();
+  bool _savingGoal = false;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) => WorldPage(
+  Widget build(BuildContext context) => WorldPage(
         title: 'Карьера',
         subtitle: 'Цель, учебный прогресс и следующий шаг',
         child: ref.watch(careerDashboardProvider).when(
@@ -32,6 +39,7 @@ class CareerScreen extends ConsumerWidget {
               const Text('Карьерная цель', style: _heading),
               const SizedBox(height: 8),
               DropdownButtonFormField<CareerTargetId>(
+                key: _goalKey,
                 initialValue: vm.targetId,
                 isExpanded: true,
                 decoration: const InputDecoration(
@@ -42,17 +50,21 @@ class CareerScreen extends ConsumerWidget {
                   for (final target in CareerTargetId.values)
                     DropdownMenuItem(value: target, child: Text(target.title, maxLines: 1, overflow: TextOverflow.ellipsis)),
                 ],
-                onChanged: (target) async {
+                onChanged: _savingGoal ? null : (target) async {
                   if (target == null) return;
+                  setState(() => _savingGoal = true);
                   try {
                     await ref.read(settingsControllerProvider.notifier)
                         .setCareerGoal(target.id);
                   } catch (_) {
+                    _goalKey.currentState?.didChange(vm.targetId);
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                         content: Text('Не удалось сохранить цель. Повтори выбор.'),
                       ));
                     }
+                  } finally {
+                    if (mounted) setState(() => _savingGoal = false);
                   }
                 },
               ),

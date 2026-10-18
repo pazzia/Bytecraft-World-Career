@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/di/providers.dart';
@@ -22,7 +24,12 @@ class WorldController extends AsyncNotifier<WorldState> {
       final current = await ref.read(worldRepositoryProvider).load();
       return action(current);
     }).then((result) async {
-      if (ref.mounted) state = AsyncData(await ref.read(worldRepositoryProvider).load());
+      if (ref.mounted) {
+        final latest = await ref.read(worldRepositoryProvider).load();
+        if (jsonEncode(state.value?.toJson()) != jsonEncode(latest.toJson())) {
+          state = AsyncData(latest);
+        }
+      }
       return result;
     });
   }

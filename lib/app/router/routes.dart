@@ -9,8 +9,9 @@ abstract final class Routes {
   static const String map = '/map';
   static const String career = '/career';
   static const String profile = '/profile';
-  static const String journal = '/journal';
-  static const String playground = '/code';
+  static const String practice = '/practice';
+  static const String journal = '/practice/dna';
+  static const String playground = '/practice/code';
   static const String topicPattern = '/topic/:topicId';
   static const String topicIdParam = 'topicId';
 

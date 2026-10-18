@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/career/presentation/career_screen.dart';
+import '../../features/practice/presentation/practice_hub_screen.dart';
 import '../../features/journal/presentation/topic_screen.dart';
 import '../../features/playground/presentation/playground_screen.dart';
 import '../../features/playground/presentation/practice_task_screen.dart';
@@ -84,28 +85,28 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: Routes.journal,
-                builder: (context, state) => const MistakeDnaScreen(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: Routes.playground,
-                builder: (context, state) => const PlaygroundScreen(),
-                routes: [
-                  GoRoute(
+            routes: [GoRoute(
+              path: Routes.practice,
+              builder: (context, state) => const PracticeHubScreen(),
+              routes: [
+                GoRoute(path: 'dna', builder: (context, state) => const MistakeDnaScreen()),
+                GoRoute(
+                  path: 'code',
+                  builder: (context, state) => const PlaygroundScreen(),
+                  routes: [GoRoute(
                     path: Routes.practiceTaskSegment,
                     builder: (context, state) => PracticeTaskScreen(
-                      taskId: state.pathParameters[Routes.taskIdParam]!,
-                    ),
-                  ),
-                ],
-              ),
-            ],
+                      taskId: state.pathParameters[Routes.taskIdParam]!),
+                  )],
+                ),
+              ],
+            )],
+          ),
+          StatefulShellBranch(
+            routes: [GoRoute(
+              path: Routes.career,
+              builder: (context, state) => const CareerScreen(),
+            )],
           ),
           StatefulShellBranch(
             routes: [
@@ -117,11 +118,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
         ],
       ),
-      GoRoute(
-        path: Routes.career,
-        parentNavigatorKey: _rootKey,
-        builder: (context, state) => const CareerScreen(),
-      ),
+      GoRoute(path: '/code', redirect: (context, state) => Routes.playground),
+      GoRoute(path: '/journal', redirect: (context, state) => Routes.journal),
       GoRoute(
         path: Routes.worldCity,
         parentNavigatorKey: _rootKey,

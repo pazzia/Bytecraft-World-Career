@@ -10,7 +10,8 @@ class StarCalculator {
 
   final GameRules rules;
 
-  int starsFor(int mistakes) {
+  int starsFor(int mistakes, {int hintsUsed = 0}) {
+    if (hintsUsed > 0 && mistakes <= rules.maxMistakesForThreeStars) return maxStars - 1;
     if (mistakes <= rules.maxMistakesForThreeStars) return maxStars;
     if (mistakes <= rules.maxMistakesForTwoStars) return maxStars - 1;
     return 1;
@@ -32,12 +33,13 @@ class RewardCalculator {
     required LevelDefinition level,
     required int mistakes,
     required bool isFirstCompletion,
+    int hintsUsed = 0,
   }) {
     final base = baseXp(level);
     if (!isFirstCompletion) {
       return (base * rules.replayXpPercent / _percent).round();
     }
-    final isPerfect = mistakes <= rules.maxMistakesForThreeStars;
+    final isPerfect = hintsUsed == 0 && mistakes <= rules.maxMistakesForThreeStars;
     return base + (isPerfect ? rules.perfectBonusXp : 0);
   }
 
@@ -51,12 +53,14 @@ class RewardCalculator {
     required LevelDefinition level,
     required int mistakes,
     required bool isFirstCompletion,
+    int hintsUsed = 0,
   }) =>
       Reward(
         xp: xpFor(
           level: level,
           mistakes: mistakes,
           isFirstCompletion: isFirstCompletion,
+          hintsUsed: hintsUsed,
         ),
         coins: coinsFor(level: level, isFirstCompletion: isFirstCompletion),
       );

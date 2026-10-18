@@ -38,8 +38,8 @@ class _WorldTabBar extends StatelessWidget {
   static const tabs = [
     (Icons.public_outlined, Icons.public_rounded, 'Мир'),
     (Icons.school_outlined, Icons.school_rounded, 'Учёба'),
-    (Icons.biotech_outlined, Icons.biotech_rounded, 'DNA'),
-    (Icons.terminal_outlined, Icons.terminal_rounded, 'Код'),
+    (Icons.terminal_outlined, Icons.terminal_rounded, 'Практика'),
+    (Icons.route_outlined, Icons.route_rounded, 'Карьера'),
     (Icons.person_outline_rounded, Icons.person_rounded, 'Профиль'),
   ];
 

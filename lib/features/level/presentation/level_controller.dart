@@ -219,7 +219,7 @@ class LevelController extends Notifier<LevelUiState> {
 
   void showHint() {
     final session = state.session;
-    if (session == null || state.isHintVisible) return;
+    if (session == null || session.mode == LevelMode.timed || state.isHintVisible) return;
     state = state.copyWith(
       session: _engine.useHint(session),
       isHintVisible: true,

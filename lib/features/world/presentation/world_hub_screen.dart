@@ -86,6 +86,8 @@ class WorldHubScreen extends ConsumerWidget {
                 WorldButton(
                   label: world.expeditionStep < 5
                       ? 'Продолжить историю: API ${world.expeditionStep}/5'
+                      : !world.expeditionChestClaimed
+                      ? 'Забрать сундук экспедиции'
                       : !world.projectUnlocked
                       ? 'Собрать калькулятор: ${world.completedProjectSteps}/4'
                       : !world.bossCleared
@@ -93,7 +95,7 @@ class WorldHubScreen extends ConsumerWidget {
                       : 'История пройдена · продолжить курс',
                   icon: Icons.play_arrow_rounded,
                   onPressed: () => context.push(
-                    world.expeditionStep < 5
+                    world.expeditionStep < 5 || !world.expeditionChestClaimed
                         ? Routes.worldExpedition
                         : !world.projectUnlocked
                         ? Routes.worldBuild
@@ -106,7 +108,7 @@ class WorldHubScreen extends ConsumerWidget {
                 WorldButton(
                   label: 'Карьера · цель и навыки',
                   icon: Icons.route_rounded,
-                  onPressed: () => context.push(Routes.career),
+                  onPressed: () => context.go(Routes.career),
                 ),
                 const SizedBox(height: 18),
                 WorldPanel(
