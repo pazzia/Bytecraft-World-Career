@@ -1,0 +1,12 @@
+{
+  "source_main": "10b7dfbe07d9d3047ec84f60fc875a5ac36c8dc7",
+  "sha256": "224e9761686b3864d8d8a850419242dc7fd0e0634801bd1c1ca92a88099b4bf2",
+  "parts": 26,
+  "refs": [
+    "main",
+    "prototype/world",
+    "prototype/career",
+    "reference/course-main",
+    "reference/design"
+  ]
+}
