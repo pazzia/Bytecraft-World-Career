@@ -73,6 +73,26 @@ class WorldHubScreen extends ConsumerWidget {
                   'Цель: восстановить API → собрать калькулятор → победить Bug Lord. Только верные ответы открывают этапы. XP открывает улучшения города; монеты оплачивают их. Ошибки попадают в тренировки. Первое решение каждого уровня курса тоже приносит игровой XP и монеты; повторное — без игровой награды.',
                   style: TextStyle(color: WorldPalette.muted, fontSize: 13),
                 ),
+                const SizedBox(height: 14),
+                WorldButton(
+                  label: world.expeditionStep < 5
+                      ? 'Продолжить историю: API ${world.expeditionStep}/5'
+                      : !world.projectUnlocked
+                      ? 'Собрать калькулятор: ${world.completedProjectSteps}/4'
+                      : !world.bossCleared
+                      ? 'Победить Bug Lord: ${world.bossHp} HP'
+                      : 'История пройдена · продолжить курс',
+                  icon: Icons.play_arrow_rounded,
+                  onPressed: () => context.push(
+                    world.expeditionStep < 5
+                        ? Routes.worldExpedition
+                        : !world.projectUnlocked
+                        ? Routes.worldBuild
+                        : !world.bossCleared
+                        ? Routes.worldBoss
+                        : Routes.map,
+                  ),
+                ),
                 const SizedBox(height: 18),
                 WorldPanel(
                   glow: WorldPalette.purple,
