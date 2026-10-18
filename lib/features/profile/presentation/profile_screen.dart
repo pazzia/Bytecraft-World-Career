@@ -23,6 +23,7 @@ import '../../progress/domain/user_profile.dart';
 import '../../progress/presentation/progress_providers.dart';
 import '../../settings/domain/app_settings.dart';
 import '../../settings/presentation/settings_controller.dart';
+import '../../world/presentation/world_controller.dart';
 
 class ProfileViewModel {
   const ProfileViewModel({
@@ -53,7 +54,7 @@ class ProfileScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: const Text('Сбросить прогресс?'),
         content: const Text(
-          'Опыт, звёзды, серия, монеты и пройденные уровни удалятся. '
+          'Прогресс курса и игрового мира, опыт, серия, монеты, здания и рекорды удалятся. '
           'Отменить это нельзя.',
         ),
         actions: [
@@ -69,6 +70,7 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
+    await ref.read(worldControllerProvider.notifier).resetWorld();
     await ref.read(progressRepositoryProvider).resetAll();
     ref.read(progressRevisionProvider.notifier).bump();
   }
@@ -105,7 +107,8 @@ class ProfileScreen extends ConsumerWidget {
                 _StatsBlock(vm: vm),
                 SectionTitle(
                   'Достижения',
-                  trailing: '$unlockedCount из ${AchievementCatalog.all.length}',
+                  trailing:
+                      '$unlockedCount из ${AchievementCatalog.all.length}',
                 ),
                 GridView.count(
                   crossAxisCount: 3,
@@ -117,7 +120,8 @@ class ProfileScreen extends ConsumerWidget {
                   children: [
                     for (final achievement in AchievementCatalog.all)
                       Semantics(
-                        label: '${achievement.title}: '
+                        label:
+                            '${achievement.title}: '
                             '${unlocked.contains(achievement.id) ? 'получено' : achievement.description}',
                         excludeSemantics: true,
                         child: Column(
@@ -132,7 +136,8 @@ class ProfileScreen extends ConsumerWidget {
                               textAlign: TextAlign.center,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              style: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(
                                     color: unlocked.contains(achievement.id)
                                         ? null
                                         : context.gameColors.textMuted,
@@ -147,7 +152,9 @@ class ProfileScreen extends ConsumerWidget {
                 SegmentedSwitch<ThemePreference>(
                   semanticLabel: 'Тема оформления',
                   selected: theme,
-                  onChanged: ref.read(settingsControllerProvider.notifier).setTheme,
+                  onChanged: ref
+                      .read(settingsControllerProvider.notifier)
+                      .setTheme,
                   options: const [
                     SegmentOption(ThemePreference.system, 'Авто'),
                     SegmentOption(ThemePreference.light, 'Светлая'),
@@ -182,9 +189,8 @@ class ProfileScreen extends ConsumerWidget {
                 Text(
                   'Bytecraft ${BuildInfo.label}',
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: context.gameColors.textMuted,
-                      ),
+                  style: Theme.of(context).textTheme.labelMedium
+                      ?.copyWith(color: context.gameColors.textMuted),
                 ),
               ],
             );
@@ -244,7 +250,9 @@ class _Header extends StatelessWidget {
                   ),
                   Text(
                     '${level.xpIntoLevel} из ${level.xpForNextLevel} XP',
-                    style: textTheme.labelMedium?.copyWith(color: game.textMuted),
+                    style: textTheme.labelMedium?.copyWith(
+                      color: game.textMuted,
+                    ),
                   ),
                 ],
               ),
@@ -272,46 +280,46 @@ class _StatsBlock extends StatelessWidget {
       ('${vm.profile.streak.longest}', 'лучшая серия'),
       (
         '${vm.progress.completedCount}',
-        '${plural(vm.progress.completedCount, 'уровень', 'уровня', 'уровней')} пройдено'
+        '${plural(vm.progress.completedCount, 'уровень', 'уровня', 'уровней')} пройдено',
       ),
       (
         '${vm.progress.totalStars}',
-        plural(vm.progress.totalStars, 'звезда', 'звезды', 'звёзд')
+        plural(vm.progress.totalStars, 'звезда', 'звезды', 'звёзд'),
       ),
       ('${vm.progress.perfectCount}', 'без ошибок'),
       (
         '${vm.profile.coins}',
-        plural(vm.profile.coins, 'монета', 'монеты', 'монет')
+        plural(vm.profile.coins, 'монета', 'монеты', 'монет'),
       ),
     ];
     Widget cell(int i) => Semantics(
-          label: '${stats[i].$1} ${stats[i].$2}',
-          excludeSemantics: true,
-          child: Container(
-            padding: const EdgeInsets.all(Spacing.md),
-            decoration: BoxDecoration(
-              border: Border(
-                left: i % 3 == 0
-                    ? BorderSide.none
-                    : BorderSide(color: game.keyBorder, width: 2),
-                top: i < 3
-                    ? BorderSide.none
-                    : BorderSide(color: game.keyBorder, width: 2),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(stats[i].$1, style: textTheme.headlineSmall),
-                Text(
-                  stats[i].$2,
-                  maxLines: 2,
-                  style: textTheme.bodySmall?.copyWith(color: game.textMuted),
-                ),
-              ],
-            ),
+      label: '${stats[i].$1} ${stats[i].$2}',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.all(Spacing.md),
+        decoration: BoxDecoration(
+          border: Border(
+            left: i % 3 == 0
+                ? BorderSide.none
+                : BorderSide(color: game.keyBorder, width: 2),
+            top: i < 3
+                ? BorderSide.none
+                : BorderSide(color: game.keyBorder, width: 2),
           ),
-        );
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(stats[i].$1, style: textTheme.headlineSmall),
+            Text(
+              stats[i].$2,
+              maxLines: 2,
+              style: textTheme.bodySmall?.copyWith(color: game.textMuted),
+            ),
+          ],
+        ),
+      ),
+    );
     return Container(
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
@@ -351,21 +359,21 @@ class _LinkRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AppCard(
-        onTap: onTap,
-        semanticLabel: label,
-        padding: const EdgeInsets.symmetric(
-          horizontal: Spacing.lg,
-          vertical: Spacing.md,
+    onTap: onTap,
+    semanticLabel: label,
+    padding: const EdgeInsets.symmetric(
+      horizontal: Spacing.lg,
+      vertical: Spacing.md,
+    ),
+    child: Row(
+      children: [
+        Icon(icon, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(width: Spacing.md),
+        Expanded(
+          child: Text(label, style: Theme.of(context).textTheme.titleMedium),
         ),
-        child: Row(
-          children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(width: Spacing.md),
-            Expanded(
-              child: Text(label, style: Theme.of(context).textTheme.titleMedium),
-            ),
-            Icon(Icons.chevron_right_rounded, color: context.gameColors.textMuted),
-          ],
-        ),
-      );
+        Icon(Icons.chevron_right_rounded, color: context.gameColors.textMuted),
+      ],
+    ),
+  );
 }

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -56,6 +58,7 @@ class WorldQuestScreen extends ConsumerStatefulWidget {
 }
 
 class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
+  final _feedbackKey = GlobalKey();
   String? _feedback;
   bool _next = false;
   bool _correct = false;
@@ -83,7 +86,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
   @override
   Widget build(BuildContext context) => WorldPage(
     title: _title,
-    subtitle: 'После ошибки XP за задачу вдвое меньше',
+    subtitle: 'После ошибки базовый XP вдвое меньше',
     child: ref
         .watch(worldControllerProvider)
         .when(
@@ -147,6 +150,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                 const SizedBox(height: 14),
                 if (_feedback != null)
                   WorldPanel(
+                    key: _feedbackKey,
                     glow: _correct ? WorldPalette.green : WorldPalette.red,
                     child: Text(
                       _feedback!,
@@ -261,6 +265,18 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                         _correct = result.correct;
                         _next = result.correct;
                       });
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!mounted) return;
+                        final target = _feedbackKey.currentContext;
+                        if (target != null) {
+                          unawaited(
+                            Scrollable.ensureVisible(
+                              target,
+                              duration: const Duration(milliseconds: 200),
+                            ),
+                          );
+                        }
+                      });
                     },
                   ),
                 const SizedBox(height: 30),
@@ -352,6 +368,7 @@ class _ChallengeFormState extends State<_ChallengeForm> {
             onPressed: _busy || input.trim().isEmpty
                 ? null
                 : () async {
+                    FocusScope.of(context).unfocus();
                     setState(() => _busy = true);
                     try {
                       await widget.submit(

@@ -21,6 +21,7 @@ The existing Python course already used answer validators; World bypassed them.
 | Season threshold only checked in UI; overflow discarded | Domain enforces 1000 XP and subtracts exactly 1000; actual rewards described |
 | Replaying a course level repeatedly paid World rewards | Persisted per-course/per-level reward keys; first verified completion only |
 | Fast taps/storage writes could race | Serialized read-modify-write; persisted result before visible reward; stale challenge cursor rejected |
+| Profile reset cleared only course progress | Confirmed reset clears World state and reward history too, with an explicit confirmation text |
 | No explanation of the economy or quest dependencies | Rules and concrete deltas shown in each mode; story goal and economy described in hub |
 
 ## Rules
