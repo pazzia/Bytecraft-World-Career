@@ -75,7 +75,7 @@ class _WorldHeartsPanelState extends ConsumerState<WorldHeartsPanel>
         child: Row(children: [
           const Icon(Icons.favorite_rounded, color: WorldPalette.red, size: 22),
           const SizedBox(width: 8),
-          Expanded(child: Text('Жизни забега: ${s.hearts}/${s.maxHearts}',
+          Expanded(child: Text('Общие жизни: ${s.hearts}/${s.maxHearts}',
             key: const ValueKey('world-hearts-count'),
             style: const TextStyle(color: WorldPalette.text, fontWeight: FontWeight.w800))),
           Text(full ? 'Полные' : '+1 ${WorldHearts.countdown(wait)}',
@@ -88,7 +88,7 @@ class _WorldHeartsPanelState extends ConsumerState<WorldHeartsPanel>
     return WorldPanel(
       glow: WorldPalette.red,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Жизни забега: ${s.hearts}/${s.maxHearts}',
+        Text('Общие жизни: ${s.hearts}/${s.maxHearts}',
           key: const ValueKey('world-hearts-count'),
           style: const TextStyle(color: WorldPalette.text, fontWeight: FontWeight.w800)),
         const SizedBox(height: 8),
@@ -105,7 +105,7 @@ class _WorldHeartsPanelState extends ConsumerState<WorldHeartsPanel>
             color: WorldPalette.red, backgroundColor: WorldPalette.border),
           const SizedBox(height: 8),
         ],
-        const Text('Одна жизнь каждые 30 минут, даже когда игра закрыта. Ошибка в бесконечном забеге отнимает одну жизнь. Серверная увеличивает максимум.',
+        const Text('Одна жизнь каждые 30 минут, даже когда игра закрыта. Ошибки в курсе и бесконечном забеге расходуют общий запас жизней. Серверная увеличивает максимум.',
           style: TextStyle(color: WorldPalette.muted, fontSize: 12)),
         if (!full) ...[
           const SizedBox(height: 10),

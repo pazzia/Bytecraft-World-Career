@@ -19,6 +19,8 @@ class LevelSession {
     required this.level,
     required this.mode,
     required this.startedAt,
+    this.operationId,
+    this.usesLives = true,
     this.mistakes = 0,
     this.submissions = 0,
     this.hintsUsed = 0,
@@ -31,6 +33,8 @@ class LevelSession {
   final LevelDefinition level;
   final LevelMode mode;
   final DateTime startedAt;
+  final String? operationId;
+  final bool usesLives;
   final int mistakes;
   final int submissions;
   final int hintsUsed;
@@ -53,6 +57,8 @@ class LevelSession {
     bool? isFailed,
   }) =>
       LevelSession(
+        operationId: operationId,
+        usesLives: usesLives,
         level: level,
         mode: mode,
         startedAt: startedAt,

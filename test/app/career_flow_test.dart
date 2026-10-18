@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:bytecraft/core/storage/game_save_store.dart';
 
 import 'package:flutter/material.dart';
 import 'package:bytecraft/features/career/domain/career_dashboard.dart';
@@ -22,8 +23,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Junior Python Backend').last);
     await tester.pumpAndSettle();
-    expect(store.snapshot.values.any((value) =>
-        value.contains('junior_python_backend')), isTrue);
+    expect((await GameSaveStore(store).read('app.settings'))!, contains('junior_python_backend'));
 
     // Recreate the app, so the goal has to come from persisted settings.
     await tester.pumpWidget(const SizedBox());
@@ -41,7 +41,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Продолжить'));
     await tester.pumpAndSettle();
-    expect(jsonDecode(store.snapshot['player.course.python']!)['levels'], isNotEmpty);
+    expect(jsonDecode((await GameSaveStore(store).read('player.course.python'))!)['levels'], isNotEmpty);
 
     await tester.pumpWidget(const SizedBox());
     await pumpBytecraft(tester, store: store);

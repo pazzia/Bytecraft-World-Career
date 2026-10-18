@@ -24,6 +24,7 @@ class ProgressRevision extends Notifier<int> {
 }
 
 final profileProvider = FutureProvider<UserProfile>((ref) {
+  ref.watch(gameSaveChangesProvider);
   ref.watch(progressRevisionProvider);
   return ref.watch(progressRepositoryProvider).loadProfile();
 });
@@ -58,7 +59,7 @@ final livesProvider = FutureProvider<LivesSnapshot>((ref) async {
   }
   return LivesSnapshot.fromState(
     profile.lives,
-    LivesPolicy(rules),
+    LivesPolicy(rules, capacity: profile.lifeCapacity),
     ref.watch(clockProvider).now(),
   );
 });

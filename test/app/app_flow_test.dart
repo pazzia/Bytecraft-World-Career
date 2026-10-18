@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:bytecraft/core/storage/game_save_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/app_harness.dart';
@@ -14,7 +15,7 @@ void main() {
     expect(find.text('Bytecraft World'), findsOneWidget);
     expect(find.text('Учись. Пиши. Строй. Соревнуйся.'), findsOneWidget);
     expect(find.text('CODE CITY'), findsOneWidget);
-    expect(find.text('Жизни забега: 3/3'), findsOneWidget);
+    expect(find.text('Общие жизни: 3/3'), findsOneWidget);
 
     await openTab(tester, 'Учёба');
     expect(find.text('Переменные'), findsWidgets);
@@ -42,7 +43,7 @@ void main() {
     expect(find.text('Обучение'), findsOneWidget);
 
     // Both learning progress and the World meta-game were persisted.
-    expect(store.snapshot.keys, contains('player.course.python'));
-    expect(store.snapshot.keys, contains('bytecraft_world_state'));
+    expect(await GameSaveStore(store).read('player.course.python'), isNotNull);
+    expect(await GameSaveStore(store).read('bytecraft_world_state'), isNotNull);
   });
 }

@@ -113,9 +113,7 @@ class LevelController extends Notifier<LevelUiState> {
         await _recordMistake(session);
         await _recordWorldMistake(session);
       } else if (result.completion != null) {
-        if (session.mode != LevelMode.review) {
-          await _rewardWorldForLesson(result.session);
-        } else {
+        if (session.mode == LevelMode.review) {
           await _recordReview(
             session,
             remembered: result.session.mistakes == 0,
@@ -125,20 +123,6 @@ class LevelController extends Notifier<LevelUiState> {
     } catch (error) {
       if (!ref.mounted) return;
       state = LevelUiState(phase: LevelPhase.error, errorMessage: '$error');
-    }
-  }
-
-  Future<void> _rewardWorldForLesson(LevelSession session) async {
-    try {
-      await ref
-          .read(worldControllerProvider.notifier)
-          .recordLessonCompleted(
-            moduleId: session.level.moduleId,
-            levelId: '${session.level.courseId}:${session.level.id}',
-            mistakes: session.mistakes,
-          );
-    } catch (_) {
-      // The meta-game is additive: learning must never fail because of it.
     }
   }
 

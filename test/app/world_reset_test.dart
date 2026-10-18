@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:bytecraft/core/storage/game_save_store.dart';
 
 import 'package:bytecraft/core/storage/key_value_store.dart';
 import 'package:bytecraft/features/world/domain/world_state.dart';
@@ -43,7 +44,7 @@ void main() {
       await tester.tap(find.text('Сбросить прогресс').last);
       await tester.pumpAndSettle();
       final saved = WorldState.fromJson(
-        jsonDecode((await store.read('bytecraft_world_state'))!)
+        jsonDecode((await GameSaveStore(store).read('bytecraft_world_state'))!)
             as Map<String, dynamic>,
       );
       expect(saved.coins, 0);

@@ -1,4 +1,6 @@
 import '../../../core/errors/app_exception.dart';
+import '../../../core/storage/game_save_store.dart';
+import '../../../core/utils/id_generator.dart';
 import '../../../core/time/calendar_day.dart';
 import '../../../core/time/clock.dart';
 import '../../../services/analytics/analytics_service.dart';
@@ -47,10 +49,14 @@ class LevelEngine {
     required AnalyticsService analytics,
     required FeatureFlagService flags,
     required TimedRunService timedRuns,
+    GameSaveStore? saveStore,
+    Future<Reward> Function(Reward, LevelSession, bool)? rewardModifier,
     UnlockPolicy unlockPolicy = const UnlockPolicy(),
     StreakPolicy streakPolicy = const StreakPolicy(),
     AchievementEvaluator achievements = const AchievementEvaluator(),
-  })  : _content = content,
+  })  : _saveStore = saveStore,
+        _rewardModifier = rewardModifier,
+        _content = content,
         _progress = progress,
         _settings = settings,
         _validators = validators,
@@ -68,6 +74,10 @@ class LevelEngine {
         _rewards = RewardCalculator(rules),
         _accountLevels = AccountLevelCalculator(rules);
 
+  final GameSaveStore? _saveStore;
+  final Future<Reward> Function(Reward, LevelSession, bool)? _rewardModifier;
+  Future<T> _atomic<T>(Future<T> Function() action) =>
+      _saveStore == null ? action() : _saveStore.transaction(action);
   final ContentRepository _content;
   final ProgressRepository _progress;
   final SettingsRepository _settings;
@@ -89,10 +99,10 @@ class LevelEngine {
   bool _livesActive(UserProfile profile) =>
       _flags.isEnabled(FeatureFlag.lives) && !profile.isPremium;
 
-  LivesSnapshot _livesSnapshot(UserProfile profile, DateTime now) =>
-      _livesActive(profile)
-          ? LivesSnapshot.fromState(profile.lives, _lives, now)
-          : LivesSnapshot.unlimited(_lives.maxLives);
+  LivesSnapshot _livesSnapshot(UserProfile profile, DateTime now, {bool usesLives = true}) =>
+      usesLives && _livesActive(profile)
+          ? LivesSnapshot.fromState(profile.lives, LivesPolicy(_rules, capacity: profile.lifeCapacity), now)
+          : LivesSnapshot.unlimited(profile.lifeCapacity ?? _lives.maxLives);
 
   Future<UnlockMode> _unlockMode() async =>
       UnlockMode.forExperience((await _settings.load()).experience);
@@ -101,6 +111,12 @@ class LevelEngine {
     required String courseId,
     required String levelId,
     LevelMode mode = LevelMode.standard,
+  }) => _atomic(() => _start(courseId: courseId, levelId: levelId, mode: mode));
+
+  Future<LevelStartResult> _start({
+    required String courseId,
+    required String levelId,
+    required LevelMode mode,
   }) async {
     final Course course;
     try {
@@ -135,12 +151,16 @@ class LevelEngine {
 
     final now = _clock.now();
     final profile = await _progress.loadProfile();
-    final lives = _livesSnapshot(profile, now);
+    final previous = progress.levelOf(levelId);
+    final usesLives = (mode == LevelMode.standard || mode == LevelMode.dailyChallenge) && !previous.completed;
+    final lives = _livesSnapshot(profile, now, usesLives: usesLives);
+    if (mode == LevelMode.review && !previous.completed) {
+      return const LevelStartDenied(LevelStartDenial.locked);
+    }
     if (lives.isEmpty) {
       return LevelStartDenied(LevelStartDenial.noLives, lives: lives);
     }
 
-    final previous = progress.levelOf(levelId);
     await _progress.saveCourseProgress(
       progress.withLevel(
         previous.copyWith(attempts: previous.attempts + 1, lastPlayedAt: now),
@@ -160,6 +180,8 @@ class LevelEngine {
     );
     return LevelStarted(
       session: LevelSession(
+        operationId: RandomIdGenerator().newId(),
+        usesLives: usesLives,
         level: level,
         mode: mode,
         startedAt: now,
@@ -176,7 +198,23 @@ class LevelEngine {
     return session.copyWith(hintsUsed: session.hintsUsed + 1);
   }
 
-  Future<SubmissionResult> submit(LevelSession session, Answer answer) async {
+  Future<SubmissionResult> submit(LevelSession session, Answer answer) => _atomic(() async {
+    final receipt = session.operationId == null ? null
+        : 'player.receipt.${session.operationId}.${session.submissions}';
+    final closed = session.operationId == null ? null : 'player.session.${session.operationId}';
+    if (receipt != null && _saveStore != null &&
+        (await _saveStore.read(receipt) != null || await _saveStore.read(closed!) != null)) {
+      throw const InvalidLevelStateException('Answer already processed');
+    }
+    final result = await _submit(session, answer);
+    if (receipt != null && _saveStore != null) {
+      await _saveStore.write(receipt, '1');
+      if (result.session.isFinished) await _saveStore.write(closed!, '1');
+    }
+    return result;
+  });
+
+  Future<SubmissionResult> _submit(LevelSession session, Answer answer) async {
     if (session.isFinished) {
       throw const InvalidLevelStateException('Level session already finished');
     }
@@ -186,7 +224,7 @@ class LevelEngine {
       return SubmissionResult(
         session: session.copyWith(isFailed: true),
         outcome: ValidationOutcome.incorrect(),
-        lives: _livesSnapshot(profile, _clock.now()),
+        lives: _livesSnapshot(profile, _clock.now(), usesLives: session.usesLives),
         timeUp: true,
       );
     }
@@ -204,9 +242,9 @@ class LevelEngine {
     if (!outcome.isCorrect) {
       _analytics.track(AnalyticsEvent.wrongAnswer, {'level_id': level.id});
       var failed = false;
-      if (_livesActive(profile)) {
+      if (session.usesLives && _livesActive(profile)) {
         final lives =
-            _lives.loseLives(profile.lives, now, amount: level.livesPenalty);
+            LivesPolicy(_rules, capacity: profile.lifeCapacity).loseLives(profile.lives, now, amount: level.livesPenalty);
         profile = profile.copyWith(lives: lives, lastActivityAt: now);
         await _progress.saveProfile(profile);
         failed = lives.current <= 0;
@@ -220,7 +258,7 @@ class LevelEngine {
           isFailed: failed,
         ),
         outcome: outcome,
-        lives: _livesSnapshot(profile, now),
+        lives: _livesSnapshot(profile, now, usesLives: session.usesLives),
       );
     }
 
@@ -230,7 +268,7 @@ class LevelEngine {
     return SubmissionResult(
       session: submitted.copyWith(isCompleted: true),
       outcome: outcome,
-      lives: _livesSnapshot(completion.profile, now),
+      lives: _livesSnapshot(completion.profile, now, usesLives: session.usesLives),
       completion: completion.result,
     );
   }
@@ -258,6 +296,7 @@ class LevelEngine {
     final isDaily = session.mode == LevelMode.dailyChallenge &&
         profile.lastDailyChallengeDay != today;
     if (isDaily) reward += _rewards.dailyChallengeBonus;
+    if (_rewardModifier != null) reward = await _rewardModifier(reward, session, isFirst);
 
     final next = _unlock.nextAfter(course, level.id);
     final nextWasUnlocked =
@@ -286,8 +325,7 @@ class LevelEngine {
     final levelBefore = applied.levelBefore;
     final newAchievements = applied.achievements;
 
-    // Course progress first: a crash between writes can only lose the
-    // reward, never the completion itself.
+    // In the app, progress, wallet and receipt commit in one GameSaveStore write.
     await _progress.saveCourseProgress(progress);
     await _progress.saveProfile(profile);
 
@@ -384,7 +422,8 @@ class LevelEngine {
         bestTimes = {...bestTimes, module.id: clearTime};
       }
     }
-    final reward = Reward(xp: levelXp + speedBonus, coins: coins);
+    var reward = Reward(xp: levelXp + speedBonus, coins: coins);
+    if (_rewardModifier != null) reward = await _rewardModifier(reward, session, isFirstEver);
 
     timed = TimedProgress(
       courseId: timed.courseId,

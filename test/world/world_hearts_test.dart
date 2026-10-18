@@ -97,19 +97,19 @@ void main() {
     await tester.pumpWidget(UncontrolledProviderScope(container: c,
       child: const MaterialApp(home: Scaffold(body: SingleChildScrollView(child: WorldHeartsPanel())))));
     await tester.pumpAndSettle();
-    expect(find.text('Жизни забега: 0/3'), findsOneWidget);
+    expect(find.text('Общие жизни: 0/3'), findsOneWidget);
     expect(find.byIcon(Icons.favorite_border_rounded), findsNWidgets(3));
     expect(find.text('Следующая жизнь через 30:00'), findsOneWidget);
     expect(find.textContaining('Нет алмазов'), findsOneWidget);
     clock.advance(const Duration(minutes: 30));
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
-    expect(find.text('Жизни забега: 1/3'), findsOneWidget);
+    expect(find.text('Общие жизни: 1/3'), findsOneWidget);
     expect(find.byIcon(Icons.favorite_rounded), findsOneWidget);
     clock.advance(const Duration(hours: 1));
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
-    expect(find.text('Жизни забега: 3/3'), findsOneWidget);
+    expect(find.text('Общие жизни: 3/3'), findsOneWidget);
     expect(find.text('Все жизни восстановлены'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());

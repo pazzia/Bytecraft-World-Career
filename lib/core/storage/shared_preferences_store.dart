@@ -19,7 +19,9 @@ class SharedPreferencesStore implements KeyValueStore {
 
   @override
   Future<void> write(String key, String value) async {
-    await _prefs.setString(_k(key), value);
+    if (!await _prefs.setString(_k(key), value)) {
+      throw StateError('Could not persist $key');
+    }
   }
 
   @override

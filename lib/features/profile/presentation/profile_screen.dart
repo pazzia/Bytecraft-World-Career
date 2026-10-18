@@ -23,7 +23,6 @@ import '../../progress/domain/user_profile.dart';
 import '../../progress/presentation/progress_providers.dart';
 import '../../settings/domain/app_settings.dart';
 import '../../settings/presentation/settings_controller.dart';
-import '../../world/presentation/world_controller.dart';
 
 class ProfileViewModel {
   const ProfileViewModel({
@@ -70,7 +69,6 @@ class ProfileScreen extends ConsumerWidget {
       ),
     );
     if (confirmed != true) return;
-    await ref.read(worldControllerProvider.notifier).resetWorld();
     await ref.read(progressRepositoryProvider).resetAll();
     ref.read(progressRevisionProvider.notifier).bump();
   }

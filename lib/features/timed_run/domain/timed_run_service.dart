@@ -1,4 +1,5 @@
 import '../../../core/time/clock.dart';
+import '../../../core/storage/game_save_store.dart';
 import '../../../services/analytics/analytics_service.dart';
 import '../../courses/domain/content_repository.dart';
 import '../../courses/domain/level_definition.dart';
@@ -36,13 +37,18 @@ class TimedRunService {
     required TimedRunPolicy policy,
     required Clock clock,
     required AnalyticsService analytics,
-  })  : _content = content,
+    GameSaveStore? saveStore,
+  })  : _saveStore = saveStore,
+        _content = content,
         _progress = progress,
         _settings = settings,
         _policy = policy,
         _clock = clock,
         _analytics = analytics;
 
+  final GameSaveStore? _saveStore;
+  Future<T> _atomic<T>(Future<T> Function() action) =>
+      _saveStore == null ? action() : _saveStore.transaction(action);
   final ContentRepository _content;
   final ProgressRepository _progress;
   final SettingsRepository _settings;
@@ -51,7 +57,9 @@ class TimedRunService {
   final AnalyticsService _analytics;
 
   /// Current state with an overdue run already dropped (and persisted).
-  Future<TimedProgress> load(String courseId) async {
+  Future<TimedProgress> load(String courseId) => _atomic(() => _load(courseId));
+
+  Future<TimedProgress> _load(String courseId) async {
     final stored = await _progress.loadTimedProgress(courseId);
     final run = stored.activeRun;
     final current = _policy.expire(stored, _clock.now());
@@ -67,7 +75,9 @@ class TimedRunService {
   }
 
   /// Starts a fresh run for [moduleId]. Any other active run is abandoned.
-  Future<StartRunResult> startRun(String courseId, String moduleId) async {
+  Future<StartRunResult> startRun(String courseId, String moduleId) => _atomic(() => _startRun(courseId, moduleId));
+
+  Future<StartRunResult> _startRun(String courseId, String moduleId) async {
     final course = await _content.loadCourse(courseId);
     final module = course.moduleById(moduleId);
     if (module == null) return const RunDenied(RunDenial.moduleNotFound);
@@ -97,14 +107,18 @@ class TimedRunService {
   }
 
   /// Next level of the active run in [moduleId], or null if none.
-  Future<LevelDefinition?> resume(String courseId, String moduleId) async {
+  Future<LevelDefinition?> resume(String courseId, String moduleId) => _atomic(() => _resume(courseId, moduleId));
+
+  Future<LevelDefinition?> _resume(String courseId, String moduleId) async {
     final timed = await load(courseId);
     final run = timed.activeRun;
     if (run == null || run.moduleId != moduleId) return null;
     return _policy.nextLevel(await _content.loadCourse(courseId), run);
   }
 
-  Future<void> abandon(String courseId) async {
+  Future<void> abandon(String courseId) => _atomic(() => _abandon(courseId));
+
+  Future<void> _abandon(String courseId) async {
     final timed = await load(courseId);
     final run = timed.activeRun;
     if (run == null) return;

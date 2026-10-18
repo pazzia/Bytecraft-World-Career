@@ -44,11 +44,13 @@ class LivesState {
 }
 
 class LivesPolicy {
-  const LivesPolicy(this.rules);
+  const LivesPolicy(this.rules, {this.capacity});
+
+  final int? capacity;
 
   final GameRules rules;
 
-  int get maxLives => rules.maxLives;
+  int get maxLives => capacity ?? rules.maxLives;
 
   /// Applies time-based regeneration up to [GameRules.maxLives].
   LivesState regenerate(LivesState state, DateTime now) {

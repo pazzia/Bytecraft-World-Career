@@ -18,6 +18,7 @@ class UserProfile {
     required this.lives,
     required this.streak,
     Set<String> unlockedAchievements = const <String>{},
+    this.lifeCapacity,
     this.lastActivityAt,
     this.lastDailyChallengeDay,
   }) : unlockedAchievements = Set.unmodifiable(unlockedAchievements);
@@ -81,6 +82,7 @@ class UserProfile {
   final String userId;
   final String displayName;
   final String avatarId;
+  final int? lifeCapacity;
   final int totalXp;
   final int coins;
   final bool isPremium;
@@ -94,6 +96,7 @@ class UserProfile {
   UserProfile copyWith({
     String? displayName,
     String? avatarId,
+    int? lifeCapacity,
     int? totalXp,
     int? coins,
     bool? isPremium,
@@ -107,6 +110,7 @@ class UserProfile {
         userId: userId,
         displayName: displayName ?? this.displayName,
         avatarId: avatarId ?? this.avatarId,
+        lifeCapacity: lifeCapacity ?? this.lifeCapacity,
         totalXp: totalXp ?? this.totalXp,
         coins: coins ?? this.coins,
         isPremium: isPremium ?? this.isPremium,

@@ -4,6 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/config/app_config.dart';
 import '../../core/storage/json_document_store.dart';
+import '../../core/storage/game_save_store.dart';
+import '../../features/world/data/world_repository.dart';
+import '../../features/world/domain/world_rules.dart';
+import '../../features/gamification/domain/reward.dart';
+import '../../features/progress/data/unified_progress_repository.dart';
 import '../../core/storage/key_value_store.dart';
 import '../../core/time/clock.dart';
 import '../../core/utils/id_generator.dart';
@@ -23,7 +28,6 @@ import '../../features/level/engine/answer_validator.dart';
 import '../../features/level/engine/level_engine.dart';
 import '../../features/metagame/data/mock_metagame_service.dart';
 import '../../features/metagame/domain/metagame.dart';
-import '../../features/progress/data/local_progress_repository.dart';
 import '../../features/progress/domain/progress_repository.dart';
 import '../../features/settings/data/local_settings_repository.dart';
 import '../../features/settings/domain/settings_repository.dart';
@@ -55,8 +59,18 @@ final keyValueStoreProvider = Provider<KeyValueStore>(
   ),
 );
 
+final gameSaveStoreProvider = Provider<GameSaveStore>(
+  (ref) => GameSaveStore(ref.watch(keyValueStoreProvider)),
+);
+final gameSaveChangesProvider = StreamProvider<int>(
+  (ref) => ref.watch(gameSaveStoreProvider).changes,
+);
 final documentStoreProvider = Provider<JsonDocumentStore>(
-  (ref) => JsonDocumentStore(ref.watch(keyValueStoreProvider)),
+  (ref) => JsonDocumentStore(ref.watch(gameSaveStoreProvider)),
+);
+final worldRepositoryProvider = Provider<WorldRepository>(
+  (ref) => WorldRepository(ref.watch(documentStoreProvider),
+      ref.watch(clockProvider), ref.watch(gameSaveStoreProvider)),
 );
 
 final textAssetLoaderProvider = Provider<TextAssetLoader>(
@@ -135,7 +149,9 @@ final contentRepositoryProvider = Provider<ContentRepository>((ref) {
 });
 
 final progressRepositoryProvider = Provider<ProgressRepository>(
-  (ref) => LocalProgressRepository(
+  (ref) => UnifiedProgressRepository(
+    save: ref.watch(gameSaveStoreProvider),
+    world: ref.watch(worldRepositoryProvider),
     documents: ref.watch(documentStoreProvider),
     clock: ref.watch(clockProvider),
     rules: ref.watch(gameRulesProvider),
@@ -177,6 +193,7 @@ final timedRunServiceProvider = Provider<TimedRunService>(
     progress: ref.watch(progressRepositoryProvider),
     settings: ref.watch(settingsRepositoryProvider),
     policy: ref.watch(timedRunPolicyProvider),
+    saveStore: ref.watch(gameSaveStoreProvider),
     clock: ref.watch(clockProvider),
     analytics: ref.watch(analyticsProvider),
   ),
@@ -193,6 +210,14 @@ final levelEngineProvider = Provider<LevelEngine>(
     analytics: ref.watch(analyticsProvider),
     flags: ref.watch(featureFlagsProvider),
     timedRuns: ref.watch(timedRunServiceProvider),
+    saveStore: ref.watch(gameSaveStoreProvider),
+    rewardModifier: (reward, session, first) async {
+      if (!first) return reward;
+      final world = await ref.read(worldRepositoryProvider).load();
+      final next = WorldRules.reward(world, reward.xp, reward.coins,
+          clean: session.mistakes == 0 && session.hintsUsed == 0);
+      return Reward(xp: next.worldXp - world.worldXp, coins: next.coins - world.coins);
+    },
   ),
 );
 
@@ -203,6 +228,7 @@ final economyServiceProvider = Provider<EconomyService>(
     analytics: ref.watch(analyticsProvider),
     rules: ref.watch(gameRulesProvider),
     clock: ref.watch(clockProvider),
+    saveStore: ref.watch(gameSaveStoreProvider),
   ),
 );
 
@@ -218,7 +244,7 @@ final dailyChallengeServiceProvider = Provider<DailyChallengeService>(
 final syncCoordinatorProvider = Provider<SyncCoordinator>(
   (ref) => SyncCoordinator(
     progress: ref.watch(progressRepositoryProvider),
-    store: ref.watch(keyValueStoreProvider),
+    store: ref.watch(gameSaveStoreProvider),
     cloud: ref.watch(cloudSyncProvider),
   ),
 );

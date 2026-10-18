@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:bytecraft/app/di/providers.dart';
 import 'package:bytecraft/core/storage/key_value_store.dart';
+import 'package:bytecraft/core/storage/game_save_store.dart';
 import 'package:bytecraft/features/world/domain/world_challenge.dart';
 import 'package:bytecraft/features/world/domain/world_state.dart';
 import 'package:bytecraft/features/world/presentation/world_controller.dart';
@@ -95,30 +96,6 @@ void main() {
     expect(done.gems, 5);
     expect(done.worldXp, 275);
   });
-  test('course replay cannot farm world rewards', () async {
-    final c = ProviderContainer(
-      overrides: [
-        keyValueStoreProvider.overrideWithValue(InMemoryKeyValueStore()),
-      ],
-    );
-    addTearDown(c.dispose);
-    await c.read(worldControllerProvider.future);
-    final controller = c.read(worldControllerProvider.notifier);
-    for (var i = 0; i < 3; i++) {
-      await controller.recordLessonCompleted(
-        moduleId: 'types',
-        levelId: 'python:types_1',
-        mistakes: 0,
-      );
-    }
-    expect(c.read(worldControllerProvider).value!.worldXp, 36);
-    await controller.recordLessonCompleted(
-      moduleId: 'types',
-      levelId: 'python:types_2',
-      mistakes: 1,
-    );
-    expect(c.read(worldControllerProvider).value!.worldXp, 60);
-  });
   test('legacy unvalidated quest flags reset once, purchased city and course remain', () async {
     final store = InMemoryKeyValueStore({
       'bytecraft_world_state': jsonEncode({
@@ -151,7 +128,7 @@ void main() {
     expect(s.cityLevels['python'], 3);
     expect(await store.read('course:python'), 'keep');
     expect(
-      jsonDecode((await store.read('bytecraft_world_state'))!)['schemaVersion'],
+      jsonDecode((await GameSaveStore(store).read('bytecraft_world_state'))!)['schemaVersion'],
       2,
     );
   });

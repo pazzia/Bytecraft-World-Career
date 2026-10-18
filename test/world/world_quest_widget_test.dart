@@ -133,7 +133,7 @@ void main() {
         },
       );
       await c
-          .read(keyValueStoreProvider)
+          .read(gameSaveStoreProvider)
           .write(
             'bytecraft_world_state',
             jsonEncode({...state.toJson(), 'schemaVersion': 2}),
