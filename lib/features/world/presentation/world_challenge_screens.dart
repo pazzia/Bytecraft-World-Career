@@ -10,6 +10,7 @@ import '../domain/world_challenge.dart';
 import '../domain/world_state.dart';
 import 'world_controller.dart';
 import 'world_ui.dart';
+import 'world_hearts_panel.dart';
 
 class ExpeditionScreen extends StatelessWidget {
   const ExpeditionScreen({super.key});
@@ -104,6 +105,10 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                if (mode == WorldMode.infinite) ...[
+                  const WorldHeartsPanel(),
+                  const SizedBox(height: 14),
+                ],
                 if (mode == WorldMode.expedition ||
                     mode == WorldMode.boss ||
                     mode == WorldMode.rival)
@@ -226,20 +231,9 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                     'Забег остановлен. Пройденные этапы и рекорд сохранены.',
                     style: TextStyle(color: WorldPalette.text),
                   ),
-                  WorldButton(
-                    label: 'Восстановить ${s.maxHearts} жизни за 1 💎',
-                    icon: Icons.favorite,
-                    onPressed: s.gems <= 0
-                        ? null
-                        : () async {
-                            await ref
-                                .read(worldControllerProvider.notifier)
-                                .reviveInfinite();
-                          },
-                  ),
-                  Text(
-                    'Алмазы: ${s.gems}. Их можно получить из сундука и за каждый третий уровень сезона.',
-                    style: const TextStyle(color: WorldPalette.muted),
+                  const Text(
+                    'Дождись следующей жизни или восстанови запас кнопкой выше.',
+                    style: TextStyle(color: WorldPalette.muted),
                   ),
                 ] else if (_next)
                   WorldButton(

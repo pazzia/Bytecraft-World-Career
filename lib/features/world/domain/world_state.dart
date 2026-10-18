@@ -12,6 +12,7 @@ class WorldState {
     required this.seasonXp,
     required this.streak,
     required this.hearts,
+    this.heartRegenAnchor,
     required this.expeditionStep,
     required this.expeditionChestClaimed,
     required this.bossHp,
@@ -91,6 +92,7 @@ class WorldState {
       seasonXp: (json['seasonXp'] as num?)?.toInt() ?? initial.seasonXp,
       streak: (json['streak'] as num?)?.toInt() ?? initial.streak,
       hearts: (json['hearts'] as num?)?.toInt() ?? initial.hearts,
+      heartRegenAnchor: DateTime.tryParse('${json['heartRegenAnchor']}'),
       expeditionStep:
           (json['expeditionStep'] as num?)?.toInt() ?? initial.expeditionStep,
       expeditionChestClaimed: json['expeditionChestClaimed'] == true,
@@ -127,6 +129,7 @@ class WorldState {
   final int seasonXp;
   final int streak;
   final int hearts;
+  final DateTime? heartRegenAnchor;
   final int expeditionStep;
   final bool expeditionChestClaimed;
   final int bossHp;
@@ -166,6 +169,8 @@ class WorldState {
     int? seasonXp,
     int? streak,
     int? hearts,
+    DateTime? heartRegenAnchor,
+    bool clearHeartRegenAnchor = false,
     int? expeditionStep,
     bool? expeditionChestClaimed,
     int? bossHp,
@@ -193,6 +198,7 @@ class WorldState {
     seasonXp: seasonXp ?? this.seasonXp,
     streak: streak ?? this.streak,
     hearts: hearts ?? this.hearts,
+    heartRegenAnchor: clearHeartRegenAnchor ? null : heartRegenAnchor ?? this.heartRegenAnchor,
     expeditionStep: expeditionStep ?? this.expeditionStep,
     expeditionChestClaimed:
         expeditionChestClaimed ?? this.expeditionChestClaimed,
@@ -223,6 +229,7 @@ class WorldState {
     'seasonXp': seasonXp,
     'streak': streak,
     'hearts': hearts,
+    if (heartRegenAnchor != null) 'heartRegenAnchor': heartRegenAnchor!.toUtc().toIso8601String(),
     'expeditionStep': expeditionStep,
     'expeditionChestClaimed': expeditionChestClaimed,
     'bossHp': bossHp,

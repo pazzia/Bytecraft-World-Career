@@ -6,6 +6,7 @@ import '../../../app/di/providers.dart';
 import '../domain/world_challenge.dart';
 import '../domain/world_rules.dart';
 import '../domain/world_state.dart';
+import '../domain/world_hearts.dart';
 
 final worldControllerProvider =
     AsyncNotifierProvider<WorldController, WorldState>(WorldController.new);
@@ -21,7 +22,11 @@ class WorldController extends AsyncNotifier<WorldState> {
     final stored = await store.read(_key);
     if (stored == null) return WorldState.initial();
     if (stored['schemaVersion'] == _schema) {
-      final current = WorldState.fromJson(stored);
+      final loaded = WorldState.fromJson(stored);
+      final current = WorldHearts.regenerate(loaded, ref.read(clockProvider).now());
+      if (!identical(loaded, current)) {
+        await store.write(_key, current.toJson(), schemaVersion: _schema);
+      }
       if (current.trainingCurriculumVersion >= DnaCurriculum.revision) return current;
       final migrated = current.copyWith(
         trainingCurriculumVersion: DnaCurriculum.revision,
@@ -191,9 +196,22 @@ class WorldController extends AsyncNotifier<WorldState> {
     if (!identical(s, next)) await _set(next);
   });
 
+  Future<void> refreshHearts() => _serial((s) async {
+    final next = WorldHearts.regenerate(s, ref.read(clockProvider).now());
+    if (!identical(s, next)) await _set(next);
+  });
+
   Future<void> reviveInfinite() => _serial((s) async {
-    if (s.gems < 1 || s.hearts > 0) return;
-    await _set(s.copyWith(gems: s.gems - 1, hearts: s.maxHearts));
+    final current = WorldHearts.regenerate(s, ref.read(clockProvider).now());
+    if (current.gems < 1 || current.hearts >= current.maxHearts) {
+      if (!identical(s, current)) await _set(current);
+      return;
+    }
+    await _set(current.copyWith(
+      gems: current.gems - 1,
+      hearts: current.maxHearts,
+      clearHeartRegenAnchor: true,
+    ));
   });
 
   Future<void> dismissMigrationNotice() =>

@@ -1,5 +1,6 @@
 import 'world_challenge.dart';
 import 'world_state.dart';
+import 'world_hearts.dart';
 
 class WorldSubmission {
   const WorldSubmission(this.state, this.message, {this.correct = false});
@@ -57,6 +58,7 @@ abstract final class WorldRules {
     String category = 'Условия',
     int? elapsedSeconds,
   }) {
+    s = WorldHearts.regenerate(s, now);
     final locked = WorldChallenges.locked(s, mode);
     if (locked != null) return WorldSubmission(s, locked);
     if (WorldChallenges.finished(s, mode, category: category))
@@ -93,7 +95,7 @@ abstract final class WorldRules {
       var effect =
           'Этап не пройден, награда не начислена. Ошибка добавлена в Mistake DNA.';
       if (mode == WorldMode.infinite) {
-        next = next.copyWith(hearts: s.hearts - 1, infiniteCurrent: 0);
+        next = WorldHearts.lose(next, now).copyWith(infiniteCurrent: 0);
         effect = '−1 жизнь; серия сброшена. Рекорд сохранён. Награды нет.';
       }
       return WorldSubmission(next, 'Неверно. ${task.explanation}\n$effect');

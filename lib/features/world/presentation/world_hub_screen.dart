@@ -6,6 +6,7 @@ import '../../../app/router/routes.dart';
 import '../domain/world_state.dart';
 import 'world_controller.dart';
 import 'world_ui.dart';
+import 'world_hearts_panel.dart';
 
 class WorldHubScreen extends ConsumerWidget {
   const WorldHubScreen({super.key});
@@ -27,6 +28,8 @@ class WorldHubScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 110),
               children: [
                 _TopBar(world: world),
+                const SizedBox(height: 12),
+                const WorldHeartsPanel(),
                 if (world.showMigrationNotice) ...[
                   const SizedBox(height: 12),
                   WorldPanel(
