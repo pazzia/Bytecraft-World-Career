@@ -67,6 +67,7 @@ class _PracticeTaskScreenState extends ConsumerState<PracticeTaskScreen> {
       try {
         final courseId = await ref.read(activeCourseIdProvider.future);
         await ref.read(worldControllerProvider.notifier).recordLearningMistake(task.moduleId,
+          title: task.title, sourceCode: task.solution,
           taskKey: 'practice:$courseId:${task.id}');
       } catch (_) { /* Learning remains available if meta-game storage fails. */ }
     }

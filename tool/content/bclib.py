@@ -63,11 +63,20 @@ def _on_alarm(signum, frame):
     raise TimeLimitExceeded()
 
 
-def run(code, stdin="", time_limit=TIME_LIMIT_SECONDS):
+class _LimitedOutput(io.StringIO):
+    def __init__(self, limit):
+        super().__init__()
+        self.limit = limit
+    def write(self, value):
+        if self.tell() + len(value) > self.limit:
+            raise BufferError('Output exceeds the exercise limit')
+        return super().write(value)
+
+def run(code, stdin="", time_limit=TIME_LIMIT_SECONDS, output_limit=None):
     """Executes code as a fresh __main__ module in a temporary directory.
     A program that runs longer than `time_limit` seconds fails with
     TimeLimitExceeded (as it would time out in the app)."""
-    out = io.StringIO()
+    out = io.StringIO() if output_limit is None else _LimitedOutput(output_limit)
     old_stdin = sys.stdin
     old_cwd = os.getcwd()
     tmp = tempfile.mkdtemp(prefix="bytecraft_")

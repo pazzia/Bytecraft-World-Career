@@ -293,7 +293,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                     }),
                   )
                 else
-                  _ChallengeForm(
+                  WorldChallengeForm(
                     key: ValueKey(task.id),
                     task: task,
                     wrongAnswers: s.failures[task.id] ?? 0,
@@ -337,16 +337,16 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
   );
 }
 
-class _ChallengeForm extends StatefulWidget {
-  const _ChallengeForm({required this.task, required this.submit, required this.wrongAnswers, super.key});
+class WorldChallengeForm extends StatefulWidget {
+  const WorldChallengeForm({required this.task, required this.submit, required this.wrongAnswers, super.key});
   final WorldChallenge task;
   final int wrongAnswers;
   final Future<void> Function(String, int) submit;
   @override
-  State<_ChallengeForm> createState() => _ChallengeFormState();
+  State<WorldChallengeForm> createState() => WorldChallengeFormState();
 }
 
-class _ChallengeFormState extends State<_ChallengeForm> {
+class WorldChallengeFormState extends State<WorldChallengeForm> {
   final _answer = TextEditingController();
   final _watch = Stopwatch()..start();
   bool _busy = false;

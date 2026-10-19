@@ -78,6 +78,8 @@ jobs:
       - name: Independently check World answers in CPython
         run: |
           python tool/world/generate_dna.py --check
+          python tool/world/generate_repairs.py --check
+          dart tool/world/check_repairs.dart
           dart run tool/world/export_questions.dart | python tool/world/check_questions.py
 
       - name: Verify calculator functional checks in Python

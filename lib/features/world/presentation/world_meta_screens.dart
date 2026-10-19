@@ -9,6 +9,7 @@ import 'world_challenge_screens.dart';
 import 'world_controller.dart';
 import 'world_ui.dart';
 import 'world_help.dart';
+import 'repair_screen.dart';
 
 class CodeCityScreen extends ConsumerWidget {
   const CodeCityScreen({super.key});
@@ -287,9 +288,11 @@ class MistakeDnaScreen extends ConsumerWidget {
       builder: (s) => ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          const RepairOverview(),
+          const SizedBox(height: 16),
           const WorldPanel(
             child: Text(
-              'Здесь учитываются реальные неверные ответы из курса и игровых режимов. Верное решение тренировки закрепляет одну ошибку выбранной темы. В каждом разделе 20 разных подтем: от основ до сложных случаев. После обновления программа DNA начинается заново; награды и остальной прогресс сохранены.',
+              'Новые ошибки сохраняются с конкретной подтемой. Только самостоятельное решение другого примера подтверждает исправление. Ниже — учебная программа из 20 подтем каждого раздела. Её прохождение само по себе не уменьшает счётчик ошибок. Старые общие ошибки без подтемы не превращаются в подтверждения.',
               style: TextStyle(color: WorldPalette.text),
             ),
           ),

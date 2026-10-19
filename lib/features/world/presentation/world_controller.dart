@@ -56,19 +56,17 @@ class WorldController extends AsyncNotifier<WorldState> {
     return result;
   });
 
-  Future<void> recordLearningMistake(String moduleId, {String? taskKey, String? topicKey}) =>
+  Future<void> recordLearningMistake(String moduleId, {String? taskKey, String? topicKey,
+    String? sourceCode, String? title}) =>
       _serial((current) async {
         final category = _mistakeCategory(moduleId);
         await _set(
-          current.copyWith(
+          WorldRules.recordError(current, skillId: topicKey ?? taskKey ?? 'module:$moduleId',
+            title: title ?? moduleId, category: category, sourceCode: sourceCode ?? '').copyWith(
             failures: {
               ...current.failures,
               for (final key in {taskKey, topicKey}.whereType<String>())
                 key: (current.failures[key] ?? 0) + 1,
-            },
-            mistakes: {
-              ...current.mistakes,
-              category: (current.mistakes[category] ?? 0) + 1,
             },
           ),
         );

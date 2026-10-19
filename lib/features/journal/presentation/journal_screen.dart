@@ -13,6 +13,7 @@ import '../../progress/presentation/progress_providers.dart';
 import '../domain/journal.dart';
 import '../domain/topic.dart';
 import 'journal_providers.dart';
+import '../../world/presentation/repair_screen.dart';
 
 class JournalViewModel {
   const JournalViewModel({
@@ -98,6 +99,8 @@ class _JournalBody extends ConsumerWidget {
         Spacing.huge,
       ),
       children: [
+        const RepairOverview(),
+        const SizedBox(height: Spacing.md),
         Text('Журнал', style: textTheme.headlineMedium),
         const SizedBox(height: Spacing.xs),
         Text(

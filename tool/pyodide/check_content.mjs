@@ -61,6 +61,21 @@ for (const task of practice.tasks) {
 }
 
 const pyodide = await loadPyodide();
+// Independent skill-repair examples use the same interpreter as the course.
+const repairs = JSON.parse(readFileSync(new URL('../../assets/projects/repair_catalog.json', import.meta.url), 'utf8'));
+let repairCount = 0;
+for (const [skill, definition] of Object.entries(repairs.skills)) {
+  for (const example of definition.examples) {
+    if (example.options?.length) {
+      if (!example.options.includes(example.answer)) throw new Error(`Invalid repair choices: ${skill}`);
+      continue;
+    }
+    items.push({ id: `repair:${skill}:${example.id}`, code: example.code,
+      stdin: example.stdin || '', expected: example.answer, trimOutput: true, quiet: true });
+    repairCount++;
+  }
+}
+console.log(`checking ${repairCount} executable independent repair examples`);
 // The same files, in the same order, as assets/python_runner/worker.js.
 pyodide.runPython(readFileSync(new URL('../../assets/python_runner/runner.py', import.meta.url), 'utf8'));
 pyodide.runPython(RUNNER);
@@ -76,7 +91,7 @@ for (const item of items) {
   const result = check(item.code, item.stdin, !!item.quiet);
   const [out, error] = result.toJs();
   result.destroy();
-  if (error || out !== item.expected) {
+  if (error || (item.trimOutput ? out.trim() : out) !== item.expected) {
     failures.push({ id: item.id, error, got: out, expected: item.expected });
   }
 }

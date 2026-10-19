@@ -1,6 +1,7 @@
 import 'world_challenge.dart';
 import 'world_state.dart';
 import 'world_hearts.dart';
+import 'skill_repair.dart';
 
 class WorldSubmission {
   const WorldSubmission(this.state, this.message, {this.correct = false});
@@ -10,6 +11,19 @@ class WorldSubmission {
 }
 
 abstract final class WorldRules {
+  static String skillKey(WorldMode mode, String category, int cursor) => switch (mode) {
+    WorldMode.training => 'dna:$category:$cursor',
+    WorldMode.expedition || WorldMode.boss => 'world:${mode.name}:$cursor',
+    _ => 'world:repeat:$category',
+  };
+  static WorldState recordError(WorldState s, {required String skillId,
+    required String title, required String category, required String sourceCode}) {
+    final repair = s.repairs[skillId] ?? SkillRepair(skillId: skillId, title: title, category: category);
+    return s.copyWith(
+      mistakes: {...s.mistakes, category: (s.mistakes[category] ?? 0) + 1},
+      repairs: {...s.repairs, skillId: repair.mistake(sourceCode)},
+    );
+  }
   static String buildingEffect(String id, int level) => switch (id) {
     'office' => '+${level - 1} монет за верное решение',
     'python' => '+${2 * (level - 1)} XP за верное решение',
@@ -87,12 +101,10 @@ abstract final class WorldRules {
       return WorldSubmission(s, 'Запусти попытку заново: время не измерено.');
     }
     if (!task.accepts(answer)) {
-      var next = s.copyWith(
+      var next = recordError(s, skillId: skillKey(mode, task.category,
+          WorldChallenges.cursor(s, mode, category)), title: task.title,
+          category: task.category, sourceCode: task.code.replaceAll('___', task.answer)).copyWith(
         failures: {...s.failures, task.id: (s.failures[task.id] ?? 0) + 1},
-        mistakes: {
-          ...s.mistakes,
-          task.category: (s.mistakes[task.category] ?? 0) + 1,
-        },
       );
       var effect =
           'Этап не пройден, награда не начислена. Ошибка добавлена в Mistake DNA.';
@@ -147,12 +159,8 @@ abstract final class WorldRules {
         effect =
             'Серия $run; рекорд ${next.infiniteRecord}. Следующая задача открыта; сложность растёт каждые 5 решений.';
       case WorldMode.training:
-        final old = s.mistakes[category] ?? 0;
-        next = next.copyWith(
-          mistakes: {...s.mistakes, category: old > 0 ? old - 1 : 0},
-        );
         effect =
-            'Незакреплённые ошибки «$category»: ${next.mistakes[category]}. Нужен новый ответ для следующей награды.';
+            'Учебный пример пройден. Незакреплённых ошибок «$category»: ${next.mistakes[category] ?? 0}. Подтверди исправление отдельным новым примером в DNA.';
       case WorldMode.guild:
         final contribution = (s.cityLevels['team'] ?? 1).clamp(
           0,

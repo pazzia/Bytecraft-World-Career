@@ -174,13 +174,13 @@ void main() {
       }
     },
   );
-  test('training only reduces selected topic, real times are required', () {
+  test('ordinary training retains gaps until independent proof, real times are required', () {
     var s = WorldState.initial().copyWith(
       expeditionStep: 2,
       mistakes: {'Циклы': 2, 'Условия': 3},
     );
     s = solve(s, WorldMode.training, category: 'Циклы');
-    expect(s.mistakes['Циклы'], 1);
+    expect(s.mistakes['Циклы'], 2); // A solved lesson is not independent proof.
     expect(s.mistakes['Условия'], 3);
     final q = WorldChallenges.at(s, WorldMode.ghost);
     expect(

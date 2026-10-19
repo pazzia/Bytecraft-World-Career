@@ -131,6 +131,8 @@ class LevelController extends Notifier<LevelUiState> {
       await ref
           .read(worldControllerProvider.notifier)
           .recordLearningMistake(session.level.moduleId,
+            title: session.level.title,
+            sourceCode: session.level.solution?.code ?? session.level.code ?? session.level.prompt,
             taskKey: 'lesson:${session.level.courseId}:${session.level.id}',
             topicKey: session.level.topicId == null ? null : 'topic:${session.level.courseId}:${session.level.topicId}');
     } catch (_) {
