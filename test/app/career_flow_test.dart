@@ -10,6 +10,9 @@ import '../helpers/app_harness.dart';
 Future<void> openCareer(WidgetTester tester) async {
   await tester.scrollUntilVisible(find.text('Карьера · цель и навыки'), 200,
       scrollable: find.byType(Scrollable).first);
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(find.text('Карьера · цель и навыки'));
+  await tester.pumpAndSettle();
   await tester.tap(find.text('Карьера · цель и навыки'));
   await tester.pumpAndSettle();
 }

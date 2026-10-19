@@ -98,6 +98,7 @@ void main() {
     tester.platformDispatcher.textScaleFactorTestValue = 1.5;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await openCareer(tester);
+    expect(find.text('Карьерная цель'), findsOneWidget);
     await reveal(tester, find.byKey(const ValueKey('next_production')));
     expect(tester.takeException(), isNull);
   });
