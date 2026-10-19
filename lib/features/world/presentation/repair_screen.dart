@@ -181,7 +181,7 @@ class _RepairScreenState extends ConsumerState<RepairScreen> {
                   WorldChallengeForm(
                     key: ValueKey('${repair.skillId}:${repair.generation}'),
                     task: catalog.next(repair)!.question(repair),
-                    wrongAnswers: repair.attempts,
+                wrongAnswers: repair.wrongAnswers,
                     submit: (answer, _) async {
                       final result = await ref
                           .read(repairServiceProvider)

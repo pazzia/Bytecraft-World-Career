@@ -245,6 +245,7 @@ void main() {
       final reopened = saved.repairs[r.skillId]!;
       expect(reopened.pending, isTrue);
       expect(reopened.proofs.length, 1);
+      expect(reopened.wrongAnswers, 0); // A successful review is not a wrong answer.
       expect(bank.next(reopened)!.id, isNot(e.id));
       expect(
         (await env.service.submit(

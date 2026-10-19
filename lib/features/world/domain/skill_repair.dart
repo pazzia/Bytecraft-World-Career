@@ -17,6 +17,7 @@ class SkillRepair {
   final List<String> sources, seen;
   final List<Map<String, String>> proofs;
   bool get pending => openErrors > 0;
+  int get wrongAnswers => (attempts - proofs.length).clamp(0, 1 << 30);
   static String signature(String code, [String stdin = '']) =>
       '${code.replaceAll(RegExp(r'\s+'), '')}\u0000${stdin.trim()}';
   SkillRepair mistake(String source, {String stdin = ''}) => SkillRepair(
