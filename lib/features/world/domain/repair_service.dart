@@ -79,6 +79,34 @@ class RepairService {
     return bank;
   }
 
+  /// A first independent check is available without deliberately making errors.
+  /// Existing proofs cannot be farmed by requesting the same check again.
+  Future<void> beginAssessment(String skillId) async {
+    final bank = await catalog();
+    final definition = bank.skills[skillId];
+    if (definition == null) throw StateError('Нет проверки этой подтемы');
+    await save.transaction(() async {
+      final current = await world.load();
+      final previous = current.repairs[skillId];
+      if (previous != null && (previous.pending || previous.proofs.isNotEmpty))
+        return;
+      final next = SkillRepair(
+        skillId: skillId,
+        title: definition['title'] as String,
+        category: definition['category'] as String,
+        assessmentRequested: true,
+        generation: (previous?.generation ?? 0) + 1,
+        seen: previous?.seen ?? const [],
+        sources: previous?.sources ?? const [],
+        attempts: previous?.attempts ?? 0,
+      );
+      if (bank.next(next) == null) throw StateError('Нужны новые примеры');
+      await world.write(
+        current.copyWith(repairs: {...current.repairs, skillId: next}),
+      );
+    });
+  }
+
   Future<RepairResult> submit(
     String skillId,
     int generation,

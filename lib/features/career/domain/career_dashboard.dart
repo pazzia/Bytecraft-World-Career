@@ -1,15 +1,15 @@
+import '../../world/domain/repair_catalog.dart';
+import '../../progress/domain/unlock_policy.dart';
+import 'career_next_step.dart';
+import '../../playground/domain/practice_task.dart';
+import '../../projects/domain/calculator_project.dart';
+import '../../world/domain/skill_repair.dart';
+import 'skill_evidence.dart';
 import '../../courses/domain/course.dart';
 import '../../progress/domain/course_progress.dart';
 import 'github_portfolio.dart';
 
-enum CareerSkillId {
-  pythonCore,
-  oop,
-  algorithms,
-  testing,
-  async,
-  production,
-}
+enum CareerSkillId { pythonCore, oop, algorithms, testing, async, production }
 
 enum CareerTargetId {
   junior('junior_python_backend', 'Junior Python Backend'),
@@ -22,36 +22,36 @@ enum CareerTargetId {
   final String title;
 
   static CareerTargetId fromId(String? id) => CareerTargetId.values.firstWhere(
-        (value) => value.id == id,
-        orElse: () => CareerTargetId.pythonBackend,
-      );
+    (value) => value.id == id,
+    orElse: () => CareerTargetId.pythonBackend,
+  );
 
   Map<CareerSkillId, int> get requirements => switch (this) {
-        CareerTargetId.junior => const {
-            CareerSkillId.pythonCore: 68,
-            CareerSkillId.oop: 48,
-            CareerSkillId.algorithms: 45,
-            CareerSkillId.testing: 50,
-            CareerSkillId.async: 35,
-            CareerSkillId.production: 42,
-          },
-        CareerTargetId.pythonBackend => const {
-            CareerSkillId.pythonCore: 85,
-            CareerSkillId.oop: 70,
-            CareerSkillId.algorithms: 65,
-            CareerSkillId.testing: 75,
-            CareerSkillId.async: 70,
-            CareerSkillId.production: 70,
-          },
-        CareerTargetId.strongMiddle => const {
-            CareerSkillId.pythonCore: 92,
-            CareerSkillId.oop: 82,
-            CareerSkillId.algorithms: 76,
-            CareerSkillId.testing: 84,
-            CareerSkillId.async: 82,
-            CareerSkillId.production: 84,
-          },
-      };
+    CareerTargetId.junior => const {
+      CareerSkillId.pythonCore: 68,
+      CareerSkillId.oop: 48,
+      CareerSkillId.algorithms: 45,
+      CareerSkillId.testing: 50,
+      CareerSkillId.async: 35,
+      CareerSkillId.production: 42,
+    },
+    CareerTargetId.pythonBackend => const {
+      CareerSkillId.pythonCore: 85,
+      CareerSkillId.oop: 70,
+      CareerSkillId.algorithms: 65,
+      CareerSkillId.testing: 75,
+      CareerSkillId.async: 70,
+      CareerSkillId.production: 70,
+    },
+    CareerTargetId.strongMiddle => const {
+      CareerSkillId.pythonCore: 92,
+      CareerSkillId.oop: 82,
+      CareerSkillId.algorithms: 76,
+      CareerSkillId.testing: 84,
+      CareerSkillId.async: 82,
+      CareerSkillId.production: 84,
+    },
+  };
 }
 
 class CareerSkill {
@@ -64,8 +64,12 @@ class CareerSkill {
     this.portfolioBonus = 0,
     this.completedLevels = 0,
     this.totalLevels = 0,
+    this.evidence = const SkillEvidence(),
+    this.nextStep,
   });
 
+  final CareerNextStep? nextStep;
+  final SkillEvidence evidence;
   final CareerSkillId id;
   final String title;
   final int score;
@@ -94,11 +98,7 @@ class CareerAction {
 }
 
 class RoleMatch {
-  const RoleMatch({
-    required this.id,
-    required this.title,
-    required this.match,
-  });
+  const RoleMatch({required this.id, required this.title, required this.match});
 
   final CareerTargetId id;
   final String title;
@@ -146,6 +146,13 @@ class CareerDashboardCalculator {
     required CourseProgress progress,
     CareerTargetId target = CareerTargetId.pythonBackend,
     GitHubPortfolio? portfolio,
+    List<PracticeTask> tasks = const [],
+    Set<String> solved = const {},
+    Iterable<SkillRepair> repairs = const [],
+    CalculatorProject project = const CalculatorProject(),
+    RepairCatalog? catalog,
+    UnlockMode unlockMode = UnlockMode.linear,
+    bool projectUnlocked = false,
   }) {
     final currentPortfolio = portfolio ?? GitHubPortfolio.disconnected();
     final requirements = target.requirements;
@@ -158,6 +165,13 @@ class CareerDashboardCalculator {
         progress,
         _pythonCore,
         currentPortfolio,
+        tasks,
+        solved,
+        repairs,
+        project,
+        catalog,
+        unlockMode,
+        projectUnlocked,
       ),
       _skill(
         CareerSkillId.oop,
@@ -167,6 +181,13 @@ class CareerDashboardCalculator {
         progress,
         _oop,
         currentPortfolio,
+        tasks,
+        solved,
+        repairs,
+        project,
+        catalog,
+        unlockMode,
+        projectUnlocked,
       ),
       _skill(
         CareerSkillId.algorithms,
@@ -176,6 +197,13 @@ class CareerDashboardCalculator {
         progress,
         _algorithms,
         currentPortfolio,
+        tasks,
+        solved,
+        repairs,
+        project,
+        catalog,
+        unlockMode,
+        projectUnlocked,
       ),
       _skill(
         CareerSkillId.testing,
@@ -185,6 +213,13 @@ class CareerDashboardCalculator {
         progress,
         _testing,
         currentPortfolio,
+        tasks,
+        solved,
+        repairs,
+        project,
+        catalog,
+        unlockMode,
+        projectUnlocked,
       ),
       _skill(
         CareerSkillId.async,
@@ -194,6 +229,13 @@ class CareerDashboardCalculator {
         progress,
         _async,
         currentPortfolio,
+        tasks,
+        solved,
+        repairs,
+        project,
+        catalog,
+        unlockMode,
+        projectUnlocked,
       ),
       _skill(
         CareerSkillId.production,
@@ -203,6 +245,13 @@ class CareerDashboardCalculator {
         progress,
         _production,
         currentPortfolio,
+        tasks,
+        solved,
+        repairs,
+        project,
+        catalog,
+        unlockMode,
+        projectUnlocked,
       ),
     ];
 
@@ -260,7 +309,9 @@ class CareerDashboardCalculator {
     final tests = projects.where((project) => project.hasTests).length;
     final ci = projects.where((project) => project.hasCi).length;
     final docker = projects.where((project) => project.hasDocker).length;
-    final packaging = projects.where((project) => project.hasPackageConfig).length;
+    final packaging = projects
+        .where((project) => project.hasPackageConfig)
+        .length;
     final engagement = projects
         .where((project) => project.stars > 0 || project.forks > 0)
         .length;
@@ -285,6 +336,13 @@ class CareerDashboardCalculator {
     CourseProgress progress,
     Set<String> moduleIds,
     GitHubPortfolio portfolio,
+    List<PracticeTask> tasks,
+    Set<String> solved,
+    Iterable<SkillRepair> repairs,
+    CalculatorProject project,
+    RepairCatalog? catalog,
+    UnlockMode mode,
+    bool projectUnlocked,
   ) {
     final levels = course.modules
         .where((module) => moduleIds.contains(module.id))
@@ -292,14 +350,46 @@ class CareerDashboardCalculator {
         .toList(growable: false);
     final courseScore = _moduleScore(course, progress, moduleIds);
     final portfolioBonus = _portfolioBonus(id, portfolio);
+    final includesProject =
+        id == CareerSkillId.pythonCore || id == CareerSkillId.production;
+    final evidence = SkillEvidence.collect(
+      course: course,
+      progress: progress,
+      modules: moduleIds,
+      tasks: tasks,
+      solved: solved,
+      repairs: repairs,
+      project: project,
+      includesCore: id == CareerSkillId.pythonCore,
+      includesProject: includesProject,
+    );
     return CareerSkill(
       id: id,
+      evidence: evidence,
+      nextStep: CareerNextStep.choose(
+        course: course,
+        progress: progress,
+        modules: moduleIds,
+        tasks: tasks,
+        solved: solved,
+        repairs: repairs,
+        evidence: evidence,
+        project: project,
+        includesProject: includesProject,
+        projectUnlocked: projectUnlocked,
+        score: courseScore,
+        target: target,
+        mode: mode,
+        catalog: catalog,
+      ),
       title: title,
       score: _percent(courseScore + portfolioBonus),
       target: target,
       courseScore: courseScore,
       portfolioBonus: portfolioBonus,
-      completedLevels: levels.where((level) => progress.isCompleted(level.id)).length,
+      completedLevels: levels
+          .where((level) => progress.isCompleted(level.id))
+          .length,
       totalLevels: levels.length,
     );
   }
@@ -339,47 +429,49 @@ class CareerDashboardCalculator {
     final docker = projects.where((project) => project.hasDocker).length;
 
     return switch (id) {
-      CareerSkillId.pythonCore =>
-        (python * 3 + packages).clamp(0, 12).toInt(),
-      CareerSkillId.oop => (packages * 2 +
-              _keywordHits(projects, const {
-                'api',
-                'backend',
-                'service',
-                'architecture',
-                'django',
-                'flask',
-                'fastapi',
-                'library',
-              }) *
-              2)
-          .clamp(0, 10)
-          .toInt(),
-      CareerSkillId.algorithms => (_keywordHits(projects, const {
-                'algorithm',
-                'algorithms',
-                'leetcode',
-                'dsa',
-                'graph',
-                'sorting',
-              }) *
-              4)
-          .clamp(0, 10)
-          .toInt(),
+      CareerSkillId.pythonCore => (python * 3 + packages).clamp(0, 12).toInt(),
+      CareerSkillId.oop =>
+        (packages * 2 +
+                _keywordHits(projects, const {
+                      'api',
+                      'backend',
+                      'service',
+                      'architecture',
+                      'django',
+                      'flask',
+                      'fastapi',
+                      'library',
+                    }) *
+                    2)
+            .clamp(0, 10)
+            .toInt(),
+      CareerSkillId.algorithms =>
+        (_keywordHits(projects, const {
+                  'algorithm',
+                  'algorithms',
+                  'leetcode',
+                  'dsa',
+                  'graph',
+                  'sorting',
+                }) *
+                4)
+            .clamp(0, 10)
+            .toInt(),
       CareerSkillId.testing => (tests * 5 + ci * 2).clamp(0, 12).toInt(),
-      CareerSkillId.async => (_keywordHits(projects, const {
-                'async',
-                'asyncio',
-                'aio',
-                'concurrency',
-                'thread',
-                'celery',
-                'queue',
-                'kafka',
-              }) *
-              4)
-          .clamp(0, 10)
-          .toInt(),
+      CareerSkillId.async =>
+        (_keywordHits(projects, const {
+                  'async',
+                  'asyncio',
+                  'aio',
+                  'concurrency',
+                  'thread',
+                  'celery',
+                  'queue',
+                  'kafka',
+                }) *
+                4)
+            .clamp(0, 10)
+            .toInt(),
       CareerSkillId.production =>
         (ci * 3 + docker * 4 + packages * 2).clamp(0, 12).toInt(),
     };
@@ -388,11 +480,10 @@ class CareerDashboardCalculator {
   int _keywordHits(
     List<GitHubProjectEvidence> projects,
     Set<String> keywords,
-  ) =>
-      projects.where((project) {
-        final text = project.searchableText;
-        return keywords.any((keyword) => text.contains(keyword));
-      }).length;
+  ) => projects.where((project) {
+    final text = project.searchableText;
+    return keywords.any((keyword) => text.contains(keyword));
+  }).length;
 
   int _weightedAverage(List<CareerSkill> skills) {
     const weights = {
@@ -436,11 +527,13 @@ class CareerDashboardCalculator {
     final result = <CareerAction>[];
     for (final skill in ordered) {
       if (skill.gap == 0) continue;
-      final definition = _definitionFor(skill.id);
+      final definition = modulesFor(skill.id);
       CourseModule? nextModule;
       for (final module in course.modules) {
         if (!definition.contains(module.id)) continue;
-        if (module.playableLevels.any((level) => !progress.isCompleted(level.id))) {
+        if (module.playableLevels.any(
+          (level) => !progress.isCompleted(level.id),
+        )) {
           nextModule = module;
           break;
         }
@@ -460,14 +553,14 @@ class CareerDashboardCalculator {
     return result;
   }
 
-  Set<String> _definitionFor(CareerSkillId id) => switch (id) {
-        CareerSkillId.pythonCore => _pythonCore,
-        CareerSkillId.oop => _oop,
-        CareerSkillId.algorithms => _algorithms,
-        CareerSkillId.testing => _testing,
-        CareerSkillId.async => _async,
-        CareerSkillId.production => _production,
-      };
+  Set<String> modulesFor(CareerSkillId id) => switch (id) {
+    CareerSkillId.pythonCore => _pythonCore,
+    CareerSkillId.oop => _oop,
+    CareerSkillId.algorithms => _algorithms,
+    CareerSkillId.testing => _testing,
+    CareerSkillId.async => _async,
+    CareerSkillId.production => _production,
+  };
 
   static const _pythonCore = {
     'variables',

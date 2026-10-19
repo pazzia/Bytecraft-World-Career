@@ -59,8 +59,8 @@ class RepairOverview extends ConsumerWidget {
                   style: const TextStyle(color: WorldPalette.text),
                 ),
                 const SizedBox(height: 8),
-          const Text(
-            'Реши другой пример без разбора. Повторение показанного ответа не подтверждает навык. Старые неверные ответы с известной подтемой тоже требуют самостоятельной проверки; курс и награды сохранены.',
+                const Text(
+                  'Реши другой пример без разбора. Повторение показанного ответа не подтверждает навык. Старые неверные ответы с известной подтемой тоже требуют самостоятельной проверки; курс и награды сохранены.',
                   style: TextStyle(color: WorldPalette.muted),
                 ),
                 for (final repair in pending) ...[
@@ -73,7 +73,7 @@ class RepairOverview extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    'Ошибок по подтеме: ${repair.openErrors}',
+                    '${repair.openErrors > 0 ? 'Ошибок по подтеме: ${repair.openErrors}' : 'Самостоятельная проверка из Career'}',
                     style: const TextStyle(color: WorldPalette.muted),
                   ),
                   TextButton(
@@ -181,7 +181,7 @@ class _RepairScreenState extends ConsumerState<RepairScreen> {
                   WorldChallengeForm(
                     key: ValueKey('${repair.skillId}:${repair.generation}'),
                     task: catalog.next(repair)!.question(repair),
-                wrongAnswers: repair.wrongAnswers,
+                    wrongAnswers: repair.wrongAnswers,
                     submit: (answer, _) async {
                       final result = await ref
                           .read(repairServiceProvider)
@@ -203,7 +203,7 @@ class _RepairScreenState extends ConsumerState<RepairScreen> {
                   ),
                   TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Вернуться к ошибкам'),
+                    child: const Text('Вернуться'),
                   ),
                 ],
               ],
