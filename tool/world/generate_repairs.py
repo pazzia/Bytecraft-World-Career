@@ -5,6 +5,9 @@ input at a time and are executed in isolated CPython; no answer is guessed.
 The bundled Pyodide check independently verifies the resulting catalogue.
 """
 import ast
+# Initialize asyncio outside the one-second execution budget. A cold stdlib
+# import interrupted by SIGALRM can leave its submodules partially initialized.
+import asyncio
 import contextlib
 import hashlib
 import io
@@ -196,7 +199,16 @@ for number, prompt, options, answer in [
         'stdin': '', 'answer': answer, 'prompt': prompt, 'options': options})
 
 short = {k: len(v['examples']) for k,v in skills.items() if len(v['examples']) < 2}
-if short: raise AssertionError(('Need independent examples', short))
+if short:
+    diagnostics = {}
+    for topic in topics:
+        key = 'topic:python:' + topic['id']
+        if key not in short: continue
+        example = next((e for e in topic['examples'] if not e.get('nativeOnly')), None)
+        if example:
+            result = run(example['code'], time_limit=5, output_limit=512)
+            diagnostics[key] = {'error': result.error, 'message': result.message}
+    raise AssertionError(('Need independent examples', short, diagnostics))
 target = ROOT / 'assets/projects/repair_catalog.json'
 text = json.dumps({'schemaVersion': 1, 'skills': skills, 'origins': origins}, ensure_ascii=False, separators=(',', ':')) + '\n'
 if '--check' in sys.argv:
