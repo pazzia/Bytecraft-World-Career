@@ -116,6 +116,54 @@ Future<void> main() async {
     }).repairs.isEmpty,
     'Invented legacy proof',
   );
+  final legacyRaw = InMemoryKeyValueStore();
+  final legacySave = GameSaveStore(legacyRaw);
+  final legacyWorld = WorldRepository(
+    JsonDocumentStore(legacySave),
+    clock,
+    legacySave,
+  );
+  await legacyWorld.write(
+    WorldState.initial().copyWith(
+      repairMigrationVersion: 0,
+      coins: 77,
+      worldXp: 99,
+      expeditionStep: 4,
+      failures: {'training:Условия:0': 2, 'unknown-old-key': 19},
+      mistakes: {'Условия': 0, 'Циклы': 7},
+    ),
+  );
+  final legacyService = RepairService(
+    legacySave,
+    legacyWorld,
+    (p) => File(p).readAsString(),
+    clock,
+  );
+  await legacyService.catalog();
+  final migrated = await legacyWorld.load();
+  check(
+    migrated.repairs.length == 1 &&
+        migrated.repairs.values.single.openErrors == 2,
+    'Exact legacy errors not imported',
+  );
+  check(
+    migrated.coins == 77 &&
+        migrated.worldXp == 99 &&
+        migrated.expeditionStep == 4,
+    'Migration changed earned progress',
+  );
+  check(migrated.mistakes['Циклы'] == 7, 'Unknown legacy counts changed');
+  final again = RepairService(
+    legacySave,
+    legacyWorld,
+    (p) => File(p).readAsString(),
+    clock,
+  );
+  await again.catalog();
+  check(
+    (await legacyWorld.load()).repairs.values.single.openErrors == 2,
+    'Legacy import repeated',
+  );
   print(
     'Repair service: concrete topics, independent examples, stale answers, duplicate rewards and restart passed',
   );

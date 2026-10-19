@@ -59,8 +59,8 @@ class RepairOverview extends ConsumerWidget {
                   style: const TextStyle(color: WorldPalette.text),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Реши другой пример без разбора. Повторение показанного ответа не подтверждает навык.',
+          const Text(
+            'Реши другой пример без разбора. Повторение показанного ответа не подтверждает навык. Старые неверные ответы с известной подтемой тоже требуют самостоятельной проверки; курс и награды сохранены.',
                   style: TextStyle(color: WorldPalette.muted),
                 ),
                 for (final repair in pending) ...[

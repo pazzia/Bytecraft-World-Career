@@ -97,6 +97,11 @@ def variants(code, stdin=''):
         if len(found) >= 10: return
 
 skills = {}
+origins = {}
+def origin(key, skill, code, stdin=''):
+    item = origins.setdefault(key, {'skillId': skill, 'sources': []})
+    source = {'code': code, 'stdin': stdin}
+    if source not in item['sources']: item['sources'].append(source)
 def add(skill, title, group, code, stdin='', exclude_data=()):
     entry = skills.setdefault(skill, {'title': title, 'category': group, 'examples': []})
     if len(entry['examples']) >= 8: return
@@ -118,6 +123,7 @@ for group, lessons in dna.items():
     for index, lesson in enumerate(lessons):
         source = lesson['code'].replace('___', lesson['answer'])
         add(f'dna:{group}:{index}', lesson['concept'], group, source)
+        origin(f'training:{group}:{index}', f'dna:{group}:{index}', source)
 
 content = ROOT / 'assets/content/python'
 topics = json.loads((content / 'topics.json').read_text())['topics']
@@ -129,13 +135,16 @@ for topic in topics:
 for file in sorted((content / 'modules').glob('*.json')):
     for level in json.loads(file.read_text())['levels']:
         solution = level.get('solution')
-        if not solution or solution.get('nativeOnly'): continue
+        if not solution: continue
         topic = titles[level['topic']]
-        add('topic:python:' + topic['id'], topic['title'], category(topic['module']), solution['code'], solution.get('stdin', ''))
+        origin('lesson:python:' + level['id'], 'topic:python:' + topic['id'], solution['code'], solution.get('stdin', ''))
+        if not solution.get('nativeOnly'):
+            add('topic:python:' + topic['id'], topic['title'], category(topic['module']), solution['code'], solution.get('stdin', ''))
 for task in json.loads((content / 'practice.json').read_text())['tasks']:
     for case in task['tests']:
         add('practice:python:' + task['id'], task['title'], category(task['module']), task['solution'], case['stdin'],
             exclude_data=[item['stdin'] for item in task['tests']])
+        origin('practice:python:' + task['id'], 'practice:python:' + task['id'], task['solution'], case['stdin'])
 
 rows = json.loads(subprocess.check_output([os.environ.get('BYTECRAFT_DART', 'dart'),
     str(ROOT / 'tool/world/export_questions.dart')], cwd=ROOT, text=True))
@@ -144,14 +153,16 @@ story_groups = {'expedition': ['Типы данных', 'Условия', 'Ин�
                 'boss': ['Циклы', 'Циклы', 'Функции', 'Условия']}
 for row in rows:
     mode, _, cursor = row['id'].partition(':')
-    if mode not in {'expedition', 'boss', 'ghost'}: continue
+    if mode not in {'expedition', 'boss', 'ghost', 'guild', 'rival', 'infinite'}: continue
     n = int(cursor)
-    if mode == 'ghost' and n >= 5: continue
-    group = groups[n] if mode == 'ghost' else story_groups[mode][n]
-    skill = f'world:repeat:{group}' if mode == 'ghost' else f'world:{mode}:{n}'
+    repeat = mode in {'ghost', 'guild', 'rival', 'infinite'}
+    group = row['category']
+    skill = f'world:repeat:{group}' if repeat else f'world:{mode}:{n}'
     source = row['code'].replace('___', row['answer'])
+    origin(row['id'], skill, source)
+    if repeat and (mode != 'ghost' or n >= 5): continue
     if mode == 'boss' and n == 0: source += '\nprint(total([4, 8, -2]))'
-    add(skill, f'Игровая задача · {group}', group, source)
+    add(skill, row['title'], group, source)
 
 # These concepts have no mutable literal inputs in the original illustration.
 # Provide actual independently authored examples instead of cosmetic changes.
@@ -187,7 +198,7 @@ for number, prompt, options, answer in [
 short = {k: len(v['examples']) for k,v in skills.items() if len(v['examples']) < 2}
 if short: raise AssertionError(('Need independent examples', short))
 target = ROOT / 'assets/projects/repair_catalog.json'
-text = json.dumps({'schemaVersion': 1, 'skills': skills}, ensure_ascii=False, separators=(',', ':')) + '\n'
+text = json.dumps({'schemaVersion': 1, 'skills': skills, 'origins': origins}, ensure_ascii=False, separators=(',', ':')) + '\n'
 if '--check' in sys.argv:
     assert target.read_text() == text, 'Regenerate repair catalogue'
 else: target.write_text(text)

@@ -32,6 +32,8 @@ void main() {
         final q = WorldChallenges.at(state, mode, category: category);
         rows.add({
           'id': q.id,
+          'title': q.title,
+          'category': q.category,
           'code': q.code,
           'answer': q.answer,
           'kind': q.options.isEmpty ? 'output' : 'fill',

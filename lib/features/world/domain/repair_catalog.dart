@@ -36,18 +36,26 @@ class RepairExample {
 }
 
 class RepairCatalog {
-  RepairCatalog(this.skills);
+  RepairCatalog(this.skills, {this.origins = const {}});
   final Map<String, Map<String, dynamic>> skills;
+  final Map<String, Map<String, dynamic>> origins;
   factory RepairCatalog.fromJson(Map<String, dynamic> json) {
     if (json['schemaVersion'] != 1)
       throw StateError('Unsupported repair catalogue');
-    return RepairCatalog({
-      for (final e in (json['skills'] as Map).entries)
-        '${e.key}': Map<String, dynamic>.from(e.value as Map),
-    });
+    return RepairCatalog(
+      {
+        for (final e in (json['skills'] as Map).entries)
+          '${e.key}': Map<String, dynamic>.from(e.value as Map),
+      },
+      origins: {
+        for (final e in (json['origins'] as Map? ?? {}).entries)
+          '${e.key}': Map<String, dynamic>.from(e.value as Map),
+      },
+    );
   }
   String title(SkillRepair repair) => repair.skillId.startsWith('world:')
-      ? repair.title : skills[repair.skillId]?['title'] as String? ?? repair.title;
+      ? repair.title
+      : skills[repair.skillId]?['title'] as String? ?? repair.title;
   RepairExample? next(SkillRepair repair) {
     if (!repair.pending) return null;
     final examples = <RepairExample>[];

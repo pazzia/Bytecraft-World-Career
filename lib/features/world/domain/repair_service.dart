@@ -6,6 +6,7 @@ import '../../courses/data/content_sources.dart';
 import '../data/world_repository.dart';
 import 'repair_catalog.dart';
 import 'world_rules.dart';
+import 'skill_repair.dart';
 
 class RepairResult {
   const RepairResult(this.message, {this.passed = false});
@@ -25,10 +26,58 @@ class RepairService {
         _catalog = null;
         throw error;
       });
-  Future<RepairCatalog> _load() async => RepairCatalog.fromJson(
-    jsonDecode(await loadAsset('assets/projects/repair_catalog.json'))
-        as Map<String, dynamic>,
-  );
+  Future<RepairCatalog> _load() async {
+    final bank = RepairCatalog.fromJson(
+      jsonDecode(await loadAsset('assets/projects/repair_catalog.json'))
+          as Map<String, dynamic>,
+    );
+    await save.transaction(() async {
+      final current = await world.load();
+      if (current.repairMigrationVersion >= 1) return;
+      final repairs = {...current.repairs};
+      for (final entry in current.failures.entries) {
+        final origin = bank.origins[entry.key];
+        if (origin == null || entry.value <= 0) continue;
+        final skill = origin['skillId'] as String;
+        final definition = bank.skills[skill];
+        if (definition == null || current.repairs.containsKey(skill)) continue;
+        final previous = repairs[skill];
+        final sources = {
+          for (final source in origin['sources'] as List)
+            SkillRepair.signature(
+              source['code'] as String,
+              source['stdin'] as String? ?? '',
+            ),
+        };
+        repairs[skill] = SkillRepair(
+          skillId: skill,
+          title: definition['title'] as String,
+          category: definition['category'] as String,
+          generation: 1,
+          openErrors: (previous?.openErrors ?? 0) + entry.value,
+          sources: {...?previous?.sources, ...sources}.toList(),
+        );
+      }
+      final counts = {...current.mistakes};
+      for (final category in {
+        ...counts.keys,
+        ...repairs.values.map((r) => r.category),
+      }) {
+        final imported = repairs.values
+            .where((r) => r.category == category)
+            .fold<int>(0, (sum, r) => sum + r.openErrors);
+        if (imported > (counts[category] ?? 0)) counts[category] = imported;
+      }
+      await world.write(
+        current.copyWith(
+          repairMigrationVersion: 1,
+          repairs: repairs,
+          mistakes: counts,
+        ),
+      );
+    });
+    return bank;
+  }
 
   Future<RepairResult> submit(
     String skillId,

@@ -5,6 +5,7 @@ class WorldState {
     this.trainingCurriculumVersion = 2,
     this.hasVerifiedProject = false,
     this.repairs = const {},
+    this.repairMigrationVersion = 1,
     this.solved = const {},
     this.failures = const {},
     this.lastActiveDay = '',
@@ -83,6 +84,7 @@ class WorldState {
 
     final initial = WorldState.initial();
     return WorldState(
+      repairMigrationVersion: (json['repairMigrationVersion'] as num?)?.toInt() ?? 0,
       repairs: {for (final entry in (json['repairs'] as Map? ?? {}).entries)
         '${entry.key}': SkillRepair.fromJson(Map<String, dynamic>.from(entry.value as Map))},
       hasVerifiedProject: json['hasVerifiedProject'] == true,
@@ -126,6 +128,7 @@ class WorldState {
 
   final bool hasVerifiedProject;
   final Map<String, SkillRepair> repairs;
+  final int repairMigrationVersion;
   final int trainingCurriculumVersion;
   final Map<String, int> solved;
   final Map<String, int> failures;
@@ -166,6 +169,7 @@ class WorldState {
   int get expeditionProgress => expeditionStep.clamp(0, 5).toInt();
 
   WorldState copyWith({
+    int? repairMigrationVersion,
     Map<String, SkillRepair>? repairs,
     int? trainingCurriculumVersion,
     bool? hasVerifiedProject,
@@ -197,6 +201,7 @@ class WorldState {
     Map<String, bool>? projectSteps,
     Map<String, int>? mistakes,
   }) => WorldState(
+    repairMigrationVersion: repairMigrationVersion ?? this.repairMigrationVersion,
     repairs: repairs ?? this.repairs,
     hasVerifiedProject: hasVerifiedProject ?? this.hasVerifiedProject,
     trainingCurriculumVersion: trainingCurriculumVersion ?? this.trainingCurriculumVersion,
@@ -230,6 +235,7 @@ class WorldState {
   );
 
   Map<String, dynamic> toJson() => {
+    'repairMigrationVersion': repairMigrationVersion,
     'repairs': {for (final entry in repairs.entries) entry.key: entry.value.toJson()},
     'hasVerifiedProject': hasVerifiedProject,
     'trainingCurriculumVersion': trainingCurriculumVersion,

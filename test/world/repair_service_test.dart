@@ -45,6 +45,61 @@ class Env {
 }
 
 void main() {
+  test('known legacy task errors import once while rewards and unknown totals are retained', () async {
+    final env = Env();
+    await env.world.write(
+      WorldState.initial().copyWith(
+        repairMigrationVersion: 0,
+        coins: 123,
+        worldXp: 456,
+        expeditionStep: 4,
+        failures: {'training:Условия:0': 2, 'unknown-key': 20},
+        mistakes: {'Условия': 0, 'Циклы': 9},
+      ),
+    );
+    final catalog = await env.service.catalog();
+    var saved = await env.world.load();
+    expect(saved.repairs.length, 1);
+    final record = saved.repairs.values.single;
+    expect(record.skillId, 'dna:Условия:0');
+    expect(record.openErrors, 2);
+    expect(saved.mistakes['Циклы'], 9);
+    expect(saved.coins, 123);
+    expect(saved.worldXp, 456);
+    expect(saved.expeditionStep, 4);
+    final example = catalog.next(record)!;
+    await env.service.submit(
+      record.skillId,
+      record.generation,
+      example.id,
+      example.answer,
+    );
+    final restarted = Env(source: env.raw);
+    await restarted.service.catalog();
+    saved = await restarted.world.load();
+    expect(saved.repairs[record.skillId]!.pending, isFalse);
+    expect(saved.repairs[record.skillId]!.proofs.length, 1);
+  });
+
+  test(
+    'failed legacy import preserves the old save and can be retried',
+    () async {
+      final disk = FailingDisk();
+      final env = Env(source: disk);
+      await env.world.write(
+        WorldState.initial().copyWith(
+          repairMigrationVersion: 0,
+          failures: {'training:Условия:0': 1},
+        ),
+      );
+      disk.fail = true;
+      await expectLater(env.service.catalog(), throwsStateError);
+      disk.fail = false;
+      expect((await env.world.load()).repairMigrationVersion, 0);
+      await env.service.catalog();
+      expect((await env.world.load()).repairs.length, 1);
+    },
+  );
   test('the repaired original does not prove learning; a distinct example does and survives restart', () async {
     final env = Env();
     var record = await env.seed();
