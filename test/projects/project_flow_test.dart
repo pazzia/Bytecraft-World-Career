@@ -69,6 +69,13 @@ void main() {
         await tester.tap(find.text('Проверить программу'));
         await tester.pumpAndSettle();
         if (step == 0) {
+          // The report is below the editor in a lazy ListView. Materialize it
+          // by scrolling before asserting that the user can see it.
+          await tester.scrollUntilVisible(
+            find.textContaining('Этап 1/4 проверен запуском Python.'),
+            150,
+            scrollable: find.byType(Scrollable).first,
+          );
           expect(
             find.textContaining('Этап 1/4 проверен запуском Python.'),
             findsOneWidget,
@@ -84,6 +91,8 @@ void main() {
             program,
           );
           await tester.pump();
+          await tester.drag(find.byType(Scrollable).first, const Offset(0, -1000));
+          await tester.pumpAndSettle();
           expect(
             find.textContaining('Этап 1/4 проверен запуском Python.'),
             findsNothing,
