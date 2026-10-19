@@ -53,6 +53,7 @@ void main() {
         find.byKey(const ValueKey('world-answer')),
         'WRONG',
       );
+      await tester.pumpAndSettle(); // Rebuild the previously disabled button.
       await tester.scrollUntilVisible(
         find.text('Проверить ответ'),
         150,
@@ -67,7 +68,7 @@ void main() {
       );
       final record = state.repairs.values.single;
       expect(record.pending, isTrue);
-      expect(record.seen.length, 1);
+      expect(record.seen.length, 1, reason: tester.widgetList<Text>(find.byType(Text)).map((t) => t.data).join(' | '));
       expect(record.proofs, isEmpty);
       final next = bank.next(record)!;
       expect(next.id, isNot(record.seen.single));
@@ -80,6 +81,7 @@ void main() {
         find.byKey(const ValueKey('world-answer')),
         next.answer,
       );
+      await tester.pumpAndSettle();
       await tester.scrollUntilVisible(
         find.text('Проверить ответ'),
         150,
