@@ -15,6 +15,7 @@ import '../../lib/features/progress/domain/unlock_policy.dart';
 import '../../lib/features/projects/domain/calculator_project.dart';
 import '../../lib/features/world/data/world_repository.dart';
 import '../../lib/features/world/domain/repair_service.dart';
+import '../../lib/features/world/domain/skill_repair.dart';
 import '../../lib/features/world/domain/world_rules.dart';
 import '../../lib/features/world/domain/world_state.dart';
 
@@ -73,6 +74,29 @@ Future<void> main() async {
       );
     }
   }
+  final experienced = calc.build(
+    course: course,
+    progress: progress,
+    tasks: tasks,
+    catalog: catalog,
+    unlockMode: UnlockMode.modulesOpen,
+  );
+  for (final skill in experienced.skills) {
+    final next = skill.nextStep!;
+    check(
+      next.kind == CareerStepKind.course &&
+          calc
+              .modulesFor(skill.id)
+              .contains(course.levelById(next.id)!.moduleId) &&
+          const UnlockPolicy().isUnlocked(
+            course,
+            progress,
+            next.id,
+            mode: UnlockMode.modulesOpen,
+          ),
+      'Experienced route ignored module unlock mode',
+    );
+  }
   final first = course.playableLevels.first;
   progress = progress.withLevel(
     LevelProgress(levelId: first.id, completed: true, bestStars: 3),
@@ -127,7 +151,7 @@ Future<void> main() async {
     load,
     clock,
   );
-  var example = catalog.next(record)!;
+  final example = catalog.next(record)!;
   await restart.submit(id, record.generation, example.id, 'WRONG');
   state = await world.load();
   record = state.repairs[id]!;
@@ -186,18 +210,59 @@ Future<void> main() async {
     'Open gap was not prioritized',
   );
 
-  // Every catalogue course topic and task maps by exact content identifiers.
-  for (final t in tasks) {
-    final skillIds = calc.modulesFor(
-      CareerSkillId.values.firstWhere(
-        (s) => calc.modulesFor(s).contains(t.moduleId),
-      ),
+  // World and DNA fundamentals are concrete learning evidence too.
+  for (final extra in ['world:expedition:0', 'dna:Условия:0']) {
+    await service.beginAssessment(extra);
+    final r = (await world.load()).repairs[extra]!;
+    final e = catalog.next(r)!;
+    await service.submit(extra, r.generation, e.id, e.answer);
+  }
+  vm = dashboard(state: await world.load());
+  check(core(vm).evidence.confirmed.length == 3, 'World/DNA proof missing');
+
+  // Coverage across the entire real bank catches unmapped topic/module IDs.
+  final allProofs = <String, SkillRepair>{};
+  for (final entry in catalog.skills.entries) {
+    final r = SkillRepair(
+      skillId: entry.key,
+      title: entry.value['title'] as String,
+      category: entry.value['category'] as String,
+      openErrors: 1,
     );
-    check(
-      skillIds.contains(t.moduleId),
-      'Unmapped practice module ${t.moduleId}',
+    final e = catalog.next(r)!;
+    allProofs[entry.key] = r.review(
+      e.id,
+      passed: true,
+      code: e.code,
+      stdin: e.stdin,
+      now: clock.now(),
     );
   }
+  final all = dashboard(
+    state: WorldState.initial().copyWith(repairs: allProofs),
+  );
+  final mapped = {
+    for (final s in all.skills)
+      for (final r in s.evidence.confirmed) r.skillId,
+  };
+  check(
+    mapped.length == catalog.skills.length,
+    'Unmapped concrete skills: ${catalog.skills.keys.toSet().difference(mapped)}',
+  );
+  final unknown = SkillRepair(
+    skillId: 'dna:unknown',
+    title: 'Unknown',
+    category: 'Unknown',
+    proofs: [
+      {'exampleId': 'legacy', 'verifiedAt': clock.now().toIso8601String()},
+    ],
+  );
+  check(
+    dashboard(
+      state: WorldState.initial().copyWith(repairs: {'dna:unknown': unknown}),
+    ).skills.every((s) => s.evidence.confirmed.isEmpty),
+    'Unknown legacy evidence attributed',
+  );
   print(
     'Career: real course/practice/project evidence, voluntary independent checks, wrong answers, restart, duplicate rewards, goal changes and reopened gaps passed',
   );

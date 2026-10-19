@@ -178,57 +178,60 @@ class _CareerScreenState extends ConsumerState<CareerScreen> {
                         'Подтверждение относится к указанной подтеме, а не ко всему навыку.',
                         style: _muted,
                       ),
-                      ExpansionTile(
-                        key: ValueKey('evidence_${skill.id.name}'),
-                        title: const Text(
-                          'Выполненная работа и проверки',
-                          style: _body,
+                      Material(
+                        type: MaterialType.transparency,
+                        child: ExpansionTile(
+                          key: ValueKey('evidence_${skill.id.name}'),
+                          title: const Text(
+                            'Выполненная работа и проверки',
+                            style: _body,
+                          ),
+                          tilePadding: EdgeInsets.zero,
+                          children: [
+                            for (final title in skill.evidence.studied)
+                              ListTile(
+                                title: Text('Изучено: $title', style: _body),
+                              ),
+                            for (final title in skill.evidence.practiced)
+                              ListTile(
+                                title: Text('Отработано: $title', style: _body),
+                                subtitle: const Text(
+                                  'Программа прошла проверки.',
+                                  style: _muted,
+                                ),
+                              ),
+                            for (final repair in skill.evidence.confirmed)
+                              ListTile(
+                                title: Text(
+                                  'Подтверждено: ${repair.title}',
+                                  style: _body,
+                                ),
+                                subtitle: Text(
+                                  'Другой пример решён самостоятельно · ${_proofDate(repair.proofs.last['verifiedAt'])}',
+                                  style: _muted,
+                                ),
+                              ),
+                            for (final repair in skill.evidence.pending)
+                              ListTile(
+                                title: Text(
+                                  'Закрепить: ${repair.title}',
+                                  style: _body,
+                                ),
+                                subtitle: const Text(
+                                  'Нужна новая самостоятельная проверка.',
+                                  style: _muted,
+                                ),
+                              ),
+                            if (skill.evidence.studied.isEmpty &&
+                                skill.evidence.practiced.isEmpty &&
+                                skill.evidence.confirmed.isEmpty &&
+                                skill.evidence.pending.isEmpty)
+                              const Text(
+                                'Начни со следующего шага на этой карточке.',
+                                style: _muted,
+                              ),
+                          ],
                         ),
-                        tilePadding: EdgeInsets.zero,
-                        children: [
-                          for (final title in skill.evidence.studied)
-                            ListTile(
-                              title: Text('Изучено: $title', style: _body),
-                            ),
-                          for (final title in skill.evidence.practiced)
-                            ListTile(
-                              title: Text('Отработано: $title', style: _body),
-                              subtitle: const Text(
-                                'Программа прошла проверки.',
-                                style: _muted,
-                              ),
-                            ),
-                          for (final repair in skill.evidence.confirmed)
-                            ListTile(
-                              title: Text(
-                                'Подтверждено: ${repair.title}',
-                                style: _body,
-                              ),
-                              subtitle: Text(
-                                'Другой пример решён самостоятельно · ${_proofDate(repair.proofs.last['verifiedAt'])}',
-                                style: _muted,
-                              ),
-                            ),
-                          for (final repair in skill.evidence.pending)
-                            ListTile(
-                              title: Text(
-                                'Закрепить: ${repair.title}',
-                                style: _body,
-                              ),
-                              subtitle: const Text(
-                                'Нужна новая самостоятельная проверка.',
-                                style: _muted,
-                              ),
-                            ),
-                          if (skill.evidence.studied.isEmpty &&
-                              skill.evidence.practiced.isEmpty &&
-                              skill.evidence.confirmed.isEmpty &&
-                              skill.evidence.pending.isEmpty)
-                            const Text(
-                              'Начни со следующего шага на этой карточке.',
-                              style: _muted,
-                            ),
-                        ],
                       ),
                       if (skill.nextStep != null) ...[
                         Text(skill.nextStep!.reason, style: _muted),

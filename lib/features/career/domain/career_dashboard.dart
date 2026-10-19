@@ -361,6 +361,7 @@ class CareerDashboardCalculator {
       repairs: repairs,
       project: project,
       includesCore: id == CareerSkillId.pythonCore,
+      catalog: catalog,
       includesProject: includesProject,
     );
     return CareerSkill(

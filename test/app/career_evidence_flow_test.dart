@@ -11,6 +11,17 @@ import 'package:flutter_test/flutter_test.dart';
 import '../helpers/app_harness.dart';
 import 'career_flow_test.dart' show openCareer;
 
+Future<void> reveal(WidgetTester tester, Finder finder) async {
+  await tester.scrollUntilVisible(
+    finder,
+    160,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
+  await tester.ensureVisible(finder);
+  await tester.pumpAndSettle();
+}
+
 void main() {
   final bank = RepairCatalog.fromJson(
     jsonDecode(File('assets/projects/repair_catalog.json').readAsStringSync())
@@ -31,11 +42,7 @@ void main() {
       });
       await pumpBytecraft(tester, store: store);
       await openCareer(tester);
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('next_pythonCore')),
-        180,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await reveal(tester, find.byKey(const ValueKey('next_pythonCore')));
       expect(find.text('Изучено уровней: 1'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('next_pythonCore')));
       await tester.pumpAndSettle();
@@ -49,21 +56,13 @@ void main() {
       expect(record.openErrors, 0);
       expect(record.assessmentRequested, isTrue);
       final example = bank.next(record)!;
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('world-answer')),
-        150,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await reveal(tester, find.byKey(const ValueKey('world-answer')));
       await tester.enterText(
         find.byKey(const ValueKey('world-answer')),
         example.answer,
       );
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.text('Проверить ответ'),
-        150,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await reveal(tester, find.text('Проверить ответ'));
       await tester.tap(find.text('Проверить ответ'));
       await tester.pumpAndSettle();
       state = WorldState.fromJson(
@@ -75,18 +74,13 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       await pumpBytecraft(tester, store: store);
       await openCareer(tester);
-      await tester.scrollUntilVisible(
-        find.byKey(const ValueKey('evidence_pythonCore')),
-        160,
-        scrollable: find.byType(Scrollable).first,
-      );
+      await reveal(tester, find.byKey(const ValueKey('evidence_pythonCore')));
       expect(find.text('Подтверждено подтем: 1'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('evidence_pythonCore')));
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
+      await reveal(
+        tester,
         find.textContaining('Другой пример решён самостоятельно'),
-        160,
-        scrollable: find.byType(Scrollable).first,
       );
       expect(
         find.textContaining('Другой пример решён самостоятельно'),
@@ -104,11 +98,7 @@ void main() {
     tester.platformDispatcher.textScaleFactorTestValue = 1.5;
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await openCareer(tester);
-    await tester.scrollUntilVisible(
-      find.byKey(const ValueKey('next_production')),
-      180,
-      scrollable: find.byType(Scrollable).first,
-    );
+    await reveal(tester, find.byKey(const ValueKey('next_production')));
     expect(tester.takeException(), isNull);
   });
 }

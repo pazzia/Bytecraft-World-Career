@@ -3,6 +3,7 @@ import '../../playground/domain/practice_task.dart';
 import '../../progress/domain/course_progress.dart';
 import '../../projects/domain/calculator_project.dart';
 import '../../world/domain/skill_repair.dart';
+import '../../world/domain/repair_catalog.dart';
 
 /// A read-only projection of saved work, never a second reward/save ledger.
 class SkillEvidence {
@@ -32,6 +33,7 @@ class SkillEvidence {
     required CalculatorProject project,
     required bool includesCore,
     required bool includesProject,
+    RepairCatalog? catalog,
   }) {
     final topicIds = {
       for (final m in course.modules.where((m) => modules.contains(m.id)))
@@ -47,7 +49,11 @@ class SkillEvidence {
           (r) =>
               topicIds.contains(r.skillId) ||
               taskIds.contains(r.skillId) ||
-              (includesCore && r.skillId.startsWith('dna:')),
+              (includesCore &&
+                  course.id == 'python' &&
+                  (r.skillId.startsWith('dna:') ||
+                      r.skillId.startsWith('world:')) &&
+                  catalog?.skills.containsKey(r.skillId) == true),
         )
         .toList();
     return SkillEvidence(
