@@ -14,13 +14,30 @@ import 'package:flutter_test/flutter_test.dart';
 
 class Env {
   Env({KeyValueStore? source, WorldState? state}) {
-    raw = source ?? InMemoryKeyValueStore({
-      WorldRepository.key: jsonEncode({...((state ?? WorldState.initial().copyWith(expeditionStep: 5)).toJson()), 'schemaVersion': 2}),
-    });
+    raw =
+        source ??
+        InMemoryKeyValueStore({
+          WorldRepository.key: jsonEncode({
+            ...((state ?? WorldState.initial().copyWith(expeditionStep: 5))
+                .toJson()),
+            'schemaVersion': 2,
+          }),
+        });
     save = GameSaveStore(raw);
     documents = JsonDocumentStore(save);
-    world = WorldRepository(documents, FixedClock(DateTime(2026, 10, 19)), save);
-    service = ProjectService(documents, save, world, runner, (_) async => '# checker', FixedClock(DateTime(2026, 10, 19)));
+    world = WorldRepository(
+      documents,
+      FixedClock(DateTime(2026, 10, 19)),
+      save,
+    );
+    service = ProjectService(
+      documents,
+      save,
+      world,
+      runner,
+      (_) async => '# checker',
+      FixedClock(DateTime(2026, 10, 19)),
+    );
   }
   late final KeyValueStore raw;
   late final GameSaveStore save;
@@ -65,18 +82,21 @@ void main() {
     expect((await env.world.load()).hasVerifiedProject, isFalse);
   });
 
-  test('a stale result cannot verify changed code or overwrite its draft', () async {
-    final env = Env();
-    env.runner.gate = Completer<void>();
-    final check = env.service.check('old program');
-    await env.runner.started.future;
-    await env.service.saveDraft('new program');
-    env.runner.gate!.complete();
-    expect((await check).passed, isFalse);
-    expect((await env.service.load()).draft, 'new program');
-    expect((await env.service.load()).step, 0);
-    expect((await env.world.load()).coins, 0);
-  });
+  test(
+    'a stale result cannot verify changed code or overwrite its draft',
+    () async {
+      final env = Env();
+      env.runner.gate = Completer<void>();
+      final check = env.service.check('old program');
+      await env.runner.started.future;
+      await env.service.saveDraft('new program');
+      env.runner.gate!.complete();
+      expect((await check).passed, isFalse);
+      expect((await env.service.load()).draft, 'new program');
+      expect((await env.service.load()).step, 0);
+      expect((await env.world.load()).coins, 0);
+    },
+  );
 
   test('duplicate concurrent checks cannot reward a component twice', () async {
     final env = Env();
@@ -100,12 +120,55 @@ void main() {
     expect((await env.service.check('program')).passed, isFalse);
     expect((await env.world.load()).hasVerifiedProject, isFalse);
     expect((await env.world.load()).coins, 0);
+    expect((await env.service.load()).wrongAnswers, 0);
+    env.runner.partial = false;
+    await env.service.check('program');
+    expect((await env.world.load()).worldXp, 45);
+  });
+
+  test('duplicated checks cannot substitute for missing operations or reduce rewards', () async {
+    final env = Env();
+    env.runner.duplicateNames = true;
+    expect((await env.service.check('program')).passed, isFalse);
+    expect((await env.service.load()).step, 0);
+    expect((await env.service.load()).wrongAnswers, 0);
+    expect((await env.world.load()).coins, 0);
+  });
+
+  test('syntax errors and timeouts count as failed attempts with clear diagnostics', () async {
+    final env = Env();
+    env.runner.loadError = true;
+    final syntax = await env.service.check('def broken(');
+    expect(syntax.passed, isFalse);
+    expect(syntax.lines.single, contains('SyntaxError'));
+    expect((await env.service.load()).wrongAnswers, 1);
+    env.runner.loadError = false;
+    env.runner.timedOut = true;
+    final timeout = await env.service.check('while True: pass');
+    expect(timeout.lines.single, contains('5 секунд'));
+    expect((await env.service.load()).wrongAnswers, 2);
+    env.runner.timedOut = false;
+    await env.service.check('working program');
+    expect((await env.world.load()).worldXp, 22);
+  });
+
+  test('a failed check without details never says it passed', () async {
+    final env = Env();
+    env.runner.pass = false;
+    final report = await env.service.check('wrong program');
+    expect(
+      report.lines.every((line) => line.contains('проверка не пройдена')),
+      isTrue,
+    );
   });
 
   test('a disk failure cannot commit the project step or its reward', () async {
-    final source = _Disk({WorldRepository.key: jsonEncode({
-      ...WorldState.initial().copyWith(expeditionStep: 5).toJson(), 'schemaVersion': 2,
-    })});
+    final source = _Disk({
+      WorldRepository.key: jsonEncode({
+        ...WorldState.initial().copyWith(expeditionStep: 5).toJson(),
+        'schemaVersion': 2,
+      }),
+    });
     final env = Env(source: source);
     env.runner.afterRun = () => source.fail = true;
     await expectLater(env.service.check('program'), throwsStateError);
@@ -120,7 +183,9 @@ void main() {
 
   test('editing a finished draft retains the last tested program without new rewards', () async {
     final env = Env();
-    for (var i = 0; i < 4; i++) { await env.service.check('working program'); }
+    for (var i = 0; i < 4; i++) {
+      await env.service.check('working program');
+    }
     env.runner.pass = false;
     await env.service.check('broken draft');
     expect((await env.service.load()).verifiedCode, 'working program');
@@ -130,10 +195,17 @@ void main() {
   });
 
   test('old question rewards are retained without paying them again for code checks', () async {
-    final env = Env(state: WorldState.initial().copyWith(expeditionStep: 5,
-      coins: 123, worldXp: 456,
-      projectSteps: {for (final id in WorldState.projectIds) id: true}));
-    for (var i = 0; i < 4; i++) { await env.service.check('program'); }
+    final env = Env(
+      state: WorldState.initial().copyWith(
+        expeditionStep: 5,
+        coins: 123,
+        worldXp: 456,
+        projectSteps: {for (final id in WorldState.projectIds) id: true},
+      ),
+    );
+    for (var i = 0; i < 4; i++) {
+      await env.service.check('program');
+    }
     expect((await env.world.load()).coins, 123);
     expect((await env.world.load()).worldXp, 456);
     expect((await env.world.load()).hasVerifiedProject, isTrue);
@@ -151,6 +223,9 @@ class _Runner implements PythonRunner {
   bool pass = true;
   bool forgedNonce = false;
   bool partial = false;
+  bool duplicateNames = false;
+  bool loadError = false;
+  bool timedOut = false;
   void Function()? afterRun;
   bool unavailable = false;
   Completer<void>? gate;
@@ -166,16 +241,40 @@ class _Runner implements PythonRunner {
   @override
   Future<void> start() async {}
   @override
-  Future<RunResult> run(String code, {String stdin = '', Duration timeout = const Duration(seconds: 5), bool echoInputPrompt = true}) async {
+  Future<RunResult> run(
+    String code, {
+    String stdin = '',
+    Duration timeout = const Duration(seconds: 5),
+    bool echoInputPrompt = true,
+  }) async {
     if (!started.isCompleted) started.complete();
     if (gate != null) await gate!.future;
     if (unavailable) return const RunResult(status: RunStatus.unavailable);
+    if (timedOut) return const RunResult(status: RunStatus.timeout);
     final request = jsonDecode(stdin) as Map<String, dynamic>;
     afterRun?.call();
-    return RunResult(status: RunStatus.ok, stdout: jsonEncode({
-      'nonce': forgedNonce ? 'bad-token' : request['nonce'],
-      'checks': List.generate(CalculatorProject.checkCounts[request['step'] as int] - (partial ? 1 : 0), (i) => {'name': 'check $i', 'passed': pass}),
-    }));
+    return RunResult(
+      status: RunStatus.ok,
+      stdout: jsonEncode({
+        'nonce': forgedNonce ? 'bad-token' : request['nonce'],
+        'checks': loadError
+            ? [
+                {
+                  'name': 'Загрузка программы',
+                  'passed': false,
+                  'detail': 'SyntaxError: invalid syntax',
+                },
+              ]
+            : List.generate(
+                CalculatorProject.checkCounts[request['step'] as int] -
+                    (partial ? 1 : 0),
+                (i) => {
+                  'name': CalculatorProject.checkNames[duplicateNames ? 0 : i],
+                  'passed': pass,
+                },
+              ),
+      }),
+    );
   }
 }
 

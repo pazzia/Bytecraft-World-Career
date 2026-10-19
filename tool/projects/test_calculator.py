@@ -30,6 +30,22 @@ class CalculatorChecks(unittest.TestCase):
         bad = REFERENCE.replace("    history.append(result)", "    pass")
         self.assertFalse(next(c for c in check(bad, 1) if c["name"] == "История вычислений")["passed"])
 
+    def test_history_must_record_every_operation(self):
+        for missing in ["-", "*"]:
+            with self.subTest(operation=missing):
+                bad = REFERENCE.replace("    history.append(result)",
+                    f"    if operation != {missing!r}:\n        history.append(result)")
+                history = next(c for c in check(bad, 1) if c["name"] == "История вычислений")
+                self.assertFalse(history["passed"])
+
+    def test_student_stderr_does_not_contaminate_report(self):
+        run = subprocess.run([sys.executable, str(CHECKER)],
+            input=json.dumps({"code": 'import sys\nprint("debug" * 10000, file=sys.stderr)\n' + REFERENCE,
+                              "step": 3, "nonce": "stderr-test"}),
+            text=True, capture_output=True, timeout=5, check=True)
+        self.assertEqual(run.stderr, "")
+        self.assertTrue(all(c["passed"] for c in json.loads(run.stdout)["checks"]))
+
     def test_unknown_operation_must_raise(self):
         bad = REFERENCE.replace('raise ValueError("Неизвестная операция")', "return 0")
         self.assertFalse(next(c for c in check(bad, 2) if c["name"] == "Неизвестная операция")["passed"])

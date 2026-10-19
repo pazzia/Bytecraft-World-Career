@@ -33,7 +33,7 @@ class QuietOutput:
     def flush(self):
         pass
 
-with contextlib.redirect_stdout(QuietOutput()):
+with contextlib.redirect_stdout(QuietOutput()), contextlib.redirect_stderr(QuietOutput()):
     try:
         exec(compile(request["code"], "calculator.py", "exec"), namespace)
     except BaseException as error:
@@ -55,10 +55,16 @@ with contextlib.redirect_stdout(QuietOutput()):
                 history = namespace.get("history")
                 assert isinstance(history, list), "Объяви список history"
                 before = len(history)
-                calculate(1, 2, "+")
-                calculate(4, 2, "/")
-                assert len(history) == before + 2, "Сохраняй каждый успешный результат"
-                assert history[-2:] == [3, 2], "В history должны быть числа-результаты"
+                expected = []
+                for a, b, operation, result in [
+                    (1, 2, "+", 3), (-4, 7, "-", -11),
+                    (2.5, 4, "*", 10), (7, 2, "/", 3.5),
+                ]:
+                    calculate(a, b, operation)
+                    expected.append(result)
+                    assert len(history) == before + len(expected), "Сохраняй каждый успешный результат"
+                    for actual, wanted in zip(history[before:], expected):
+                        equal_number(actual, wanted)
             record("История вычислений", history_check)
         if request["step"] >= 2:
             record("Защита от нуля", lambda: raises(ZeroDivisionError, lambda: calculate(1, 0, "/")))

@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 if [ ! -d android ] || [ ! -d ios ]; then
-  flutter create --platforms=android,ios --project-name bytecraft --org com.pazzia .
+  flutter create --platforms=android,ios --project-name bytecraftworld --org com.pazzia .
 fi
 
 flutter pub get
@@ -17,7 +17,7 @@ flutter pub get
 if command -v python3 >/dev/null 2>&1; then
   tmp="$(mktemp -d)"
   python3 tool/content/generate_python_course.py "$tmp"
-  diff -r "$tmp" assets/content/python/modules && echo "Content: OK (matches generator)"
+  diff -r "$tmp" assets/content/python && echo "Content: OK (matches generator)"
   rm -rf "$tmp"
 fi
 

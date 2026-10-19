@@ -14,43 +14,94 @@ import '../helpers/app_harness.dart';
 import '../helpers/fake_python_runner.dart';
 
 void main() {
-  final reference = File('tool/projects/calculator_reference.py').readAsStringSync();
-  testWidgets('expedition chest leads to a saved executable calculator and boss unlock', (tester) async {
-    final source = InMemoryKeyValueStore({'bytecraft_world_state': jsonEncode({
-      ...WorldState.initial().copyWith(expeditionStep: 5).toJson(), 'schemaVersion': 2,
-    })});
-    final runner = FakePythonRunner((code, stdin) {
-      final request = jsonDecode(stdin) as Map<String, dynamic>;
-      return RunResult(status: RunStatus.ok, stdout: jsonEncode({
-        'nonce': request['nonce'],
-        'checks': List.generate(CalculatorProject.checkCounts[request['step'] as int],
-            (i) => {'name': 'test $i', 'passed': true}),
-      }));
-    });
-    await pumpBytecraft(tester, store: source, runner: runner);
-    await tester.scrollUntilVisible(find.text('Забрать сундук экспедиции'), 150,
-        scrollable: find.byType(Scrollable).first);
-    await tester.tap(find.text('Забрать сундук экспедиции'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Открыть сундук'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('К проекту').last);
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.byKey(const ValueKey('code_editor')), 200,
-        scrollable: find.byType(Scrollable).first);
-    await tester.enterText(find.byKey(const ValueKey('code_editor')), reference);
-    for (var step = 0; step < 4; step++) {
-      await tester.scrollUntilVisible(find.text('Проверить программу'), 200,
-          scrollable: find.byType(Scrollable).first);
-      await tester.tap(find.text('Проверить программу'));
+  final reference = File('tool/projects/calculator_reference.py')
+      .readAsStringSync();
+  testWidgets(
+    'expedition chest leads to a saved executable calculator and boss unlock',
+    (tester) async {
+      final source = InMemoryKeyValueStore({
+        'bytecraft_world_state': jsonEncode({
+          ...WorldState.initial().copyWith(expeditionStep: 5).toJson(),
+          'schemaVersion': 2,
+        }),
+      });
+      final runner = FakePythonRunner((code, stdin) {
+        final request = jsonDecode(stdin) as Map<String, dynamic>;
+        return RunResult(
+          status: RunStatus.ok,
+          stdout: jsonEncode({
+            'nonce': request['nonce'],
+            'checks': List.generate(
+              CalculatorProject.checkCounts[request['step'] as int],
+              (i) => {'name': CalculatorProject.checkNames[i], 'passed': true},
+            ),
+          }),
+        );
+      });
+      await pumpBytecraft(tester, store: source, runner: runner);
+      await tester.scrollUntilVisible(
+        find.text('Забрать сундук экспедиции'),
+        150,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('Забрать сундук экспедиции'));
       await tester.pumpAndSettle();
-    }
-    final saved = jsonDecode((await GameSaveStore(source).read(ProjectService.key))!) as Map<String, dynamic>;
-    expect(saved['step'], 4);
-    expect(saved['verifiedCode'], reference);
-    final wallet = WorldState.fromJson(jsonDecode((await GameSaveStore(source).read('bytecraft_world_state'))!) as Map<String, dynamic>);
-    expect(wallet.hasVerifiedProject, isTrue);
-    expect(wallet.coins, 180);
-    expect(tester.takeException(), isNull);
-  });
+      await tester.tap(find.text('Открыть сундук'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('К проекту').last);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('code_editor')),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('code_editor')),
+        reference,
+      );
+      var program = reference;
+      for (var step = 0; step < 4; step++) {
+        await tester.scrollUntilVisible(
+          find.text('Проверить программу'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.tap(find.text('Проверить программу'));
+        await tester.pumpAndSettle();
+        if (step == 0) {
+          expect(
+            find.textContaining('Этап 1/4 проверен запуском Python.'),
+            findsOneWidget,
+          );
+          await tester.scrollUntilVisible(
+            find.byKey(const ValueKey('code_editor')),
+            -200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          program = '$reference\n# Продолжаю работу';
+          await tester.enterText(
+            find.byKey(const ValueKey('code_editor')),
+            program,
+          );
+          await tester.pump();
+          expect(
+            find.textContaining('Этап 1/4 проверен запуском Python.'),
+            findsNothing,
+          );
+        }
+      }
+      final saved = jsonDecode(
+        (await GameSaveStore(source).read(ProjectService.key))!,
+      ) as Map<String, dynamic>;
+      expect(saved['step'], 4);
+      expect(saved['verifiedCode'], program);
+      final wallet = WorldState.fromJson(
+        jsonDecode((await GameSaveStore(source).read('bytecraft_world_state'))!)
+            as Map<String, dynamic>,
+      );
+      expect(wallet.hasVerifiedProject, isTrue);
+      expect(wallet.coins, 180);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

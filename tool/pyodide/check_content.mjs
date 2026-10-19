@@ -83,11 +83,16 @@ for (const item of items) {
 // Verify the project checker through the same worker entry point as Android.
 const calculatorChecker = readFileSync(new URL('../../assets/projects/calculator_check.py', import.meta.url), 'utf8');
 const calculatorReference = readFileSync(new URL('../projects/calculator_reference.py', import.meta.url), 'utf8');
-for (const [name, code, step, expectedPass] of [
+const calculatorCases = [
   ...[0, 1, 2, 3].map((step) => [`reference-${step}`, calculatorReference, step, true]),
   ['constant-answer', 'def calculate(a,b,operation): return 11', 0, false],
   ['syntax-error', 'def broken(', 0, false],
-]) {
+  ...['-', '*'].map((operation) => [`missing-history-${operation}`,
+    calculatorReference.replace('    history.append(result)',
+      `    if operation != ${JSON.stringify(operation)}:\n        history.append(result)`), 1, false]),
+  ['student-stderr', 'import sys\nprint("debug" * 10000, file=sys.stderr)\n' + calculatorReference, 3, true],
+];
+for (const [name, code, step, expectedPass] of calculatorCases) {
   const token = `project-${name}`;
   const result = check(calculatorChecker, JSON.stringify({ code, step, nonce: token }), true);
   const [out, error] = result.toJs();
@@ -101,7 +106,7 @@ for (const [name, code, step, expectedPass] of [
   } catch { /* Invalid output is always a failed check. */ }
   if (!valid || passed !== expectedPass) failures.push({ id: `calculator-${name}`, error, got: out, expected: `passed=${expectedPass}` });
 }
-console.log('checked 6 calculator cases in the bundled Python runner');
+console.log(`checked ${calculatorCases.length} calculator cases in the bundled Python runner`);
 console.log(`checked ${items.length} programs, ${failures.length} differ`);
 for (const f of failures.slice(0, 40)) {
   console.log(`--- ${f.id}`);
