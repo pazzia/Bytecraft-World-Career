@@ -9,13 +9,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/app_harness.dart';
+
+import 'package:bytecraft/features/career/presentation/career_screen.dart';
+
 import 'career_flow_test.dart' show openCareer;
 
 Future<void> reveal(WidgetTester tester, Finder finder) async {
   await tester.scrollUntilVisible(
     finder,
     160,
-    scrollable: find.byType(Scrollable).first,
+    scrollable: find.byType(Scrollable).last,
   );
   await tester.pumpAndSettle();
   await tester.ensureVisible(finder);
@@ -99,7 +102,25 @@ void main() {
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     await openCareer(tester);
     expect(find.text('Карьерная цель'), findsOneWidget);
-    await reveal(tester, find.byKey(const ValueKey('next_production')));
+    final careerScroll = find
+        .descendant(
+          of: find.byType(CareerScreen),
+          matching: find.byType(Scrollable),
+        )
+        .first;
+    for (
+      var i = 0;
+      i < 40 &&
+          find.byKey(const ValueKey('next_production')).evaluate().isEmpty;
+      i++
+    ) {
+      await tester.drag(careerScroll, const Offset(0, -250));
+      await tester.pumpAndSettle();
+    }
+    dumpTexts(tester, 'career-enlarged');
+    expect(find.byKey(const ValueKey('next_production')), findsOneWidget);
+    await tester.ensureVisible(find.byKey(const ValueKey('next_production')));
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 }
