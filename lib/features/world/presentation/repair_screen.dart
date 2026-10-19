@@ -155,7 +155,7 @@ class _RepairScreenState extends ConsumerState<RepairScreen> {
               children: [
                 Text(
                   repair == null
-                      ? 'Запись ошибки сброшена.'
+                      ? 'Запись проверки сброшена.'
                       : catalog.title(repair),
                   style: const TextStyle(
                     color: WorldPalette.text,

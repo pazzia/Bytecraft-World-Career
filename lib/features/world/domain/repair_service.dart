@@ -123,7 +123,7 @@ class RepairService {
           !repair.pending ||
           repair.generation != generation) {
         return const RepairResult(
-          'Запись ошибки уже изменилась. Открой актуальную проверку.',
+          'Данные проверки уже изменились. Открой актуальную проверку.',
         );
       }
       final example = bank.next(repair);
@@ -160,8 +160,8 @@ class RepairService {
       await world.write(next);
       return RepairResult(
         passed
-            ? 'Исправление подтверждено новым самостоятельным решением. Доказательство сохранено. +${next.worldXp - current.worldXp} XP · +${next.coins - current.coins} монет.'
-            : 'Ответ не совпал. ${example.question(repair).explanation}\nЭтот пример теперь разобран и не может подтвердить исправление. Следующая проверка будет другой.',
+            ? 'Подтема подтверждена новым самостоятельным решением. Доказательство сохранено. +${next.worldXp - current.worldXp} XP · +${next.coins - current.coins} монет.'
+            : 'Ответ не совпал. ${example.question(repair).explanation}\nЭтот пример теперь разобран и не может дать самостоятельное подтверждение. Следующая проверка будет другой.',
         passed: passed,
       );
     });

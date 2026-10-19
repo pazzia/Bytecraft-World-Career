@@ -35,7 +35,10 @@ class _CareerScreenState extends ConsumerState<CareerScreen> {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stack) => Center(
             child: TextButton(
-              onPressed: () => ref.invalidate(careerDashboardProvider),
+              onPressed: () {
+                ref.invalidate(repairCatalogProvider);
+                ref.invalidate(careerDashboardProvider);
+              },
               child: const Text('Не удалось загрузить навыки. Повторить'),
             ),
           ),
