@@ -85,7 +85,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
     WorldMode.guild =>
       'Это локальный учебный проект. Каждое проверенное решение даёт ${s.cityLevels['team'] ?? 1} вклад. Здание «Команда» увеличивает вклад. Цель — 160.',
     WorldMode.rival => 'Kai — учебный соперник с заранее подготовленными задачами. Победа засчитывается только за верный ответ: 55 XP и 25 монет до бонусов. Задачи меняются.',
-    WorldMode.training => 'Верное решение закрепляет одну ошибку выбранной темы: 30 XP и 12 монет до бонусов. Неверное добавляет ошибку. Числа обозначают ошибки, а не проценты.',
+    WorldMode.training => 'Это учебные примеры: 30 XP и 12 монет за верное решение до бонусов. Неверный ответ сохраняет ошибку по подтеме. Чтобы подтвердить исправление, реши отдельный новый пример в DNA; обычная тренировка не уменьшает счётчик.',
     WorldMode.infinite => 'За верный ответ: 20 + длина серии XP и 5 монет до бонусов. Ошибка отнимает жизнь и обнуляет серию; рекорд сохраняется. При нуле жизней продолжить нельзя.',
   };
   @override
@@ -142,6 +142,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
           error: (e, st) => Center(child: Text('$e')),
           data: (s) {
             final mode = widget.mode;
+            final pendingRepairs = s.repairs.values.any((repair) => repair.pending && repair.category == widget.category);
             final lock = WorldChallenges.locked(s, mode);
             final finished = WorldChallenges.finished(s, mode, category: widget.category);
             final cursor = WorldChallenges.cursor(s, mode, widget.category);
@@ -239,7 +240,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                         'API восстановлен. Открой сундук и переходи к проекту.',
                       WorldMode.project =>
                         'Калькулятор готов. Можно сразиться с Bug Lord.',
-                      WorldMode.training => 'Все 20 подтем пройдены. Продолжай курс и применяй знания в практике.',
+                      WorldMode.training => 'Все 20 учебных подтем пройдены. Самостоятельные проверки ошибок доступны в DNA.',
                       WorldMode.guild => 'Проект команды завершён. Бонус уже начислен. Продолжай курс Python.',
                       _ => 'Bug Lord побеждён. Продолжай курс Python и тренируйся в забегах.',
                     }, style: const TextStyle(color: WorldPalette.green)),
@@ -265,11 +266,14 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                         ? 'К проекту'
                         : mode == WorldMode.project
                         ? 'К боссу'
+                        : mode == WorldMode.training && pendingRepairs
+                        ? 'Подтвердить исправления в DNA'
                         : 'Продолжить курс Python',
                     icon: Icons.arrow_forward,
                     onPressed: () => context.push(switch (mode) {
                       WorldMode.expedition => Routes.worldBuild,
                       WorldMode.project => Routes.worldBoss,
+                      WorldMode.training when pendingRepairs => Routes.worldMistakes,
                       _ => Routes.map,
                     }),
                   ),
