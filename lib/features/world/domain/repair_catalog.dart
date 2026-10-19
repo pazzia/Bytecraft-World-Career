@@ -46,8 +46,8 @@ class RepairCatalog {
         '${e.key}': Map<String, dynamic>.from(e.value as Map),
     });
   }
-  String title(SkillRepair repair) =>
-      skills[repair.skillId]?['title'] as String? ?? repair.title;
+  String title(SkillRepair repair) => repair.skillId.startsWith('world:')
+      ? repair.title : skills[repair.skillId]?['title'] as String? ?? repair.title;
   RepairExample? next(SkillRepair repair) {
     if (!repair.pending) return null;
     final examples = <RepairExample>[];
