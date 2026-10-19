@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/router/routes.dart';
 import '../domain/story_journey.dart';
 import 'world_ui.dart';
+import 'world_help.dart';
 
 class StoryGuide extends StatelessWidget {
   const StoryGuide({required this.journey, this.showAction = true, super.key});
@@ -20,7 +21,12 @@ class StoryGuide extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
+      TextButton.icon(
+        onPressed: () => WorldHelp.showResources(context),
+        icon: const Icon(Icons.help_outline_rounded, size: 18),
+        label: const Text('Как работают награды и улучшения'),
+      ),
+      Text(
           'Твой маршрут · ${journey.completedStages}/3 этапов',
           style: const TextStyle(
             color: WorldPalette.cyan,

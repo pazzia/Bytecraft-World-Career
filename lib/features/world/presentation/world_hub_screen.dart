@@ -10,7 +10,6 @@ import 'story_guide.dart';
 import 'world_controller.dart';
 import 'world_ui.dart';
 import 'world_hearts_panel.dart';
-import 'world_help.dart';
 
 class WorldHubScreen extends ConsumerWidget {
   const WorldHubScreen({super.key});
