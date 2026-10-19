@@ -10,6 +10,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('duplicate purchase at the displayed price upgrades only once', () async {
+    final initial = WorldState.initial().copyWith(coins: 1000, worldXp: 800);
+    final store = InMemoryKeyValueStore({'bytecraft_world_state':
+      jsonEncode({...initial.toJson(), 'schemaVersion': 2})});
+    final c = ProviderContainer(overrides: [keyValueStoreProvider.overrideWithValue(store)]);
+    addTearDown(c.dispose);
+    await c.read(worldControllerProvider.future);
+    final results = await Future.wait(List.generate(10, (_) =>
+      c.read(worldControllerProvider.notifier).upgradeBuilding('office', expectedLevel: 1)));
+    expect(results.where((purchased) => purchased).length, 1);
+    final saved = await c.read(worldRepositoryProvider).load();
+    expect(saved.cityLevels['office'], 2);
+    expect(saved.coins, 880);
+  });
   test('new curriculum resets only old DNA cursors and keeps earned game progress', () async {
     final old = WorldState.initial().copyWith(coins: 91, worldXp: 150, expeditionStep: 3,
       trainingCurriculumVersion: 1,

@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router/routes.dart';
 import '../domain/world_state.dart';
+import '../domain/story_journey.dart';
+import '../../projects/presentation/project_providers.dart';
+import 'story_guide.dart';
 import 'world_controller.dart';
 import 'world_ui.dart';
 import 'world_hearts_panel.dart';
@@ -52,60 +55,9 @@ class WorldHubScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
-                const SizedBox(height: 18),
-                Text(
-                  'BYTECRAFT WORLD',
-                  style: TextStyle(
-                    color: WorldPalette.cyan.withValues(alpha: .9),
-                    letterSpacing: 2.2,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                const Text(
-                  'Учись. Пиши. Строй. Соревнуйся.',
-                  style: TextStyle(
-                    color: WorldPalette.text,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    height: 1.1,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Решай задания Python → получай XP и монеты → улучшай город. Начни с экспедиции: восстанови API, собери калькулятор и победи Bug Lord.',
-                  style: TextStyle(color: WorldPalette.muted, fontSize: 13),
-                ),
-                Align(alignment: Alignment.centerLeft, child: TextButton.icon(
-                  onPressed: () => WorldHelp.showResources(context),
-                  icon: const Icon(Icons.help_outline_rounded, size: 18),
-                  label: const Text('Что дают награды и улучшения?'),
-                )),
                 const SizedBox(height: 14),
-                WorldButton(
-                  label: world.expeditionStep < 5
-                      ? 'Продолжить историю: API ${world.expeditionStep}/5'
-                      : !world.expeditionChestClaimed
-                      ? 'Забрать сундук экспедиции'
-                      : !world.projectUnlocked || !world.hasVerifiedProject
-                      ? world.completedProjectSteps == 4 && !world.hasVerifiedProject
-                          ? 'Проверить код калькулятора'
-                          : 'Собрать калькулятор: ${world.completedProjectSteps}/4'
-                      : !world.bossCleared
-                      ? 'Победить Bug Lord: ${world.bossHp} HP'
-                      : 'История пройдена · продолжить курс',
-                  icon: Icons.play_arrow_rounded,
-                  onPressed: () => context.push(
-                    world.expeditionStep < 5 || !world.expeditionChestClaimed
-                        ? Routes.worldExpedition
-                        : !world.projectUnlocked || !world.hasVerifiedProject
-                        ? Routes.worldBuild
-                        : !world.bossCleared
-                        ? Routes.worldBoss
-                        : Routes.map,
-                  ),
-                ),
+                StoryGuide(journey: StoryJourney(world,
+                  verifiedComponents: ref.watch(calculatorProjectProvider).value?.step ?? 0)),
                 const SizedBox(height: 12),
                 WorldButton(
                   label: 'Карьера · цель и навыки',

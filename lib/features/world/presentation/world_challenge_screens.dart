@@ -227,7 +227,7 @@ class _WorldQuestScreenState extends ConsumerState<WorldQuestScreen> {
                     label: 'К обязательному этапу',
                     icon: Icons.arrow_forward,
                     onPressed: () => context.push(
-                      mode == WorldMode.boss
+                      mode == WorldMode.boss && s.expeditionProgress >= 5
                           ? Routes.worldBuild
                           : Routes.worldExpedition,
                     ),

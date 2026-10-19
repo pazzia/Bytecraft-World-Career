@@ -22,6 +22,6 @@ fi
 # Prove that this fork starts on the NEW game hub, not on the legacy
 # Bytecraft onboarding/home screen.
 grep -q 'Bytecraft World' world-ui.xml
-grep -q 'CODE CITY' world-ui.xml
-grep -q 'Учись. Пиши. Строй. Соревнуйся.' world-ui.xml
+grep -q 'Твой маршрут' world-ui.xml
+grep -q 'Сейчас: Восстанови API' world-ui.xml
 echo "started=true" >> smoke-world.txt

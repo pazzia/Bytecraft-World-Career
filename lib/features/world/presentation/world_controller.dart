@@ -111,9 +111,12 @@ class WorldController extends AsyncNotifier<WorldState> {
     return 'Функции';
   }
 
-  Future<void> upgradeBuilding(String id) => _serial((s) async {
+  Future<bool> upgradeBuilding(String id, {int? expectedLevel}) => _serial((s) async {
+    if (expectedLevel != null && s.cityLevels[id] != expectedLevel) return false;
     final next = WorldRules.upgrade(s, id);
-    if (!identical(s, next)) await _set(next);
+    if (identical(s, next)) return false;
+    await _set(next);
+    return true;
   });
 
   Future<void> claimExpeditionChest() => _serial((s) async {

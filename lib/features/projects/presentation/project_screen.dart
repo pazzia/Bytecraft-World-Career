@@ -5,32 +5,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/di/providers.dart';
 import '../../../app/router/routes.dart';
 import '../../../shared/widgets/code_copy.dart';
 import '../../playground/presentation/code_editor.dart';
-import '../../playground/presentation/playground_providers.dart';
 import '../../world/presentation/world_controller.dart';
 import '../../world/presentation/world_ui.dart';
 import '../domain/calculator_project.dart';
 import '../domain/project_service.dart';
-
-final projectServiceProvider = Provider<ProjectService>(
-  (ref) => ProjectService(
-    ref.watch(documentStoreProvider),
-    ref.watch(gameSaveStoreProvider),
-    ref.watch(worldRepositoryProvider),
-    ref.watch(pythonRunnerProvider),
-    ref.watch(textAssetLoaderProvider),
-    ref.watch(clockProvider),
-  ),
-);
-final calculatorProjectProvider = FutureProvider<CalculatorProject>((
-  ref,
-) async {
-  ref.watch(gameSaveChangesProvider);
-  return ref.watch(projectServiceProvider).load();
-});
+import 'project_providers.dart';
+import '../../world/domain/story_journey.dart';
+import '../../world/presentation/story_guide.dart';
 
 class ProjectScreen extends ConsumerStatefulWidget {
   const ProjectScreen({super.key});
@@ -145,6 +129,8 @@ class _ProjectScreenState extends ConsumerState<ProjectScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  StoryGuide(journey: StoryJourney(world, verifiedComponents: project.step), showAction: false),
+                  const SizedBox(height: 12),
                   Text(
                     'Проверено ${project.step}/4 компонентов',
                     style: const TextStyle(

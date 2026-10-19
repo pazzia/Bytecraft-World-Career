@@ -13,7 +13,9 @@ void main() {
     final store = await pumpBytecraft(tester);
 
     expect(find.text('Bytecraft World'), findsOneWidget);
-    expect(find.text('Учись. Пиши. Строй. Соревнуйся.'), findsOneWidget);
+    expect(find.text('Сейчас: Восстанови API'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('CODE CITY'), 150,
+        scrollable: find.byType(Scrollable).first);
     expect(find.text('CODE CITY'), findsOneWidget);
     expect(find.text('Общие жизни: 3/3'), findsOneWidget);
 

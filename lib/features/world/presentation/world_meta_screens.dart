@@ -23,12 +23,24 @@ class CodeCityScreen extends ConsumerWidget {
 
   Future<void> _upgrade(BuildContext context, WidgetRef ref, String id,
       String title, int previousLevel) async {
-    await ref.read(worldControllerProvider.notifier).upgradeBuilding(id);
+    final bool purchased;
+    try {
+      purchased = await ref.read(worldControllerProvider.notifier).upgradeBuilding(id, expectedLevel: previousLevel);
+    } catch (_) {
+      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text('Не удалось сохранить покупку. Монеты не списаны; повтори попытку.')));
+      return;
+    }
     if (!context.mounted) return;
+    if (!purchased) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content:
+        Text('Условия покупки изменились. Проверь новый уровень, цену и баланс.')));
+      return;
+    }
     final level = ref.read(worldControllerProvider).value?.cityLevels[id];
     if (level == null || level <= previousLevel) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text('$title: уровень $level. Теперь ${WorldRules.buildingEffect(id, level)}.'),
+      content: Text('$title: уровень $level. Потрачено ${80 + previousLevel * 40} монет. Теперь ${WorldRules.buildingEffect(id, level)}.'),
     ));
   }
 
