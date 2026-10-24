@@ -2,6 +2,12 @@
 
 Самостоятельный проект игрового обучения Python и развития навыков. Отдельный репозиторий: **pazzia/Bytecraft-World-Career**.
 
+## Скачать Android APK
+
+[**Скачать последнюю проверенную сборку**](https://github.com/pazzia/Bytecraft-World-Career/releases/latest/download/Bytecraft-World-Career.apk) · [Версия, исходники и контрольная сумма](https://github.com/pazzia/Bytecraft-World-Career/releases/latest) · [Ход сборки](https://github.com/pazzia/Bytecraft-World-Career/actions/workflows/world-android.yml)
+
+APK публикуется в Releases после проверки контента, анализа, тестов, подписи и запуска на Android. Ссылка выше ведёт на последний опубликованный APK. Новый коммит не отменяет уже выполняющуюся сборку. [Порядок публикации и незакрытые вопросы](docs/product/DEPLOYMENT.md).
+
 ## Что перенесено
 
 В `main` находится актуальная база World: исходники, контент, изображения, тесты и инструменты, включая восстановление жизней 0.4.3 и подготовленные изменения 0.4.4 — полную карту экспедиции с программистом и пояснения зданий / наград.

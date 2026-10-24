@@ -6,11 +6,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: world-career-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -25,6 +25,7 @@ jobs:
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+          flutter-version: '3.47.7'
           cache: true
 
       - name: Set up Python
@@ -229,3 +230,25 @@ jobs:
             world-screen.png
             world-logcat.txt
             world-app-log.txt
+
+  publish:
+    needs: [build, smoke]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Download tested World APK
+        uses: actions/download-artifact@v4
+        with:
+          name: bytecraft-world-apk
+          path: release
+
+      - name: Publish verified APK to Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tool/android/publish_release.sh
